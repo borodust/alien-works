@@ -1,7 +1,7 @@
 (cl:in-package :alien-works.graphics.filament)
 
 (defun create-engine ()
-  (%filament:filament-create
+  (%filament:filament-engine-create
    '%filament:filament-engine-backend (cffi:foreign-enum-value
                                        '%filament:filament-engine-backend
                                        :opengl)

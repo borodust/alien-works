@@ -14,12 +14,26 @@
                 :serial t
                 :components ((:file "packages")
                              (:file "host")))
+               (:module "physics"
+                :serial t
+                :components ((:file "packages")
+                             (:module "physx"
+                              :components ((:file "math")
+                                           (:file "foundation")
+                                           (:file "vdb")
+                                           (:file "physics")
+                                           (:file "dispatcher")
+                                           (:file "material")
+                                           (:file "scene")
+                                           (:file "actor")))
+                             (:file "physics")))
                (:module "graphics"
                 :serial t
                 :components ((:file "packages")
                              (:module "filament"
                               :components ((:file "math")
                                            (:file "engine")
+                                           (:file "entity")
                                            (:file "renderer")
                                            (:file "swap-chain")
                                            (:file "view")

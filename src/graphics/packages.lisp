@@ -4,6 +4,9 @@
   (:export #:create-engine
            #:destroy-engine
 
+           #:create-entity
+           #:destroy-entity
+
            #:create-renderer
            #:destroy-renderer
            #:render-view

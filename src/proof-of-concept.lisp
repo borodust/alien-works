@@ -16,7 +16,9 @@
    (cffi:load-foreign-library
     "libSDL2.so")
    (cffi:load-foreign-library
-    "/home/borodust/devel/repo/claw-filament/src/lib/build/libfilament.clawed.so")))
+    "/home/borodust/devel/repo/claw-filament/src/lib/build/libfilament.clawed.so")
+   (cffi:load-foreign-library
+    "/home/borodust/devel/repo/claw-physx/src/adapter.so")))
 
 ;;;
 ;;; DEMO

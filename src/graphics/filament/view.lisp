@@ -31,15 +31,13 @@
 
 
 (defun update-view-viewport (view x y width height)
-  (let ((viewport (iffi:make-simple-intricate-instance '%filament:filament-viewport
-                                                       '%filament::int32-t (coerce x 'fixnum)
-                                                       '%filament::int32-t (coerce y 'fixnum)
-                                                       '%filament::uint32-t (coerce width 'fixnum)
-                                                       '%filament::uint32-t (coerce height 'fixnum))))
+  (let ((viewport (iffi:make-intricate-instance '%filament:filament-viewport
+                                                '%filament::int32-t (coerce x 'fixnum)
+                                                '%filament::int32-t (coerce y 'fixnum)
+                                                '%filament::uint32-t (coerce width 'fixnum)
+                                                '%filament::uint32-t (coerce height 'fixnum))))
     (unwind-protect
          (%filament::filament-set-viewport
           '(:pointer %filament::filament-view) view
           '(:pointer %filament::filament-viewport) viewport))
-    (iffi:destroy-intricate-instance '%filament:filament-viewport
-                                     '%filament:filament-~viewport
-                                     viewport)))
+    (iffi:destroy-intricate-instance '%filament:filament-viewport viewport)))

@@ -16,7 +16,7 @@
 
 
 (defun create-vec4f (x y z w)
-  (let ((vec (iffi:make-simple-intricate-instance '%filament:filament-math-details-t-vec4<float>)))
+  (let ((vec (iffi:make-intricate-instance '%filament:filament-math-details-t-vec4<float>)))
     (setf (vec4f vec 0) x
           (vec4f vec 1) y
           (vec4f vec 2) z
