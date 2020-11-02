@@ -34,7 +34,8 @@
                 :serial t
                 :components ((:file "packages")
                              (:module "filament"
-                              :components ((:file "math")
+                              :components ((:file "utils")
+                                           (:file "math")
                                            (:file "engine")
                                            (:file "entity")
                                            (:file "renderer")

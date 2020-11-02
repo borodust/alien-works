@@ -7,7 +7,11 @@
 
            #:create-entity
            #:destroy-entity
-           #:defrenderable
+
+           #:with-renderable-builder
+           #:with-vertex-buffer-builder
+           #:with-index-buffer-builder
+           #:with-material-builder
 
            #:create-renderer
            #:destroy-renderer
@@ -32,6 +36,7 @@
            #:destroy-scene
            #:scene-skybox
 
+           #:with-skybox-builder
            #:create-color-skybox))
 
 
