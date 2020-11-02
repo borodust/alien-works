@@ -1,11 +1,13 @@
 (cl:defpackage :alien-works.graphics.filament
-  (:local-nicknames (:a :alexandria))
+  (:local-nicknames (:a :alexandria)
+                    (:! :alien-works.utils.empty))
   (:use :cl)
   (:export #:create-engine
            #:destroy-engine
 
            #:create-entity
            #:destroy-entity
+           #:defrenderable
 
            #:create-renderer
            #:destroy-renderer

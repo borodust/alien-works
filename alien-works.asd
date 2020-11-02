@@ -10,6 +10,9 @@
                :claw-sdl :claw-mathfu :claw-physx :claw-filament)
   :serial t
   :components ((:file "packages")
+               (:module "utils"
+                :serial t
+                :components ((:file "utils")))
                (:module "host"
                 :serial t
                 :components ((:file "packages")

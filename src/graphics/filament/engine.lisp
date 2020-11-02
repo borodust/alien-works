@@ -10,5 +10,5 @@
 
 
 (defun destroy-engine (engine)
-  (%filament:filament-destroy
+  (%filament:filament-engine-destroy
    '(:pointer %filament::filament-engine) engine))
