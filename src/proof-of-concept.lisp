@@ -26,6 +26,7 @@
 (defun run ()
   (aw.host:with-window (win)
     (aw.gx:with-engine (engine :surface (aw.host:window-surface win))
-      (loop repeat 5
+      (aw.gx:add-triangle engine)
+      (loop repeat 60
             do (aw.gx:render-frame engine)
                (sleep 1)))))

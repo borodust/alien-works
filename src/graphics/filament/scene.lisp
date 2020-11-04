@@ -1,4 +1,4 @@
-(cl:in-package :alien-works.graphics.filament)
+(cl:in-package :%alien-works.graphics)
 
 
 (defun create-scene (engine)
@@ -17,3 +17,9 @@
    '(:pointer %filament::filament-scene) scene
    '(:pointer %filament::filament-skybox) skybox)
   skybox)
+
+
+(defun add-scene-entity (scene entity)
+  (%filament::filament-add-entity
+   '(:pointer %filament::filament-scene) scene
+   '(:pointer %filament::utils-entity) entity))

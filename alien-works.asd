@@ -7,7 +7,8 @@
   :pathname "src/"
   :depends-on (:alexandria :trivial-main-thread
                :cffi :cffi-c-ref :claw-utils :claw
-               :claw-sdl :claw-mathfu :claw-physx :claw-filament)
+               :claw-sdl :claw-mathfu :claw-physx :claw-filament
+               :static-vectors)
   :serial t
   :components ((:file "packages")
                (:module "utils"
@@ -36,7 +37,9 @@
                              (:module "filament"
                               :components ((:file "utils")
                                            (:file "math")
+                                           (:file "box")
                                            (:file "engine")
+                                           (:file "buffer")
                                            (:file "entity")
                                            (:file "renderer")
                                            (:file "swap-chain")
