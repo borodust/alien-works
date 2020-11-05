@@ -62,7 +62,8 @@
 
    (entity :initform (%gx:create-entity) :reader entity-of)
    (vbuf)
-   (ibuf)))
+   (ibuf)
+   (mat)))
 
 
 (cffi:defcstruct triangle-vertex
@@ -96,9 +97,8 @@
             (data :indices 2) 2)
       (data &))))
 
-
 (defmethod initialize-instance :after ((this triangle) &key engine)
-  (with-slots (data entity vbuf ibuf) this
+  (with-slots (data entity vbuf ibuf mat) this
     (unless data
       (setf data (make-triangle-data)))
     (let* ((engine (handle-of engine))
@@ -123,7 +123,13 @@
                      (make-index-buffer
                       (:index-count 3)
                       (:buffer-type (%gx:index-type-enum :ushort)))
-                   (make-index-buffer engine)))
+                   (make-index-buffer engine))
+            mat (%gx:with-material-builder (make-material
+                                            (:package (%alien-works.graphics:bundled-material-data
+                                                       :defaultmaterial)
+                                                      (%alien-works.graphics:bundled-material-size
+                                                       :defaultmaterial)))
+                  (make-material engine)))
 
       (cref:c-val ((data (:struct triangle-data)))
         (%gx:update-vertex-buffer vbuf engine 0
@@ -133,12 +139,14 @@
                                  (data :indices &)
                                  (* 3 index-size)))
 
+
       (%gx:with-box (bounding-box -1 -1 -1 1 1 1)
         (%gx:with-renderable-builder
             (make-renderable
              (:bounding-box bounding-box)
              (:count-bound-geometry
               0 (%gx:renderable-primitive-type-enum :triangles) vbuf ibuf 0 3)
+             (:material 0 (%gx:material-default-instance mat))
              (:culling nil)
              (:receive-shadows nil)
              (:cast-shadows nil))

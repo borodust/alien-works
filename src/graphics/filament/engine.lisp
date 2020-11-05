@@ -14,25 +14,6 @@
    '(:pointer %filament::filament-engine) engine))
 
 
-(defun bundled-material-data (keyword)
-  (let ((name (a:format-symbol '%filament "*~A~A~A*" 'materials- keyword '-offset)))
-    (a:when-let ((offset (eval name)))
-      (cffi:make-pointer
-       (+ (cffi:pointer-address %filament:*materials-package*)
-          offset)))))
-
-
-(define-compiler-macro bundled-material-data (&whole whole keyword)
-  (let ((name (a:format-symbol '%filament "*~A~A~A*" 'materials- keyword '-offset)))
-    (a:if-let ((offset (handler-case
-                           (eval name)
-                         (t () nil))))
-      (cffi:make-pointer
-       (+ (cffi:pointer-address %filament:*materials-package*)
-          offset))
-      whole)))
-
-
 (defun bundled-material-size (keyword)
   (let ((name (a:format-symbol '%filament "*~A~A~A*" 'materials- keyword '-size)))
     (eval name)))
@@ -46,6 +27,30 @@
       size
       whole)))
 
+
+(defun bundled-material-offset (keyword)
+  (let ((name (a:format-symbol (find-package '%filament) "*~A~A~A*" 'materials- keyword '-offset)))
+    (eval name)))
+
+
+(define-compiler-macro bundled-material-offset (&whole whole keyword)
+  (let ((name (a:format-symbol (find-package '%filament) "*~A~A~A*" 'materials- keyword '-offset)))
+    (a:if-let ((offset (handler-case
+                           (eval name)
+                         (t () nil))))
+      offset
+      whole)))
+
+
+(defun bundled-material-data (keyword)
+  (a:when-let ((offset (bundled-material-offset keyword)))
+    (cffi:make-pointer (+ (cffi:pointer-address %filament:*materials-package*) offset))))
+
+
+(define-compiler-macro bundled-material-data (&whole whole keyword)
+  (a:if-let ((offset (bundled-material-offset keyword)))
+    `(cffi:make-pointer ,(+ (cffi:pointer-address %filament:*materials-package*) offset))
+    whole))
 
 ;;;
 ;;; SKYBOX
@@ -121,3 +126,8 @@
                      '(!::engine)
                      steps
                      body)))
+
+
+(defun material-default-instance (material)
+  (%filament:filament-get-default-instance
+   '(:pointer %filament::filament-material) material))

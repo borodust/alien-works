@@ -5,6 +5,9 @@
   (:use :cl)
   (:export #:create-engine
            #:destroy-engine
+
+           #:with-material-builder
+           #:material-default-instance
            #:bundled-material-data
            #:bundled-material-size
 
@@ -13,8 +16,6 @@
 
            #:renderable-primitive-type-enum
            #:with-renderable-builder
-
-           #:with-material-builder
 
            #:vertex-attribute-enum
            #:vertex-attribute-type-enum

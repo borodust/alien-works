@@ -27,6 +27,6 @@
   (aw.host:with-window (win)
     (aw.gx:with-engine (engine :surface (aw.host:window-surface win))
       (aw.gx:add-triangle engine)
-      (loop repeat 60
+      (loop repeat 5
             do (aw.gx:render-frame engine)
                (sleep 1)))))
