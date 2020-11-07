@@ -10,6 +10,11 @@
            #:material-default-instance
            #:bundled-material-data
            #:bundled-material-size
+           #:parse-material
+           #:destroy-material
+           #:material-data
+           #:material-size
+           #:with-parsed-material
 
            #:create-entity
            #:destroy-entity

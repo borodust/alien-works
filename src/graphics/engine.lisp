@@ -97,6 +97,25 @@
             (data :indices 2) 2)
       (data &))))
 
+(defparameter *baked-material-source*
+"
+material {
+    name : bakedColor,
+    requires : [
+        color
+    ],
+    shadingModel : unlit,
+    culling : none
+}
+
+fragment {
+    void material(inout MaterialInputs material) {
+        prepareMaterial(material);
+        material.baseColor = getColor();
+    }
+}
+")
+
 (defmethod initialize-instance :after ((this triangle) &key engine)
   (with-slots (data entity vbuf ibuf mat) this
     (unless data
@@ -124,12 +143,11 @@
                       (:index-count 3)
                       (:buffer-type (%gx:index-type-enum :ushort)))
                    (make-index-buffer engine))
-            mat (%gx:with-material-builder (make-material
-                                            (:package (%alien-works.graphics:bundled-material-data
-                                                       :defaultmaterial)
-                                                      (%alien-works.graphics:bundled-material-size
-                                                       :defaultmaterial)))
-                  (make-material engine)))
+            mat (%gx:with-parsed-material (mat-data *baked-material-source*)
+                  (%gx:with-material-builder (make-material
+                                              (:package (%gx:material-data mat-data)
+                                                        (%gx:material-size mat-data)))
+                    (make-material engine))))
 
       (cref:c-val ((data (:struct triangle-data)))
         (%gx:update-vertex-buffer vbuf engine 0
@@ -138,7 +156,6 @@
         (%gx:update-index-buffer ibuf engine
                                  (data :indices &)
                                  (* 3 index-size)))
-
 
       (%gx:with-box (bounding-box -1 -1 -1 1 1 1)
         (%gx:with-renderable-builder

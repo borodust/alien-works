@@ -8,7 +8,7 @@
   :depends-on (:alexandria :trivial-main-thread
                :cffi :cffi-c-ref :claw-utils :claw
                :claw-sdl :claw-mathfu :claw-physx :claw-filament
-               :static-vectors)
+               :static-vectors :uiop)
   :serial t
   :components ((:file "packages")
                (:module "utils"
@@ -39,6 +39,7 @@
                                            (:file "math")
                                            (:file "box")
                                            (:file "engine")
+                                           (:file "material")
                                            (:file "buffer")
                                            (:file "entity")
                                            (:file "renderer")
