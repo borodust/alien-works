@@ -40,8 +40,12 @@
            #:create-swap-chain
            #:destroy-swap-chain
 
+           #:projection-enum
            #:create-camera
            #:destroy-camera
+           #:update-camera-projection
+           #:update-camera-fov-projection
+           #:update-camera-lens-projection
 
            #:create-view
            #:destroy-view
@@ -60,7 +64,13 @@
 
            #:create-box
            #:destroy-box
-           #:with-box))
+           #:with-box
+
+           #:transform-manager
+           #:with-transform-instance
+           #:transform
+
+           #:with-mat4f))
 
 
 (cl:defpackage :alien-works.graphics
@@ -72,4 +82,6 @@
   (:use :cl)
   (:export #:with-engine
            #:render-frame
-           #:add-triangle))
+
+           #:add-triangle
+           #:rotate-triangle))

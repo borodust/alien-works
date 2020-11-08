@@ -40,6 +40,7 @@
                                            (:file "box")
                                            (:file "engine")
                                            (:file "material")
+                                           (:file "transform")
                                            (:file "buffer")
                                            (:file "entity")
                                            (:file "renderer")

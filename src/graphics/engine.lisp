@@ -23,7 +23,15 @@
     (setf (%gx:view-camera view) camera
           (%gx:view-scene view) scene
           (%gx:view-post-processing-enabled-p view) nil)
-    (%gx:update-view-viewport view 0 0 640 480)))
+    (%gx:update-view-viewport view 0 0 640 480)
+
+    (let ((zoom 1.5)
+          (aspect (/ 640 480)))
+      (%gx:update-camera-projection camera
+                                    (%gx:projection-enum :ortho)
+                                    (- (* aspect zoom)) (* aspect zoom)
+                                    (- zoom) zoom
+                                    0 1))))
 
 
 (defun create-engine (surface)
@@ -60,6 +68,7 @@
 (defclass triangle ()
   ((data :initform nil :allocation :class)
 
+   (engine)
    (entity :initform (%gx:create-entity) :reader entity-of)
    (vbuf)
    (ibuf)
@@ -117,14 +126,15 @@ fragment {
 ")
 
 (defmethod initialize-instance :after ((this triangle) &key engine)
-  (with-slots (data entity vbuf ibuf mat) this
+  (with-slots (data entity vbuf ibuf mat (this-engine engine)) this
     (unless data
       (setf data (make-triangle-data)))
     (let* ((engine (handle-of engine))
            (triangle-vertex-size (cffi:foreign-type-size '(:struct triangle-vertex)))
            (index-size (cffi:foreign-type-size :uint16))
            (pos-size (* 2 (cffi:foreign-type-size :float))))
-      (setf vbuf (%gx:with-vertex-buffer-builder
+      (setf this-engine engine
+            vbuf (%gx:with-vertex-buffer-builder
                      (make-vertex-buffer
                       (:vertex-count 3)
                       (:buffer-count 1)
@@ -174,3 +184,11 @@ fragment {
   (let ((instance (make-instance 'triangle :engine engine)))
     (%gx:add-scene-entity (scene-of engine) (entity-of instance))
     instance))
+
+
+(defun rotate-triangle (triangle)
+  (with-slots (entity engine) triangle
+    (let ((transform-manager (%gx:transform-manager engine)))
+      (%gx:with-transform-instance (instance entity) transform-manager
+        (%gx:with-mat4f (mat)
+          (setf (%gx:transform transform-manager instance) mat))))))
