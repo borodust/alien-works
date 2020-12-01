@@ -3,4 +3,7 @@
                     (:a :alexandria))
   (:use :cl)
   (:export #:with-window
-           #:window-surface))
+           #:window-surface
+
+           #:handle-events
+           #:event-type))

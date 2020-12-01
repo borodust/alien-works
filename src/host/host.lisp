@@ -1,6 +1,8 @@
 (cl:in-package :alien-works.host)
 
 
+(declaim (special *event*))
+
 (defun call-with-window (callback)
   (%sdl:init %sdl:+init-video+)
   (let ((window (cffi:with-foreign-string (name "YO")
@@ -12,7 +14,9 @@
     (when (cffi:null-pointer-p window)
       (error "Failed to create a window"))
     (unwind-protect
-         (funcall callback window)
+         (cref:c-with ((event %sdl:event))
+           (let ((*event* (event &)))
+             (funcall callback window)))
       (%sdl:destroy-window window)
       (%sdl:quit))))
 
@@ -31,3 +35,18 @@
 
     (ecase (wm-info :subsystem)
       (:x11 (cffi:make-pointer (wm-info :info :x11 :window))))))
+
+
+;;;
+;;; EVENTS
+;;;
+(defun handle-events (handler)
+  (loop for result = (%sdl:poll-event *event*)
+        while (> result 0)
+        do (funcall handler *event*)))
+
+
+(defun event-type (event)
+  (let* ((id (cref:c-ref event %sdl:event :type))
+         (type (cffi:foreign-enum-keyword '%sdl:event-type id :errorp nil)))
+    (if type type :uknown)))
