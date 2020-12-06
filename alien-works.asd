@@ -17,6 +17,10 @@
                (:module "math"
                 :serial t
                 :components ((:file "packages")
+                             (:file "vec2")
+                             (:file "vec3")
+                             (:file "vec4")
+                             (:file "mat4")
                              (:file "math")))
                (:module "host"
                 :serial t

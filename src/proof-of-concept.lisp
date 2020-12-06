@@ -27,8 +27,11 @@
 ;;;
 ;;; DEMO
 ;;;
+(defvar *triangle* nil)
 
-(defun init-loop ())
+
+(defun init-loop ()
+  (setf *triangle* (aw.gx:add-triangle *engine*)))
 
 
 (defun handle-event (event)
@@ -39,7 +42,8 @@
 (defun handle-loop ()
   (flet ((%handle-event (event)
            (handle-event event)))
-   (aw.host:handle-events #'%handle-event))
+    (aw.host:handle-events #'%handle-event))
+  (aw.gx:rotate-triangle *triangle*)
   (aw.gx:render-frame *engine*)
   (sleep 0.014))
 
@@ -47,7 +51,6 @@
 (defun run ()
   (aw.host:with-window (win)
     (aw.gx:with-engine (engine :surface (aw.host:window-surface win))
-      (aw.gx:add-triangle engine)
       (let ((*engine* engine))
         (init-loop)
         (catch 'quit

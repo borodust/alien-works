@@ -1,7 +1,8 @@
 (cl:defpackage :%alien-works.graphics
   (:local-nicknames (:a :alexandria)
                     (:! :alien-works.utils.empty)
-                    (:u :alien-works.utils))
+                    (:u :alien-works.utils)
+                    (:m :alien-works.math))
   (:use :cl)
   (:export #:create-engine
            #:destroy-engine
@@ -78,7 +79,8 @@
                     (:%gx :%alien-works.graphics)
                     (:u :alien-works.utils)
                     (:sv :static-vectors)
-                    (:cref :cffi-c-ref))
+                    (:cref :cffi-c-ref)
+                    (:m :alien-works.math))
   (:use :cl)
   (:export #:with-engine
            #:render-frame

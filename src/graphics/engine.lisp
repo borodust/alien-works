@@ -190,5 +190,8 @@ fragment {
   (with-slots (entity engine) triangle
     (let ((transform-manager (%gx:transform-manager engine)))
       (%gx:with-transform-instance (instance entity) transform-manager
-        (%gx:with-mat4f (mat)
-          (setf (%gx:transform transform-manager instance) mat))))))
+        (m:with-mat4 (source)
+          (m:with-vec3 (vec :z 1)
+            (m:rotate-mat4 source source (/ (get-internal-real-time) 1000000) vec))
+          (%gx:with-mat4f (mat source)
+            (setf (%gx:transform transform-manager instance) mat)))))))
