@@ -11,12 +11,10 @@
 
 
 (defun make-vec3 (x y z)
-  (let ((instance (iffi:make-intricate-instance '%glm:glm-vec3)))
-    (setf (vec3 instance 0) x
-          (vec3 instance 1) y
-          (vec3 instance 2) z)
-    instance))
-
+  (iffi:make-intricate-instance '%glm:glm-vec3
+                                :float (float x 0f0)
+                                :float (float y 0f0)
+                                :float (float z 0f0)))
 
 (defun destroy-vec3 (vec)
   (iffi:destroy-intricate-instance '%glm:glm-vec3 vec))
@@ -41,6 +39,13 @@
 (defun vec3-mult (result this that)
   (%glm:glm-operator*
    '(:pointer %glm:glm-vec3) result
+   '(:pointer %glm:glm-vec3) this
+   '(:pointer %glm:glm-vec3) that))
+
+
+(declaim (inline vec3-dot))
+(defun vec3-dot (this that)
+  (%glm:glm-dot
    '(:pointer %glm:glm-vec3) this
    '(:pointer %glm:glm-vec3) that))
 

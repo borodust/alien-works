@@ -11,10 +11,9 @@
 
 
 (defun make-vec2 (x y)
-  (let ((instance (iffi:make-intricate-instance '%glm:glm-vec2)))
-    (setf (vec2 instance 0) x
-          (vec2 instance 1) y)
-    instance))
+  (iffi:make-intricate-instance '%glm:glm-vec2
+                                :float (float x 0f0)
+                                :float (float y 0f0)))
 
 
 (defun destroy-vec2 (vec)

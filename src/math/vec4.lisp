@@ -11,12 +11,11 @@
 
 
 (defun make-vec4 (x y z w)
-  (let ((instance (iffi:make-intricate-instance '%glm:glm-vec4)))
-    (setf (vec4 instance 0) x
-          (vec4 instance 1) y
-          (vec4 instance 2) z
-          (vec4 instance 3) w)
-    instance))
+  (iffi:make-intricate-instance '%glm:glm-vec4
+                                :float (float x 0f0)
+                                :float (float y 0f0)
+                                :float (float z 0f0)
+                                :float (float w 0f0)))
 
 
 (defun destroy-vec4 (vec)

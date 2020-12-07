@@ -18,7 +18,11 @@
    (cffi:load-foreign-library
     "libSDL2.so")
    (cffi:load-foreign-library
+    "libassimp.so")
+   (cffi:load-foreign-library
     "/home/borodust/devel/repo/claw-glm/src/adapter.so")
+   (cffi:load-foreign-library
+    "/home/borodust/devel/repo/claw-soil/src/adapter.so")
    (cffi:load-foreign-library
     "/home/borodust/devel/repo/claw-filament/src/lib/build/libfilament.clawed.so")
    (cffi:load-foreign-library
@@ -45,7 +49,7 @@
     (aw.host:handle-events #'%handle-event))
   (aw.gx:rotate-triangle *triangle*)
   (aw.gx:render-frame *engine*)
-  (sleep 0.014))
+  (sleep 0.015))
 
 
 (defun run ()

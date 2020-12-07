@@ -30,7 +30,7 @@ it must replace pure CL variant
 
 ### Foundation
 
-* [Mathfu](https://github.com/google/mathfu)
+* [GLM](https://github.com/g-truc/glm)
 * [SDL](https://libsdl.org/)
 * [Filament](https://github.com/google/filament)
 * [Skia](https://skia.org/)
@@ -39,5 +39,5 @@ it must replace pure CL variant
 * [OpenAL](https://github.com/kcat/openal-soft)
 * [Assimp](https://github.com/assimp/assimp)
 * [sndfile](https://github.com/libsndfile/libsndfile)
-* [stb_image](https://github.com/nothings/stb/blob/master/stb_image.h)/[SOIL2](https://github.com/SpartanJ/SOIL2)
+* [SOIL2](https://github.com/SpartanJ/SOIL2)
 * [Nuklear](https://github.com/Immediate-Mode-UI/Nuklear)

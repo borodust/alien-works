@@ -7,8 +7,9 @@
   :pathname "src/"
   :depends-on (:alexandria :trivial-main-thread
                :cffi :cffi-c-ref :claw-utils :claw
+               :static-vectors :uiop
                :claw-sdl :claw-glm :claw-physx :claw-filament
-               :static-vectors :uiop)
+               :claw-assimp :claw-soil)
   :serial t
   :components ((:file "packages")
                (:module "utils"
@@ -20,6 +21,8 @@
                              (:file "vec2")
                              (:file "vec3")
                              (:file "vec4")
+                             (:file "quat")
+                             (:file "mat3")
                              (:file "mat4")
                              (:file "math")))
                (:module "host"
@@ -58,4 +61,13 @@
                                            (:file "camera")
                                            (:file "skybox")))
                              (:file "engine")))
+               (:module "resources"
+                :serial t
+                :components ((:file "packages")
+                             (:file "resources")
+                             (:module "scene"
+                              :serial t
+                              :components ((:file "utils")
+                                           (:file "mesh")
+                                           (:file "scene")))))
                (:file "proof-of-concept")))

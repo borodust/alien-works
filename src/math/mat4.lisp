@@ -10,31 +10,31 @@
     (setf (vec4 ptr row) value)))
 
 
-(defun create-mat4 (x0 x1 x2 x3
-                    y0 y1 y2 y3
-                    z0 z1 z2 z3
-                    w0 w1 w2 w3)
-  (let ((mat (iffi:make-intricate-instance '%glm:glm-mat4)))
-    (setf (mat4 mat 0 0) x0
-          (mat4 mat 1 0) y0
-          (mat4 mat 2 0) z0
-          (mat4 mat 3 0) w0
+(defun make-mat4 (x0 x1 x2 x3
+                  y0 y1 y2 y3
+                  z0 z1 z2 z3
+                  w0 w1 w2 w3)
+  (iffi:make-intricate-instance
+   '%glm:glm-mat4
+   :float (float x0 0f0)
+   :float (float y0 0f0)
+   :float (float z0 0f0)
+   :float (float w0 0f0)
 
-          (mat4 mat 0 1) x1
-          (mat4 mat 1 1) y1
-          (mat4 mat 2 1) z1
-          (mat4 mat 3 1) w1
+   :float (float x1 0f0)
+   :float (float y1 0f0)
+   :float (float z1 0f0)
+   :float (float w1 0f0)
 
-          (mat4 mat 0 2) x2
-          (mat4 mat 1 2) y2
-          (mat4 mat 2 2) z2
-          (mat4 mat 3 2) w2
+   :float (float x2 0f0)
+   :float (float y2 0f0)
+   :float (float z2 0f0)
+   :float (float w2 0f0)
 
-          (mat4 mat 0 3) x3
-          (mat4 mat 1 3) y3
-          (mat4 mat 2 3) z3
-          (mat4 mat 3 3) w3)
-    mat))
+   :float (float x3 0f0)
+   :float (float y3 0f0)
+   :float (float z3 0f0)
+   :float (float w3 0f0)))
 
 
 (defun destroy-mat4 (mat)
@@ -47,10 +47,10 @@
                             (z0 0f0) (z1 0f0) (z2 1f0) (z3 0f0)
                             (w0 0f0) (w1 0f0) (w2 0f0) (w3 1f0))
                      &body body)
-  `(let ((,mat (create-mat4 ,x0 ,x1 ,x2 ,x3
-                            ,y0 ,y1 ,y2 ,y3
-                            ,z0 ,z1 ,z2 ,z3
-                            ,w0 ,w1 ,w2 ,w3)))
+  `(let ((,mat (make-mat4 ,x0 ,x1 ,x2 ,x3
+                          ,y0 ,y1 ,y2 ,y3
+                          ,z0 ,z1 ,z2 ,z3
+                          ,w0 ,w1 ,w2 ,w3)))
      (unwind-protect
           (progn ,@body)
        (destroy-mat4 ,mat))))

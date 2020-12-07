@@ -12,14 +12,34 @@
            #:make-vec3
            #:destroy-vec3
            #:with-vec3
+           #:vec3-add
+           #:vec3-mult
+           #:vec3-dot
+           #:vec3-cross
 
            #:vec4
            #:make-vec4
            #:destroy-vec4
            #:with-vec4
 
+           #:mat3
+           #:make-mat3
+           #:make-mat3-from-basis
+           #:destroy-mat3
+           #:with-mat3
+           #:with-mat3-from-basis
+
            #:mat4
-           #:create-mat4
+           #:make-mat4
            #:destroy-mat4
            #:with-mat4
-           #:rotate-mat4))
+           #:rotate-mat4
+
+           #:quat
+           #:make-quat
+           #:destroy-quat
+           #:with-quat
+           #:mat3->quat
+           #:normalize-quat
+           #:positivize-quat
+           #:negate-quat))
