@@ -14,27 +14,27 @@
                   y0 y1 y2 y3
                   z0 z1 z2 z3
                   w0 w1 w2 w3)
-  (iffi:make-intricate-instance
-   '%glm:glm-mat4
-   :float (float x0 0f0)
-   :float (float y0 0f0)
-   :float (float z0 0f0)
-   :float (float w0 0f0)
+  (let ((instance (iffi:make-intricate-instance '%glm:glm-mat4)))
+    (setf (mat4 instance 0 0) x0
+          (mat4 instance 0 1) y0
+          (mat4 instance 0 2) z0
+          (mat4 instance 0 3) w0
 
-   :float (float x1 0f0)
-   :float (float y1 0f0)
-   :float (float z1 0f0)
-   :float (float w1 0f0)
+          (mat4 instance 1 0) x1
+          (mat4 instance 1 1) y1
+          (mat4 instance 1 2) z1
+          (mat4 instance 1 3) w1
 
-   :float (float x2 0f0)
-   :float (float y2 0f0)
-   :float (float z2 0f0)
-   :float (float w2 0f0)
+          (mat4 instance 2 0) x2
+          (mat4 instance 2 1) y2
+          (mat4 instance 2 2) z2
+          (mat4 instance 2 3) w2
 
-   :float (float x3 0f0)
-   :float (float y3 0f0)
-   :float (float z3 0f0)
-   :float (float w3 0f0)))
+          (mat4 instance 3 0) x3
+          (mat4 instance 3 1) y3
+          (mat4 instance 3 2) z3
+          (mat4 instance 3 3) w3)
+    instance))
 
 
 (defun destroy-mat4 (mat)
