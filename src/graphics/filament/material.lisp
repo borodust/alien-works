@@ -80,15 +80,15 @@
 ;;; MATERIAL COMPILER
 ;;;
 (defun parse-material (source &optional material-base-path)
-  (cffi:with-foreign-strings ((name-ptr (namestring
-                                         (merge-pathnames
-                                          "in-memory"
-                                          (uiop:ensure-directory-pathname (or material-base-path "")))))
-                              ((source-ptr source-size) source))
+  (let ((name (namestring (merge-pathnames
+                           "in-memory"
+                           (uiop:ensure-directory-pathname (or material-base-path ""))))))
     (iffi:with-intricate-instances ((config %filament:claw-filament-in-memory-config
-                                            '(:pointer :char) name-ptr
-                                            '(:pointer :char) source-ptr
-                                            '%filament:size-t source-size)
+                                            'claw-utils:claw-string name
+                                            'claw-utils:claw-string source
+                                            ;; FIXME: this is not really a good way
+                                            ;; to figure out real unicode string length
+                                            '%filament:size-t (length source))
                                     (compiler %filament:matc-material-compiler))
       (%filament:matc-run '(:pointer %filament::matc-material-compiler) compiler
                           '(:pointer %filament::matc-config) config)

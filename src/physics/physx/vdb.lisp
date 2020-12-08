@@ -20,11 +20,10 @@
 
 
 (defun connect-pvd (pvd &key (host "127.0.0.1") (port 5425))
-  (let ((transport (cffi:with-foreign-string (address host)
-                     (%physx:physx-px-default-pvd-socket-transport-create
-                      '(:pointer :char) address
-                      :int port
-                      :unsigned-int 10)))
+  (let ((transport (%physx:physx-px-default-pvd-socket-transport-create
+                    'claw-utils:claw-string host
+                    :int port
+                    :unsigned-int 10))
         (instrumentation-flags (make-instrumentation-flags :all)))
     (unwind-protect
          (prog1 transport
