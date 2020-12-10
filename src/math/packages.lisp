@@ -12,6 +12,7 @@
            #:make-vec3
            #:destroy-vec3
            #:with-vec3
+           #:with-vec3*
            #:vec3-add
            #:vec3-mult
            #:vec3-dot

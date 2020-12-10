@@ -27,6 +27,10 @@
        (destroy-vec3 ,vec))))
 
 
+(defmacro with-vec3* ((&rest declarations) &body body)
+  (u:expand-multibinding 'with-vec3 declarations body))
+
+
 (declaim (inline vec3-add))
 (defun vec3-add (result this that)
   (%glm:glm-operator+

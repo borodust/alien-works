@@ -6,7 +6,9 @@
   (:export #:enumval
            #:define-enumval-extractor
            #:enumbit
-           #:define-enumbit-combiner))
+           #:define-enumbit-combiner
+
+           #:expand-multibinding))
 (cl:in-package :alien-works.utils)
 
 
@@ -61,3 +63,13 @@
          (define-compiler-macro ,name (&rest names)
            (let ((,names names))
              ,(%expand-enumbit names)))))))
+
+
+
+(defun expand-multibinding (name bindings body)
+  (labels ((%expand (bindings)
+             (if bindings
+                 `((,name ,(first bindings)
+                          ,@(%expand (rest bindings))))
+                 body)))
+    (first (%expand bindings))))
