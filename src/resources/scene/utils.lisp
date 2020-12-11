@@ -56,6 +56,14 @@
          ,@body)))
 
 
+(defmacro with-face ((var &optional src) &body body)
+  (if src
+      `(cref:c-let ((,var (:struct %ai:face) :from ,src))
+         ,@body)
+      `(cref:c-val ((,var (:struct %ai:face)))
+         ,@body)))
+
+
 (defun ai-string-to-lisp (ai-string)
   (cref:c-val ((ai-string (:struct %ai:string)))
     (cffi:foreign-string-to-lisp (ai-string :data &) :count (ai-string :length))))
@@ -78,6 +86,10 @@
 
 (defun write-int16 (buffer &rest values)
   (write-primitives buffer :int16 values))
+
+
+(defun write-uint32 (buffer &rest values)
+  (write-primitives buffer :uint32 values))
 
 
 (defun write-int8 (buffer &rest values)

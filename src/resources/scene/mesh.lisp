@@ -107,6 +107,15 @@
                  (3 :nshort3))))))))
 
 
+(defun write-face (buffer face)
+  (with-face (face)
+    (loop with ptr = buffer
+          for idx below (face :num-indices)
+          for written = (write-uint32 ptr (face :indices idx))
+          do (setf ptr (cffi:inc-pointer ptr written))
+          finally (return ptr))))
+
+
 (defun combine-binary-writers (&rest writers)
   (lambda (buffer idx)
     (multiple-value-bind (buffer shift) (align-buffer buffer)
@@ -129,7 +138,30 @@
                             `((:offset ,padding))))))))))
 
 
-(defun parse-mesh ()
+(defclass buffer ()
+  ((data :initarg :data :initform (error ":data missing"))
+   (length :initarg :length :initform (error ":length missing"))
+   (descriptor :initarg :descriptor :initform (error ":descriptor missing"))))
+
+
+(defun destroy-buffer (buffer)
+  (with-slots (data) buffer
+    (cffi:foreign-free data)))
+
+
+(defclass mesh ()
+  ((vertex-buffer :initarg :vertex-buffer :initform (error ":vertex-buffer missing"))
+   (index-buffers :initarg :index-buffers :initform nil)))
+
+
+(defun destroy-mesh (mesh)
+  (with-slots (vertex-buffer index-buffers) mesh
+    (destroy-buffer vertex-buffer)
+    (loop for buf in index-buffers
+          do (destroy-buffer buf))))
+
+
+(defun parse-vertices ()
   (with-mesh (mesh)
     (let* ((vertex-count (mesh :num-vertices))
            (writers (append (list
@@ -168,7 +200,44 @@
           (let ((buffer (cffi:foreign-alloc :int8 :count (* vert-len vertex-count))))
             (loop for idx below vertex-count
                   do (funcall uber-writer (cffi:inc-pointer buffer (* idx vert-len)) idx))
-            (values buffer descriptor)))))))
+            (make-instance 'buffer :data buffer
+                                   :length vertex-count
+                                   :descriptor descriptor)))))))
+
+
+(defun parse-faces ()
+  (flet ((%next-primitive (faces max-count)
+           (if (> max-count 0)
+               (cref:c-val ((faces (:struct %assimp:face)))
+                 (loop with face-size = (faces 0 :num-indices)
+                       for idx from 0 below max-count
+                       while (= face-size (faces idx :num-indices))
+                       finally (return (list face-size idx))))
+               (list 0 0))))
+    (with-mesh (mesh)
+      (let ((total-face-count (mesh :num-faces)))
+        (unless (zerop total-face-count)
+          (loop with faces-ptr = (mesh :faces)
+                with rest-count = total-face-count
+                for (next-face-size next-face-count) = (%next-primitive faces-ptr rest-count)
+                while (> next-face-count 0)
+                collect (let ((buffer (cffi:foreign-alloc :uint32 :count (* next-face-count
+                                                                            next-face-size))))
+                          (with-face (next-faces-ptr faces-ptr)
+                            (loop with ptr = buffer
+                                  for face-idx below next-face-count
+                                  for next-face-ptr = (next-faces-ptr face-idx &)
+                                  do (setf ptr (write-face ptr next-face-ptr))
+                                  finally (setf faces-ptr next-face-ptr
+                                                rest-count (- rest-count next-face-count))))
+                          (make-instance 'buffer :data buffer
+                                                 :length next-face-count
+                                                 :descriptor `((:index ,next-face-size))))))))))
+
+(defun parse-mesh ()
+  (make-instance 'mesh
+                 :vertex-buffer (parse-vertices)
+                 :index-buffers (parse-faces)))
 
 
 (defun parse-meshes ()
