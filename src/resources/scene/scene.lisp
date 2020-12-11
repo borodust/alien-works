@@ -50,3 +50,18 @@
 
 (defmacro with-imported-scene ((path) &body body)
   `(call-with-scene ,path (lambda () ,@body)))
+
+
+(defclass scene ()
+  ((meshes :initarg :meshes :initform nil :reader scene-meshes)))
+
+
+(defun destroy-scene (scene)
+  (with-slots (meshes) scene
+    (loop for mesh in meshes
+          do (destroy-mesh mesh))))
+
+
+(defun parse-scene (path)
+  (with-imported-scene (path)
+    (make-instance 'scene :meshes (parse-meshes))))

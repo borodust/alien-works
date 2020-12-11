@@ -5,4 +5,13 @@
                     (:m :alien-works.math)
                     (:%ai :%assimp))
   (:use :cl)
-  (:export))
+  (:export #:parse-scene
+           #:scene-meshes
+           #:destroy-scene
+
+           #:mesh-vertex-buffer
+           #:mesh-index-buffers
+
+           #:buffer-data
+           #:buffer-size
+           #:buffer-descriptor))

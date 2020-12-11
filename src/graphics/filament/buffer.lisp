@@ -2,6 +2,7 @@
 
 
 
+
 ;;;
 ;;; VERTEX BUFFER
 ;;;
@@ -15,17 +16,17 @@
       (:buffer-count
        (%explode-function
         '(%filament:filament-buffer-count
-          '(:pointer %filament::filament-vertex-buffer-builder)
+          '(:pointer %filament:filament-vertex-buffer-builder)
           '%filament:uint8-t)))
       (:vertex-count
        (%explode-function
         '(%filament:filament-vertex-count
-          '(:pointer %filament::filament-vertex-buffer-builder)
+          '(:pointer %filament:filament-vertex-buffer-builder)
           '%filament:uint32-t)))
       (:attribute
        (%explode-function
         '(%filament:filament-attribute
-          '(:pointer %filament::filament-vertex-buffer-builder)
+          '(:pointer %filament:filament-vertex-buffer-builder)
           '%filament:filament-vertex-attribute
           '%filament:uint8-t
           '%filament:filament-vertex-buffer-attribute-type
@@ -34,9 +35,38 @@
       (:normalized
        (%explode-function
         '(%filament:filament-normalized
-          '(:pointer %filament::filament-vertex-buffer-builder)
+          '(:pointer %filament:filament-vertex-buffer-builder)
           '%filament:filament-vertex-attribute
           ':bool))))))
+
+
+(warp-intricate-function vertex-buffer-builder-buffer-count
+    %filament:filament-buffer-count
+  '(:pointer %filament:filament-vertex-buffer-builder)
+  '%filament:uint8-t)
+
+
+(warp-intricate-function vertex-buffer-builder-vertex-count
+    %filament:filament-vertex-count
+  '(:pointer %filament:filament-vertex-buffer-builder)
+  '%filament:uint32-t)
+
+
+(warp-intricate-function vertex-buffer-builder-attribute
+    %filament:filament-attribute
+  '(:pointer %filament:filament-vertex-buffer-builder)
+  '%filament:filament-vertex-attribute
+  '%filament:uint8-t
+  '%filament:filament-vertex-buffer-attribute-type
+  '%filament:uint32-t
+  '%filament:uint8-t)
+
+
+(warp-intricate-function vertex-buffer-builder-normalized
+    %filament:filament-normalized
+  '(:pointer %filament:filament-vertex-buffer-builder)
+  '%filament:filament-vertex-attribute
+  ':bool)
 
 
 (defmacro with-vertex-buffer-builder ((name &rest steps) &body body)
@@ -55,19 +85,25 @@
                      body)))
 
 
+(defun destroy-vertex-buffer (engine buffer)
+  (%filament:filament-destroy
+   '(:pointer %filament:filament-engine) engine
+   '(:pointer %filament:filament-vertex-buffer) buffer))
+
+
 (defun update-vertex-buffer (buffer engine index data size &optional (offset 0))
   (iffi:with-intricate-instance
       (descriptor %filament:filament-backend-buffer-descriptor
                   '(:pointer :void) data
-                  '%filament::size-t size
-                  '%filament::filament-backend-buffer-descriptor-callback (cffi:null-pointer)
+                  '%filament:size-t size
+                  '%filament:filament-backend-buffer-descriptor-callback (cffi:null-pointer)
                   '(:pointer :void) (cffi:null-pointer))
-    (%filament::filament-set-buffer-at
-     '(:pointer %filament::filament-vertex-buffer) buffer
-     '(:pointer %filament::filament-engine) engine
-     '%filament::uint8-t index
-     '(:pointer %filament::filament-vertex-buffer-buffer-descriptor) descriptor
-     '%filament::uint32-t offset)))
+    (%filament:filament-set-buffer-at
+     '(:pointer %filament:filament-vertex-buffer) buffer
+     '(:pointer %filament:filament-engine) engine
+     '%filament:uint8-t index
+     '(:pointer %filament:filament-vertex-buffer-buffer-descriptor) descriptor
+     '%filament:uint32-t offset)))
 
 
 ;;;
@@ -82,13 +118,25 @@
       (:index-count
        (%explode-function
         '(%filament:filament-index-count
-          '(:pointer %filament::filament-index-buffer-builder)
+          '(:pointer %filament:filament-index-buffer-builder)
           '%filament:uint32-t)))
       (:buffer-type
        (%explode-function
         '(%filament:filament-buffer-type
-          '(:pointer %filament::filament-index-buffer-builder)
+          '(:pointer %filament:filament-index-buffer-builder)
           '%filament:filament-index-buffer-index-type))))))
+
+
+(warp-intricate-function index-buffer-builder-index-count
+    %filament:filament-index-count
+  '(:pointer %filament:filament-index-buffer-builder)
+  '%filament:uint32-t)
+
+
+(warp-intricate-function index-buffer-builder-buffer-type
+    %filament:filament-buffer-type
+  '(:pointer %filament:filament-index-buffer-builder)
+  '%filament:filament-index-buffer-index-type)
 
 
 (defmacro with-index-buffer-builder ((name &rest steps) &body body)
@@ -107,15 +155,21 @@
                      body)))
 
 
+(defun destroy-index-buffer (engine buffer)
+  (%filament:filament-destroy
+   '(:pointer %filament:filament-engine) engine
+   '(:pointer %filament:filament-index-buffer) buffer))
+
+
 (defun update-index-buffer (buffer engine data size &optional (offset 0))
   (iffi:with-intricate-instance
       (descriptor %filament:filament-backend-buffer-descriptor
                   '(:pointer :void) data
-                  '%filament::size-t size
-                  '%filament::filament-backend-buffer-descriptor-callback (cffi:null-pointer)
+                  '%filament:size-t size
+                  '%filament:filament-backend-buffer-descriptor-callback (cffi:null-pointer)
                   '(:pointer :void) (cffi:null-pointer))
-    (%filament::filament-set-buffer
-     '(:pointer %filament::filament-index-buffer) buffer
-     '(:pointer %filament::filament-engine) engine
-     '(:pointer %filament::filament-index-buffer-buffer-descriptor) descriptor
-     '%filament::uint32-t offset)))
+    (%filament:filament-set-buffer
+     '(:pointer %filament:filament-index-buffer) buffer
+     '(:pointer %filament:filament-engine) engine
+     '(:pointer %filament:filament-index-buffer-buffer-descriptor) descriptor
+     '%filament:uint32-t offset)))

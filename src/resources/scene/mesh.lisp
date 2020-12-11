@@ -39,8 +39,8 @@
     (multiple-value-bind (buffer shift) (align-buffer buffer)
       (values (+ shift (write-float buffer (pos :x) (pos :y) (pos :z)))
               `(,@(unless (zerop shift)
-                    `((:offset ,shift)))
-                (:position :float3))))))
+                    `((:offset :byte ,shift)))
+                (:position :float 3))))))
 
 
 (defun write-quat-tangent (buffer a-normal a-tangent a-bitangent)
@@ -66,8 +66,8 @@
                                  (normalize-int16 (m:quat result 2))
                                  (normalize-int16 (m:quat result 3))))
            `(,@(unless (zerop shift)
-                 `((:offset ,shift)))
-             (:tangent :nshort4))))))))
+                 `((:offset :byte ,shift)))
+             (:tangent :short 4 :normalized t))))))))
 
 
 (defun write-color (buffer col)
@@ -80,8 +80,8 @@
                             (normalize-uint8 (col :b))
                             (normalize-uint8 (col :a))))
        `(,@(unless (zerop shift)
-             `((:offset ,shift)))
-         (:color :nubyte4))))))
+             `((:offset :byte ,shift)))
+         (:color :ubyte 4 :normalized t))))))
 
 
 (defun write-uv (buffer uv channels)
@@ -100,18 +100,15 @@
                             (normalize-int16 (uv :y))
                             (normalize-int16 (uv :z))))))
        `(,@(unless (zerop shift)
-             `((:offset ,shift)))
-         (:uv ,(ecase channels
-                 (1 :nshort)
-                 (2 :nshort2)
-                 (3 :nshort3))))))))
+             `((:offset :byte ,shift)))
+         (:uv :short ,channels :normalized t))))))
 
 
 (defun write-face (buffer face)
   (with-face (face)
     (loop with ptr = buffer
           for idx below (face :num-indices)
-          for written = (write-uint32 ptr (face :indices idx))
+          for written = (write-uint32 ptr (face :indices * idx))
           do (setf ptr (cffi:inc-pointer ptr written))
           finally (return ptr))))
 
@@ -132,16 +129,16 @@
                (padding (calc-alignment-padding total)))
           (values total
                   (append (unless (zerop shift)
-                            `((:offset ,shift)))
+                            `((:offset :byte ,shift)))
                           descriptors
                           (unless (zerop padding)
-                            `((:offset ,padding))))))))))
+                            `((:offset :byte ,padding))))))))))
 
 
 (defclass buffer ()
-  ((data :initarg :data :initform (error ":data missing"))
-   (length :initarg :length :initform (error ":length missing"))
-   (descriptor :initarg :descriptor :initform (error ":descriptor missing"))))
+  ((data :initarg :data :initform (error ":data missing") :reader buffer-data)
+   (size :initarg :size :initform (error ":size missing") :reader buffer-size)
+   (descriptor :initarg :descriptor :initform (error ":descriptor missing") :reader buffer-descriptor)))
 
 
 (defun destroy-buffer (buffer)
@@ -150,8 +147,12 @@
 
 
 (defclass mesh ()
-  ((vertex-buffer :initarg :vertex-buffer :initform (error ":vertex-buffer missing"))
-   (index-buffers :initarg :index-buffers :initform nil)))
+  ((vertex-buffer :initarg :vertex-buffer
+                  :initform (error ":vertex-buffer missing")
+                  :reader mesh-vertex-buffer)
+   (index-buffers :initarg :index-buffers
+                  :initform nil
+                  :reader mesh-index-buffers)))
 
 
 (defun destroy-mesh (mesh)
@@ -197,11 +198,12 @@
       (unless (zerop vertex-count)
         (multiple-value-bind (vert-len descriptor)
             (dry-run (funcall uber-writer (cffi:null-pointer) 0))
-          (let ((buffer (cffi:foreign-alloc :int8 :count (* vert-len vertex-count))))
+          (let* ((buffer-size (* vert-len vertex-count))
+                 (buffer (cffi:foreign-alloc :int8 :count buffer-size)))
             (loop for idx below vertex-count
                   do (funcall uber-writer (cffi:inc-pointer buffer (* idx vert-len)) idx))
             (make-instance 'buffer :data buffer
-                                   :length vertex-count
+                                   :size buffer-size
                                    :descriptor descriptor)))))))
 
 
@@ -221,8 +223,14 @@
                 with rest-count = total-face-count
                 for (next-face-size next-face-count) = (%next-primitive faces-ptr rest-count)
                 while (> next-face-count 0)
-                collect (let ((buffer (cffi:foreign-alloc :uint32 :count (* next-face-count
-                                                                            next-face-size))))
+                collect (let* ((buffer-size (* next-face-count
+                                               next-face-size
+                                               (cffi:foreign-type-size :uint32)))
+                               (buffer (cffi:foreign-alloc :int8 :count buffer-size))
+                               (primitive (ecase next-face-size
+                                            (1 :points)
+                                            (2 :lines)
+                                            (3 :triangles))))
                           (with-face (next-faces-ptr faces-ptr)
                             (loop with ptr = buffer
                                   for face-idx below next-face-count
@@ -231,8 +239,9 @@
                                   finally (setf faces-ptr next-face-ptr
                                                 rest-count (- rest-count next-face-count))))
                           (make-instance 'buffer :data buffer
-                                                 :length next-face-count
-                                                 :descriptor `((:index ,next-face-size))))))))))
+                                                 :size buffer-size
+                                                 :descriptor `((:index :uint 1
+                                                                       :primitive ,primitive))))))))))
 
 (defun parse-mesh ()
   (make-instance 'mesh

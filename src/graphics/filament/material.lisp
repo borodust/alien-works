@@ -113,8 +113,8 @@
    '(:pointer %filament::claw-filament-material-data) data))
 
 
-(defmacro with-parsed-material ((material source) &body body)
-  `(let ((,material (parse-material ,source)))
+(defmacro with-parsed-material ((material source &optional base-path) &body body)
+  `(let ((,material (parse-material ,source ,base-path)))
      (unwind-protect
           (progn ,@body)
        (destroy-material ,material))))

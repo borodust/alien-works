@@ -9,10 +9,9 @@
                :cffi :cffi-c-ref :claw-utils :claw
                :static-vectors :uiop
                :claw-sdl :claw-glm :claw-physx :claw-filament
-               :claw-assimp :claw-soil)
+               :claw-assimp :claw-soil :defpackage-plus)
   :serial t
-  :components ((:file "packages")
-               (:module "utils"
+  :components ((:module "utils"
                 :serial t
                 :components ((:file "utils")))
                (:module "math"
@@ -70,4 +69,4 @@
                               :components ((:file "utils")
                                            (:file "mesh")
                                            (:file "scene")))))
-               (:file "proof-of-concept")))
+               (:file "packages")))

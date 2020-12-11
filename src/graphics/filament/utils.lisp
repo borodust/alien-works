@@ -15,6 +15,13 @@
                     append (list type arg)))))
 
 
+(defmacro warp-intricate-function (name intricate-name &body params)
+  (let ((args (loop for nil in params
+                    collect (gensym))))
+    `(defun ,name (,@args)
+       ,(explode-function (list* intricate-name params) args))))
+
+
 (defun explode-builder (name-and-opts
                         opt-expander
                         ctor-expander
@@ -23,10 +30,14 @@
                         steps
                         body)
   (a:with-gensyms (builder)
-    (let ((name (first (a:ensure-list name-and-opts))))
-      `(flet ((,name (,@maker-args)
-                (iffi:with-intricate-instance (,builder ,@(funcall ctor-expander))
-                  ,@(loop for (name . args) in steps
-                          collect (funcall opt-expander name (list* builder args)))
-                  ,(funcall build-expander builder))))
-         ,@body))))
+    (destructuring-bind (name &rest opts) (a:ensure-list name-and-opts)
+      (destructuring-bind (&key instance &allow-other-keys) opts
+        `(iffi:with-intricate-instance (,builder ,@(funcall ctor-expander))
+           ,@(loop for (name . args) in steps
+                   collect (funcall opt-expander name (list* builder args)))
+           (flet ((,name (,@maker-args)
+                    ,(funcall build-expander builder)))
+             (,@(if instance
+                    `(let ((,instance ,builder)))
+                    '(progn))
+              ,@body)))))))
