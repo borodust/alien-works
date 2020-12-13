@@ -34,7 +34,7 @@
       (destructuring-bind (&key instance &allow-other-keys) opts
         `(iffi:with-intricate-instance (,builder ,@(funcall ctor-expander))
            ,@(loop for (name . args) in steps
-                   collect (funcall opt-expander name (list* builder args)))
+                   collect (explode-function (funcall opt-expander name) (list* builder args)))
            (flet ((,name (,@maker-args)
                     ,(funcall build-expander builder)))
              (,@(if instance

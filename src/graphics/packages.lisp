@@ -96,7 +96,23 @@
            #:with-transform-instance
            #:transform
 
-           #:with-mat4f))
+           #:with-mat4f
+           #:with-vec3f
+
+           #:with-light-builder
+           #:light-builder-cast-shadows
+           #:light-builder-shadow-options
+           #:light-builder-cast-light
+           #:light-builder-position
+           #:light-builder-direction
+           #:light-builder-color
+           #:light-builder-intensity
+           #:light-builder-intensity-efficiency
+           #:light-builder-falloff
+           #:light-builder-spot-light-cone
+           #:light-builder-sun-angular-radius
+           #:light-builder-sun-halo-size
+           #:light-builder-sun-halo-falloff))
 
 
 (cl:defpackage :alien-works.graphics
@@ -109,6 +125,8 @@
   (:use :cl)
   (:export #:with-engine
            #:render-frame
+
+           #:add-scene-entity
 
            #:add-triangle
            #:rotate-triangle
@@ -126,7 +144,10 @@
 
            #:make-renderable
            #:destroy-renderable
-           #:add-renderable
+           #:transform-renderable
+
+           #:make-light
+           #:destroy-light
 
            #:.material
 
@@ -152,4 +173,16 @@
            #:.bone-skinning
            #:.skinning
            #:.morphing
-           #:.blend-order))
+           #:.blend-order
+
+           #:.cast-light
+           #:.position
+           #:.direction
+           #:.color
+           #:.intensity
+           #:.intensity-efficiency
+           #:.falloff
+           #:.spot-light-cone
+           #:.sun-angular-radius
+           #:.sun-halo-size
+           #:.sun-halo-falloff))

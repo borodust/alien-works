@@ -58,7 +58,8 @@
                                            (:file "view")
                                            (:file "scene")
                                            (:file "camera")
-                                           (:file "skybox")))
+                                           (:file "skybox")
+                                           (:file "light")))
                              (:file "engine")))
                (:module "resources"
                 :serial t

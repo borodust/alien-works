@@ -17,30 +17,24 @@
 ;;;
 ;;; SKYBOX
 ;;;
-(defun expand-skybox-builder-function (name args)
-  (flet ((%explode-function (signature)
-           (explode-function signature args)))
-    (ecase name
-      (:environment
-       (%explode-function
-        '(%filament:filament-environment
-          '(:pointer %filament:filament-skybox-builder)
-          '(:pointer %filament:filament-texture))))
-      (:show-sun
-       (%explode-function
-        '(%filament:filament-show-sun
-          '(:pointer %filament:filament-skybox-builder)
-          ':bool)))
-      (:intensity
-       (%explode-function
-        '(%filament:filament-intensity
-          '(:pointer %filament:filament-skybox-builder)
-          ':float)))
-      (:color
-       (%explode-function
-        '(%filament:filament-color
-          '(:pointer %filament:filament-skybox-builder)
-          '(:pointer %filament:filament-math-float4)))))))
+(defun expand-skybox-builder-function (name)
+  (ecase name
+    (:environment
+     '(%filament:filament-environment
+       '(:pointer %filament:filament-skybox-builder)
+       '(:pointer %filament:filament-texture)))
+    (:show-sun
+     '(%filament:filament-show-sun
+       '(:pointer %filament:filament-skybox-builder)
+       ':bool))
+    (:intensity
+     '(%filament:filament-intensity
+       '(:pointer %filament:filament-skybox-builder)
+       ':float))
+    (:color
+     '(%filament:filament-color
+       '(:pointer %filament:filament-skybox-builder)
+       '(:pointer %filament:filament-math-float4)))))
 
 
 (defmacro with-skybox-builder ((name &rest steps) &body body)

@@ -28,110 +28,92 @@
 (u:define-enumval-extractor renderable-primitive-type-enum
   %filament:filament-renderable-manager-primitive-type)
 
-(defun expand-renderable-manager-builder-function (name args)
-  (flet ((%explode-function (signature)
-           (explode-function signature args)))
-    (ecase name
-      (:index-bound-geometry
-       (%explode-function
-        '(%filament:filament-geometry
-          '(:pointer %filament:filament-renderable-manager-builder)
-          '%filament:size-t
-          '%filament:filament-renderable-manager-primitive-type
-          '(:pointer %filament:filament-vertex-buffer)
-          '(:pointer %filament:filament-index-buffer)
-          '%filament:size-t
-          '%filament:size-t
-          '%filament:size-t
-          '%filament:size-t)))
-      (:count-bound-geometry
-       (%explode-function
-        '(%filament:filament-geometry
-          '(:pointer %filament:filament-renderable-manager-builder)
-          '%filament:size-t
-          '%filament:filament-renderable-manager-primitive-type
-          '(:pointer %filament:filament-vertex-buffer)
-          '(:pointer %filament:filament-index-buffer)
-          '%filament:size-t
-          '%filament:size-t)))
-      (:geometry
-       (%explode-function
-        '(%filament:filament-geometry
-          '(:pointer %filament:filament-renderable-manager-builder)
-          '%filament:size-t
-          '%filament:filament-renderable-manager-primitive-type
-          '(:pointer %filament:filament-vertex-buffer)
-          '(:pointer %filament:filament-index-buffer))))
-      (:material
-       (%explode-function
-        '(%filament:filament-material
-          '(:pointer %filament:filament-renderable-manager-builder)
-          '%filament:size-t
-          '(:pointer %filament:filament-material-instance))))
-      (:bounding-box
-       (%explode-function
-        '(%filament:filament-bounding-box
-          '(:pointer %filament:filament-renderable-manager-builder)
-          '(:pointer %filament:filament-box))))
-      (:layer-mask
-       (%explode-function
-        '(%filament:filament-layer-mask
-          '(:pointer %filament:filament-renderable-manager-builder)
-          '%filament:uint8-t
-          '%filament:uint8-t)))
-      (:priority
-       (%explode-function
-        '(%filament:filament-priority
-          '(:pointer %filament:filament-renderable-manager-builder)
-          '%filament:uint8-t)))
-      (:culling
-       (%explode-function
-        '(%filament:filament-culling
-          '(:pointer %filament:filament-renderable-manager-builder)
-          ':bool)))
-      (:cast-shadows
-       (%explode-function
-        '(%filament:filament-cast-shadows
-          '(:pointer %filament:filament-renderable-manager-builder)
-          ':bool)))
-      (:receive-shadows
-       (%explode-function
-        '(%filament:filament-receive-shadows
-          '(:pointer %filament:filament-renderable-manager-builder)
-          ':bool)))
-      (:screen-space-contact-shadows
-       (%explode-function
-        '(%filament:filament-screen-space-contact-shadows
-          '(:pointer %filament:filament-renderable-manager-builder)
-          ':bool)))
-      (:transform-skinning
-       (%explode-function
-        '(%filament:filament-skinning
-          '(:pointer %filament:filament-renderable-manager-builder)
-          '%filament:size-t
-          '(:pointer %filament:filament-math-mat4f))))
-      (:bone-skinning
-       (%explode-function
-        '(%filament:filament-skinning
-          '(:pointer %filament:filament-renderable-manager-builder)
-          '%filament:size-t
-          '(:pointer %filament:filament-renderable-manager-bone))))
-      (:skinning
-       (%explode-function
-        '(%filament:filament-skinning
-          '(:pointer %filament:filament-renderable-manager-builder)
-          '%filament:size-t)))
-      (:morphing
-       (%explode-function
-        '(%filament:filament-morphing
-          '(:pointer %filament:filament-renderable-manager-builder)
-          ':bool)))
-      (:blend-order
-       (%explode-function
-        '(%filament:filament-blend-order
-          '(:pointer %filament:filament-renderable-manager-builder)
-          '%filament:size-t
-          '%filament:uint16-t))))))
+(defun expand-renderable-manager-builder-function (name)
+  (ecase name
+    (:index-bound-geometry
+     '(%filament:filament-geometry
+       '(:pointer %filament:filament-renderable-manager-builder)
+       '%filament:size-t
+       '%filament:filament-renderable-manager-primitive-type
+       '(:pointer %filament:filament-vertex-buffer)
+       '(:pointer %filament:filament-index-buffer)
+       '%filament:size-t
+       '%filament:size-t
+       '%filament:size-t
+       '%filament:size-t))
+    (:count-bound-geometry
+     '(%filament:filament-geometry
+       '(:pointer %filament:filament-renderable-manager-builder)
+       '%filament:size-t
+       '%filament:filament-renderable-manager-primitive-type
+       '(:pointer %filament:filament-vertex-buffer)
+       '(:pointer %filament:filament-index-buffer)
+       '%filament:size-t
+       '%filament:size-t))
+    (:geometry
+     '(%filament:filament-geometry
+       '(:pointer %filament:filament-renderable-manager-builder)
+       '%filament:size-t
+       '%filament:filament-renderable-manager-primitive-type
+       '(:pointer %filament:filament-vertex-buffer)
+       '(:pointer %filament:filament-index-buffer)))
+    (:material
+     '(%filament:filament-material
+       '(:pointer %filament:filament-renderable-manager-builder)
+       '%filament:size-t
+       '(:pointer %filament:filament-material-instance)))
+    (:bounding-box
+     '(%filament:filament-bounding-box
+       '(:pointer %filament:filament-renderable-manager-builder)
+       '(:pointer %filament:filament-box)))
+    (:layer-mask
+     '(%filament:filament-layer-mask
+       '(:pointer %filament:filament-renderable-manager-builder)
+       '%filament:uint8-t
+       '%filament:uint8-t))
+    (:priority
+     '(%filament:filament-priority
+       '(:pointer %filament:filament-renderable-manager-builder)
+       '%filament:uint8-t))
+    (:culling
+     '(%filament:filament-culling
+       '(:pointer %filament:filament-renderable-manager-builder)
+       ':bool))
+    (:cast-shadows
+     '(%filament:filament-cast-shadows
+       '(:pointer %filament:filament-renderable-manager-builder)
+       ':bool))
+    (:receive-shadows
+     '(%filament:filament-receive-shadows
+       '(:pointer %filament:filament-renderable-manager-builder)
+       ':bool))
+    (:screen-space-contact-shadows
+     '(%filament:filament-screen-space-contact-shadows
+       '(:pointer %filament:filament-renderable-manager-builder)
+       ':bool))
+    (:transform-skinning
+     '(%filament:filament-skinning
+       '(:pointer %filament:filament-renderable-manager-builder)
+       '%filament:size-t
+       '(:pointer %filament:filament-math-mat4f)))
+    (:bone-skinning
+     '(%filament:filament-skinning
+       '(:pointer %filament:filament-renderable-manager-builder)
+       '%filament:size-t
+       '(:pointer %filament:filament-renderable-manager-bone)))
+    (:skinning
+     '(%filament:filament-skinning
+       '(:pointer %filament:filament-renderable-manager-builder)
+       '%filament:size-t))
+    (:morphing
+     '(%filament:filament-morphing
+       '(:pointer %filament:filament-renderable-manager-builder)
+       ':bool))
+    (:blend-order
+     '(%filament:filament-blend-order
+       '(:pointer %filament:filament-renderable-manager-builder)
+       '%filament:size-t
+       '%filament:uint16-t))))
 
 
 (warp-intricate-function renderable-builder-index-bound-geometry

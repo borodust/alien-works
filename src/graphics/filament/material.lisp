@@ -43,16 +43,13 @@
 ;;;
 ;;; MATERIAL PARSER
 ;;;
-(defun expand-material-builder-function (name args)
-  (flet ((%explode-function (signature)
-           (explode-function signature args)))
-    (ecase name
-      (:package
-       (%explode-function
-        '(%filament:filament-package
-          '(:pointer %filament::filament-material-builder)
-          '(:pointer :void)
-          '%filament:size-t))))))
+(defun expand-material-builder-function (name)
+  (ecase name
+    (:package
+     '(%filament:filament-package
+       '(:pointer %filament::filament-material-builder)
+       '(:pointer :void)
+       '%filament:size-t))))
 
 
 (defmacro with-material-builder ((name &rest steps) &body body)

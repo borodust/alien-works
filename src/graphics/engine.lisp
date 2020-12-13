@@ -17,7 +17,7 @@
           scene (%gx:create-scene engine))
 
     ;; scene setup
-    (setf (%gx:scene-skybox scene) (%gx:create-color-skybox engine 0.8 0.25 0.25 1))
+    (setf (%gx:scene-skybox scene) (%gx:create-color-skybox engine 0.2 0.2 0.2 1))
 
     ;; view setup
     (setf (%gx:view-camera view) camera
@@ -28,10 +28,10 @@
     (let ((zoom 1.5)
           (aspect (/ 640 480)))
       (%gx:update-camera-projection camera
-                                    (%gx:projection-enum :ortho)
+                                    (%gx:projection-enum :perspective)
                                     (- (* aspect zoom)) (* aspect zoom)
                                     (- zoom) zoom
-                                    0 1))))
+                                    1 100))))
 
 
 (defun create-engine (surface)
@@ -186,8 +186,15 @@ fragment {
     instance))
 
 
-(defun add-renderable (engine renderable)
-  (%gx:add-scene-entity (scene-of engine) renderable))
+(defun add-scene-entity (engine entity)
+  (%gx:add-scene-entity (scene-of engine) entity))
+
+
+(defun transform-renderable (engine renderable transform)
+  (let ((transform-manager (%gx:transform-manager (handle-of engine))))
+    (%gx:with-transform-instance (instance renderable) transform-manager
+      (%gx:with-mat4f (mat transform)
+        (setf (%gx:transform transform-manager instance) mat)))))
 
 
 (defun rotate-triangle (triangle)
@@ -254,6 +261,18 @@ fragment {
 (define-builder-option bone-skinning (bone-count bones))
 (define-builder-option skinning (bone-count))
 (define-builder-option morphing (enabled))
+
+(define-builder-option cast-light (enabled))
+(define-builder-option position (vec3))
+(define-builder-option direction (vec3))
+(define-builder-option color (vec3))
+(define-builder-option intensity (value))
+(define-builder-option intensity-efficiency (intensity efficiency))
+(define-builder-option falloff (value))
+(define-builder-option spot-light-cone (inner outer))
+(define-builder-option sun-angular-radius (radius))
+(define-builder-option sun-halo-size (value))
+(define-builder-option sun-halo-falloff (value))
 
 
 
@@ -419,3 +438,63 @@ fragment {
 
 (defun destroy-renderable (engine renderable)
   (%gx:destroy-engine-entity engine renderable))
+
+;;;
+;;; LIGHT
+;;;
+(defclass light-builder (builder) ())
+
+(defmethod %.cast-shadows ((this light-builder) enabled)
+  (%gx:light-builder-cast-shadows (handle-of this) enabled))
+
+(defmethod %.cast-light ((this light-builder) enabled)
+  (%gx:light-builder-cast-light (handle-of this) enabled))
+
+(defmethod %.position ((this light-builder) vec3)
+  (%gx:with-vec3f (vec (m:vec3 vec3 0) (m:vec3 vec3 1) (m:vec3 vec3 2))
+    (%gx:light-builder-position (handle-of this) vec)))
+
+(defmethod %.direction ((this light-builder) vec3)
+  (%gx:with-vec3f (vec (m:vec3 vec3 0) (m:vec3 vec3 1) (m:vec3 vec3 2))
+    (%gx:light-builder-direction (handle-of this) vec)))
+
+(defmethod %.color ((this light-builder) vec3)
+  (%gx:with-vec3f (vec (m:vec3 vec3 0) (m:vec3 vec3 1) (m:vec3 vec3 2))
+    (%gx:light-builder-color (handle-of this) vec)))
+
+(defmethod %.intensity ((this light-builder) value)
+  (%gx:light-builder-intensity (handle-of this) (float value 0f0)))
+
+(defmethod %.intensity-efficiency ((this light-builder) intensity efficiency)
+  (%gx:light-builder-intensity-efficiency (handle-of this)
+                                          (float intensity 0f0)
+                                          (float efficiency 0f0)))
+
+(defmethod %.falloff ((this light-builder) value)
+  (%gx:light-builder-falloff (handle-of this) value))
+
+(defmethod %.spot-light-cone ((this light-builder) inner outer)
+  (%gx:light-builder-spot-light-cone (handle-of this)
+                                     (float inner 0f0)
+                                     (float outer 0f0)))
+
+(defmethod %.sun-angular-radius ((this light-builder) value)
+  (%gx:light-builder-sun-angular-radius (handle-of this) (float value 0f0)))
+
+(defmethod %.sun-halo-size ((this light-builder) value)
+  (%gx:light-builder-sun-halo-size (handle-of this) (float value 0f0)))
+
+(defmethod %.sun-halo-falloff ((this light-builder) value)
+  (%gx:light-builder-sun-halo-falloff (handle-of this) (float value 0f0)))
+
+(defun make-light (engine type &rest options)
+  (%gx:with-light-builder ((%build :instance handle) (type))
+    (let ((builder (make-instance 'light-builder :handle handle))
+          (entity (%gx:create-entity)))
+      (loop for opt in options
+            do (funcall opt builder))
+      (%build (handle-of engine) entity)
+      entity)))
+
+(defun destroy-light (engine light)
+  (%gx:destroy-engine-entity engine light))

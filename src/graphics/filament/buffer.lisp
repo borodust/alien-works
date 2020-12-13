@@ -9,35 +9,29 @@
 (u:define-enumval-extractor vertex-attribute-enum %filament:filament-vertex-attribute)
 (u:define-enumval-extractor vertex-attribute-type-enum %filament:filament-vertex-buffer-attribute-type)
 
-(defun expand-vertex-buffer-builder-function (name args)
-  (flet ((%explode-function (signature)
-           (explode-function signature args)))
-    (ecase name
-      (:buffer-count
-       (%explode-function
-        '(%filament:filament-buffer-count
-          '(:pointer %filament:filament-vertex-buffer-builder)
-          '%filament:uint8-t)))
-      (:vertex-count
-       (%explode-function
-        '(%filament:filament-vertex-count
-          '(:pointer %filament:filament-vertex-buffer-builder)
-          '%filament:uint32-t)))
-      (:attribute
-       (%explode-function
-        '(%filament:filament-attribute
-          '(:pointer %filament:filament-vertex-buffer-builder)
-          '%filament:filament-vertex-attribute
-          '%filament:uint8-t
-          '%filament:filament-vertex-buffer-attribute-type
-          '%filament:uint32-t
-          '%filament:uint8-t)))
-      (:normalized
-       (%explode-function
-        '(%filament:filament-normalized
-          '(:pointer %filament:filament-vertex-buffer-builder)
-          '%filament:filament-vertex-attribute
-          ':bool))))))
+(defun expand-vertex-buffer-builder-function (name)
+  (ecase name
+    (:buffer-count
+     '(%filament:filament-buffer-count
+       '(:pointer %filament:filament-vertex-buffer-builder)
+       '%filament:uint8-t))
+    (:vertex-count
+     '(%filament:filament-vertex-count
+       '(:pointer %filament:filament-vertex-buffer-builder)
+       '%filament:uint32-t))
+    (:attribute
+     '(%filament:filament-attribute
+       '(:pointer %filament:filament-vertex-buffer-builder)
+       '%filament:filament-vertex-attribute
+       '%filament:uint8-t
+       '%filament:filament-vertex-buffer-attribute-type
+       '%filament:uint32-t
+       '%filament:uint8-t))
+    (:normalized
+     '(%filament:filament-normalized
+       '(:pointer %filament:filament-vertex-buffer-builder)
+       '%filament:filament-vertex-attribute
+       ':bool))))
 
 
 (warp-intricate-function vertex-buffer-builder-buffer-count
@@ -111,20 +105,16 @@
 ;;;
 (u:define-enumval-extractor index-type-enum %filament:filament-index-buffer-index-type)
 
-(defun expand-index-buffer-builder-function (name args)
-  (flet ((%explode-function (signature)
-           (explode-function signature args)))
-    (ecase name
-      (:index-count
-       (%explode-function
-        '(%filament:filament-index-count
-          '(:pointer %filament:filament-index-buffer-builder)
-          '%filament:uint32-t)))
-      (:buffer-type
-       (%explode-function
-        '(%filament:filament-buffer-type
-          '(:pointer %filament:filament-index-buffer-builder)
-          '%filament:filament-index-buffer-index-type))))))
+(defun expand-index-buffer-builder-function (name)
+  (ecase name
+    (:index-count
+     '(%filament:filament-index-count
+       '(:pointer %filament:filament-index-buffer-builder)
+       '%filament:uint32-t))
+    (:buffer-type
+     '(%filament:filament-buffer-type
+       '(:pointer %filament:filament-index-buffer-builder)
+       '%filament:filament-index-buffer-index-type))))
 
 
 (warp-intricate-function index-buffer-builder-index-count

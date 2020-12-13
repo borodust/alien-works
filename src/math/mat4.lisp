@@ -62,3 +62,17 @@
    '(:pointer %glm::glm-mat4) source
    ':float (float angle 0f0)
    '(:pointer %glm::glm-vec3) vec3))
+
+
+(defun translate-mat4 (result source vec3)
+  (%glm:glm-translate
+   '(:pointer %glm::glm-mat4) result
+   '(:pointer %glm::glm-mat4) source
+   '(:pointer %glm::glm-vec3) vec3))
+
+
+(defun scale-mat4 (result source vec3)
+  (%glm:glm-scale
+   '(:pointer %glm::glm-mat4) result
+   '(:pointer %glm::glm-mat4) source
+   '(:pointer %glm::glm-vec3) vec3))

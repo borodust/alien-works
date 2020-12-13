@@ -35,6 +35,8 @@
            #:destroy-mat4
            #:with-mat4
            #:rotate-mat4
+           #:translate-mat4
+           #:scale-mat4
 
            #:quat
            #:make-quat
