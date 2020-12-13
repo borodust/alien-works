@@ -24,6 +24,14 @@
    '(:pointer %filament::filament-scene) scene))
 
 
+(u:define-enumval-extractor view-anti-aliasing-enum %filament:filament-view-anti-aliasing)
+
+(defun (setf view-anti-aliasing) (antialiasing view)
+  (%filament::filament-set-anti-aliasing
+   '(:pointer %filament::filament-view) view
+   '%filament::filament-view-anti-aliasing (view-anti-aliasing-enum antialiasing)))
+
+
 (defun (setf view-post-processing-enabled-p) (enabled-p view)
   (%filament::filament-set-post-processing-enabled
    '(:pointer %filament::filament-view) view

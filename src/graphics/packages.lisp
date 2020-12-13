@@ -72,11 +72,13 @@
            #:update-camera-projection
            #:update-camera-fov-projection
            #:update-camera-lens-projection
+           #:update-camera-model-matrix
 
            #:create-view
            #:destroy-view
            #:view-camera
            #:view-scene
+           #:view-anti-aliasing
            #:view-post-processing-enabled-p
            #:update-view-viewport
 
@@ -97,6 +99,8 @@
            #:transform
 
            #:with-mat4f
+
+           #:with-vec4f
            #:with-vec3f
 
            #:with-light-builder
@@ -112,7 +116,24 @@
            #:light-builder-spot-light-cone
            #:light-builder-sun-angular-radius
            #:light-builder-sun-halo-size
-           #:light-builder-sun-halo-falloff))
+           #:light-builder-sun-halo-falloff
+
+           #:with-texture-builder
+           #:texture-builder-width
+           #:texture-builder-height
+           #:texture-builder-depth
+           #:texture-builder-levels
+           #:texture-builder-sampler
+           #:texture-builder-format
+           #:texture-builder-usage
+           #:texture-builder-swizzle
+           #:texture-builder-import
+           #:update-texture-image
+           #:update-texture-subimage
+           #:update-texture-array-subimage
+           #:update-cubemap-images
+           #:generate-texture-mipmaps
+           #:generate-texture-prefilter-mipmaps))
 
 
 (cl:defpackage :alien-works.graphics
@@ -128,8 +149,7 @@
 
            #:add-scene-entity
 
-           #:add-triangle
-           #:rotate-triangle
+           #:update-camera-transform
 
            #:make-material
            #:destroy-material

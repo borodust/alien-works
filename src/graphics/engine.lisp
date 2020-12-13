@@ -7,6 +7,15 @@
    swap-chain renderer camera view))
 
 
+;;;
+;;; SKYBOX
+;;;
+(defun create-color-skybox (engine r g b a)
+  (%gx:with-vec4f (color r g b a)
+    (%gx:with-skybox-builder (%make-skybox (:color color))
+      (%make-skybox engine))))
+
+
 (defmethod initialize-instance :after ((this engine) &key surface)
   (with-slots (engine swap-chain renderer scene camera view) this
     (setf engine (%gx:create-engine)
@@ -17,12 +26,13 @@
           scene (%gx:create-scene engine))
 
     ;; scene setup
-    (setf (%gx:scene-skybox scene) (%gx:create-color-skybox engine 0.2 0.2 0.2 1))
+    (setf (%gx:scene-skybox scene) (create-color-skybox engine 0.2 0.2 0.2 1))
 
     ;; view setup
     (setf (%gx:view-camera view) camera
           (%gx:view-scene view) scene
-          (%gx:view-post-processing-enabled-p view) nil)
+          (%gx:view-anti-aliasing view) :fxaa
+          (%gx:view-post-processing-enabled-p view) t)
     (%gx:update-view-viewport view 0 0 640 480)
 
     (let ((zoom 1.5)
@@ -62,128 +72,10 @@
        (destroy-engine ,engine))))
 
 
-;;;
-;;; TRIANGLE
-;;;
-(defclass triangle ()
-  ((data :initform nil :allocation :class)
-
-   (engine)
-   (entity :initform (%gx:create-entity) :reader entity-of)
-   (vbuf)
-   (ibuf)
-   (mat)))
-
-
-(cffi:defcstruct triangle-vertex
-  (pos :float :count 2)
-  (color :uint32))
-
-
-(cffi:defcstruct triangle-data
-  (vertices (:struct triangle-vertex) :count 3)
-  (indices :uint16 :count 3))
-
-
-(defun make-triangle-data ()
-  (flet ((init-vertex (vertex x y argb)
-           (cref:c-val ((vertex (:struct triangle-vertex)))
-             (setf (vertex :pos 0) (float x 0f0)
-                   (vertex :pos 1) (float y 0f0)
-                   (vertex :color) argb))))
-    (cref:c-let ((data (:struct triangle-data) :alloc t))
-      (init-vertex (data :vertices 0 &)
-                   1 0
-                   #xffff0000)
-      (init-vertex (data :vertices 1 &)
-                   (cos (/ (* PI 2) 3)) (sin (/ (* PI 2) 3))
-                   #xff00ff00)
-      (init-vertex (data :vertices 2 &)
-                   (cos (/ (* PI 4) 3)) (sin (/ (* PI 4) 3))
-                   #xff0000ff)
-      (setf (data :indices 0) 0
-            (data :indices 1) 1
-            (data :indices 2) 2)
-      (data &))))
-
-(defparameter *baked-material-source*
-"
-material {
-    name : bakedColor,
-    requires : [
-        color
-    ],
-    shadingModel : unlit,
-    culling : none
-}
-
-fragment {
-    void material(inout MaterialInputs material) {
-        prepareMaterial(material);
-        material.baseColor = getColor();
-    }
-}
-")
-
-(defmethod initialize-instance :after ((this triangle) &key engine)
-  (with-slots (data entity vbuf ibuf mat (this-engine engine)) this
-    (unless data
-      (setf data (make-triangle-data)))
-    (let* ((engine (handle-of engine))
-           (triangle-vertex-size (cffi:foreign-type-size '(:struct triangle-vertex)))
-           (index-size (cffi:foreign-type-size :uint16))
-           (pos-size (* 2 (cffi:foreign-type-size :float))))
-      (setf this-engine engine
-            vbuf (%gx:with-vertex-buffer-builder
-                     (make-vertex-buffer
-                      (:vertex-count 3)
-                      (:buffer-count 1)
-                      (:attribute (%gx:vertex-attribute-enum :position)
-                                  0
-                                  (%gx:vertex-attribute-type-enum :float2)
-                                  0 triangle-vertex-size)
-                      (:attribute (%gx:vertex-attribute-enum :color)
-                                  0
-                                  (%gx:vertex-attribute-type-enum :ubyte4)
-                                  pos-size triangle-vertex-size)
-                      (:normalized (%gx:vertex-attribute-enum :color) t))
-                   (make-vertex-buffer engine))
-            ibuf (%gx:with-index-buffer-builder
-                     (make-index-buffer
-                      (:index-count 3)
-                      (:buffer-type (%gx:index-type-enum :ushort)))
-                   (make-index-buffer engine))
-            mat (%gx:with-parsed-material (mat-data *baked-material-source*)
-                  (%gx:with-material-builder (make-material
-                                              (:package (%gx:material-data mat-data)
-                                                        (%gx:material-size mat-data)))
-                    (make-material engine))))
-
-      (cref:c-val ((data (:struct triangle-data)))
-        (%gx:update-vertex-buffer vbuf engine 0
-                                  (data :vertices &)
-                                  (* 3 triangle-vertex-size))
-        (%gx:update-index-buffer ibuf engine
-                                 (data :indices &)
-                                 (* 3 index-size)))
-
-      (%gx:with-box (bounding-box -1 -1 -1 1 1 1)
-        (%gx:with-renderable-builder
-            (%make-renderable (1)
-              (:bounding-box bounding-box)
-              (:count-bound-geometry
-               0 (%gx:renderable-primitive-type-enum :triangles) vbuf ibuf 0 3)
-              (:material 0 (%gx:material-default-instance mat))
-              (:culling nil)
-              (:receive-shadows nil)
-              (:cast-shadows nil))
-          (%make-renderable engine entity))))))
-
-
-(defun add-triangle (engine)
-  (let ((instance (make-instance 'triangle :engine engine)))
-    (%gx:add-scene-entity (scene-of engine) (entity-of instance))
-    instance))
+(defun update-camera-transform (engine transform)
+  (with-slots (camera) engine
+    (%gx:with-mat4f (mat transform)
+      (%gx:update-camera-model-matrix camera mat))))
 
 
 (defun add-scene-entity (engine entity)
@@ -195,17 +87,6 @@ fragment {
     (%gx:with-transform-instance (instance renderable) transform-manager
       (%gx:with-mat4f (mat transform)
         (setf (%gx:transform transform-manager instance) mat)))))
-
-
-(defun rotate-triangle (triangle)
-  (with-slots (entity engine) triangle
-    (let ((transform-manager (%gx:transform-manager engine)))
-      (%gx:with-transform-instance (instance entity) transform-manager
-        (m:with-mat4 (source)
-          (m:with-vec3 (vec :z 1)
-            (m:rotate-mat4 source source (/ (get-internal-real-time) 1000000) vec))
-          (%gx:with-mat4f (mat source)
-            (setf (%gx:transform transform-manager instance) mat)))))))
 
 
 ;;;

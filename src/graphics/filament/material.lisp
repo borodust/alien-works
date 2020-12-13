@@ -43,13 +43,11 @@
 ;;;
 ;;; MATERIAL PARSER
 ;;;
-(defun expand-material-builder-function (name)
-  (ecase name
-    (:package
-     '(%filament:filament-package
-       '(:pointer %filament::filament-material-builder)
-       '(:pointer :void)
-       '%filament:size-t))))
+(warp-intricate-builder-option material-builder :package
+    %filament:filament-package
+  '(:pointer %filament::filament-material-builder)
+  '(:pointer :void)
+  '%filament:size-t)
 
 
 (defmacro with-material-builder ((name &rest steps) &body body)
@@ -60,7 +58,7 @@
              '(:pointer %filament:filament-material-builder) ,builder
              '(:pointer %filament:filament-engine) !::engine)))
     (explode-builder name
-                     #'expand-material-builder-function
+                     'material-builder
                      #'ctor-expander
                      #'build-expander
                      '(!::engine)

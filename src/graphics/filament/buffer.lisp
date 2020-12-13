@@ -1,52 +1,24 @@
 (cl:in-package :%alien-works.graphics)
 
-
-
-
 ;;;
 ;;; VERTEX BUFFER
 ;;;
 (u:define-enumval-extractor vertex-attribute-enum %filament:filament-vertex-attribute)
 (u:define-enumval-extractor vertex-attribute-type-enum %filament:filament-vertex-buffer-attribute-type)
 
-(defun expand-vertex-buffer-builder-function (name)
-  (ecase name
-    (:buffer-count
-     '(%filament:filament-buffer-count
-       '(:pointer %filament:filament-vertex-buffer-builder)
-       '%filament:uint8-t))
-    (:vertex-count
-     '(%filament:filament-vertex-count
-       '(:pointer %filament:filament-vertex-buffer-builder)
-       '%filament:uint32-t))
-    (:attribute
-     '(%filament:filament-attribute
-       '(:pointer %filament:filament-vertex-buffer-builder)
-       '%filament:filament-vertex-attribute
-       '%filament:uint8-t
-       '%filament:filament-vertex-buffer-attribute-type
-       '%filament:uint32-t
-       '%filament:uint8-t))
-    (:normalized
-     '(%filament:filament-normalized
-       '(:pointer %filament:filament-vertex-buffer-builder)
-       '%filament:filament-vertex-attribute
-       ':bool))))
-
-
-(warp-intricate-function vertex-buffer-builder-buffer-count
+(warp-intricate-builder-option vertex-buffer-builder :buffer-count
     %filament:filament-buffer-count
   '(:pointer %filament:filament-vertex-buffer-builder)
   '%filament:uint8-t)
 
 
-(warp-intricate-function vertex-buffer-builder-vertex-count
+(warp-intricate-builder-option vertex-buffer-builder :vertex-count
     %filament:filament-vertex-count
   '(:pointer %filament:filament-vertex-buffer-builder)
   '%filament:uint32-t)
 
 
-(warp-intricate-function vertex-buffer-builder-attribute
+(warp-intricate-builder-option vertex-buffer-builder :attribute
     %filament:filament-attribute
   '(:pointer %filament:filament-vertex-buffer-builder)
   '%filament:filament-vertex-attribute
@@ -56,7 +28,7 @@
   '%filament:uint8-t)
 
 
-(warp-intricate-function vertex-buffer-builder-normalized
+(warp-intricate-builder-option vertex-buffer-builder :normalized
     %filament:filament-normalized
   '(:pointer %filament:filament-vertex-buffer-builder)
   '%filament:filament-vertex-attribute
@@ -71,7 +43,7 @@
              '(:pointer %filament:filament-vertex-buffer-builder) ,builder
              '(:pointer %filament:filament-engine) !::engine)))
     (explode-builder name
-                     #'expand-vertex-buffer-builder-function
+                     'vertex-buffer-builder
                      #'ctor-expander
                      #'build-expander
                      '(!::engine)
@@ -117,13 +89,13 @@
        '%filament:filament-index-buffer-index-type))))
 
 
-(warp-intricate-function index-buffer-builder-index-count
+(warp-intricate-builder-option index-buffer-builder :index-count
     %filament:filament-index-count
   '(:pointer %filament:filament-index-buffer-builder)
   '%filament:uint32-t)
 
 
-(warp-intricate-function index-buffer-builder-buffer-type
+(warp-intricate-builder-option index-buffer-builder :buffer-type
     %filament:filament-buffer-type
   '(:pointer %filament:filament-index-buffer-builder)
   '%filament:filament-index-buffer-index-type)
@@ -137,7 +109,7 @@
              '(:pointer %filament:filament-index-buffer-builder) ,builder
              '(:pointer %filament:filament-engine) !::engine)))
     (explode-builder name
-                     #'expand-index-buffer-builder-function
+                     'index-buffer-builder
                      #'ctor-expander
                      #'build-expander
                      '(!::engine)

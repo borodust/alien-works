@@ -44,3 +44,9 @@
    :double (float aspect 0d0)
    :double (float near 0d0)
    :double (float far 0d0)))
+
+
+(defun update-camera-model-matrix (camera transform)
+  (%filament:filament-set-model-matrix
+   '(:pointer %filament::filament-camera) camera
+   '(:pointer %filament::filament-math-mat4f) transform))

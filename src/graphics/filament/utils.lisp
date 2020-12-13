@@ -22,8 +22,11 @@
        ,(explode-function (list* intricate-name params) args))))
 
 
+(defgeneric builder-option-intricate-function (builder option))
+
+
 (defun explode-builder (name-and-opts
-                        opt-expander
+                        builder-name
                         ctor-expander
                         build-expander
                         maker-args
@@ -34,10 +37,21 @@
       (destructuring-bind (&key instance &allow-other-keys) opts
         `(iffi:with-intricate-instance (,builder ,@(funcall ctor-expander))
            ,@(loop for (name . args) in steps
-                   collect (explode-function (funcall opt-expander name) (list* builder args)))
+                   collect (explode-function (builder-option-intricate-function builder-name name)
+                                             (list* builder args)))
            (flet ((,name (,@maker-args)
                     ,(funcall build-expander builder)))
              (,@(if instance
                     `(let ((,instance ,builder)))
                     '(progn))
               ,@body)))))))
+
+
+(defmacro warp-intricate-builder-option (builder option-name intricate-function &body params)
+  (let ((intricate-signature (list* intricate-function params)))
+    `(progn
+       (warp-intricate-function ,(a:symbolicate builder '- option-name) ,@intricate-signature)
+       (defmethod builder-option-intricate-function ((builder (eql ',builder))
+                                                     (option (eql ,option-name)))
+         (declare (ignore builder option))
+         ',intricate-signature))))
