@@ -3,7 +3,8 @@
 
 (declaim (special *scene*
                   *mesh*
-                  *material*))
+                  *material*
+                  *images*))
 
 
 (a:define-constant +attribute-alignment+ 4)
@@ -122,3 +123,19 @@
 (defmacro dry-run (&body body)
   `(let ((*dry-run* t))
      ,@body))
+
+
+(defmacro with-simple-array-pointer ((pointer-var simple-array) &body body)
+  (a:once-only (simple-array)
+    #+sbcl
+    `(sb-sys:with-pinned-objects (,simple-array)
+       (let ((,pointer-var (sb-sys:vector-sap (sb-ext:array-storage-vector ,simple-array))))
+         ,@body))
+    #+ccl
+    `(ccl:with-pointer-to-ivector (,pointer-var ,simple-array)
+       ,@body)
+    #+ecl
+    `(let ((,pointer-var (si:make-foreign-data-from-array ,simple-array)))
+       ,@body)
+    #-(or sbcl ccl ecl)
+    (error "with-simple-array-pointer is not implemented for ~A" (lisp-implementation-type))))

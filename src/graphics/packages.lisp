@@ -149,7 +149,7 @@
 
            #:add-scene-entity
 
-           #:update-camera-transform
+           #:transform-camera
 
            #:make-material
            #:destroy-material
@@ -164,7 +164,7 @@
 
            #:make-renderable
            #:destroy-renderable
-           #:transform-renderable
+           #:transform-entity
 
            #:make-light
            #:destroy-light

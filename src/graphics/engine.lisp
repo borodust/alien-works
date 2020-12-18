@@ -33,15 +33,15 @@
           (%gx:view-scene view) scene
           (%gx:view-anti-aliasing view) :fxaa
           (%gx:view-post-processing-enabled-p view) t)
-    (%gx:update-view-viewport view 0 0 640 480)
+    (%gx:update-view-viewport view 0 0 1280 960)
 
-    (let ((zoom 1.5)
-          (aspect (/ 640 480)))
+    (let ((zoom 1)
+          (aspect (/ 1280 960)))
       (%gx:update-camera-projection camera
                                     (%gx:projection-enum :perspective)
                                     (- (* aspect zoom)) (* aspect zoom)
                                     (- zoom) zoom
-                                    1 100))))
+                                    0.01 10))))
 
 
 (defun create-engine (surface)
@@ -72,7 +72,7 @@
        (destroy-engine ,engine))))
 
 
-(defun update-camera-transform (engine transform)
+(defun transform-camera (engine transform)
   (with-slots (camera) engine
     (%gx:with-mat4f (mat transform)
       (%gx:update-camera-model-matrix camera mat))))
@@ -82,9 +82,9 @@
   (%gx:add-scene-entity (scene-of engine) entity))
 
 
-(defun transform-renderable (engine renderable transform)
+(defun transform-entity (engine entity transform)
   (let ((transform-manager (%gx:transform-manager (handle-of engine))))
-    (%gx:with-transform-instance (instance renderable) transform-manager
+    (%gx:with-transform-instance (instance entity) transform-manager
       (%gx:with-mat4f (mat transform)
         (setf (%gx:transform transform-manager instance) mat)))))
 

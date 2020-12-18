@@ -53,7 +53,9 @@
 
 
 (defclass scene ()
-  ((meshes :initarg :meshes :initform nil :reader scene-meshes)))
+  ((meshes :initarg :meshes :initform nil :reader scene-meshes)
+   (materials :initarg :materials :initform nil :reader scene-materials)
+   (images :initarg :images :initform nil :reader scene-images)))
 
 
 (defun destroy-scene (scene)
@@ -64,4 +66,8 @@
 
 (defun parse-scene (path)
   (with-imported-scene (path)
-    (make-instance 'scene :meshes (parse-meshes))))
+    (let ((*images* (list)))
+      (make-instance 'scene
+                     :meshes (parse-meshes)
+                     :materials (parse-materials)
+                     :images *images*))))

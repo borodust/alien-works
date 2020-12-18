@@ -70,6 +70,7 @@
                              (:module "scene"
                               :serial t
                               :components ((:file "utils")
+                                           (:file "material")
                                            (:file "mesh")
                                            (:file "scene")))))
                (:file "packages")))

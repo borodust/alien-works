@@ -9,7 +9,7 @@
                   (%sdl:create-window name
                                       %sdl:+windowpos-undefined+
                                       %sdl:+windowpos-undefined+
-                                      640 480
+                                      1280 960
                                       (cffi:foreign-enum-value '%sdl:window-flags :opengl)))))
     (when (cffi:null-pointer-p window)
       (error "Failed to create a window"))
