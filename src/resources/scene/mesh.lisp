@@ -152,7 +152,13 @@
                   :reader mesh-vertex-buffer)
    (index-buffers :initarg :index-buffers
                   :initform nil
-                  :reader mesh-index-buffers)))
+                  :reader mesh-index-buffers)
+   (material :initarg :material
+             :initform nil
+             :reader mesh-material)
+   (aabb :initarg :aabb
+         :initform nil
+         :reader mesh-aabb)))
 
 
 (defun destroy-mesh (mesh)

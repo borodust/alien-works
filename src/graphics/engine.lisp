@@ -155,7 +155,14 @@
 (define-builder-option sun-halo-size (value))
 (define-builder-option sun-halo-falloff (value))
 
-
+(define-builder-option width (value))
+(define-builder-option height (value))
+(define-builder-option depth (value))
+(define-builder-option levels (value))
+(define-builder-option sampler (value))
+(define-builder-option format (value))
+(define-builder-option usage (value))
+(define-builder-option swizzle (&key r g b a))
 
 (defclass builder ()
   ((handle :initarg :handle :initform (error ":handle missing") :reader handle-of)))
@@ -379,3 +386,70 @@
 
 (defun destroy-light (engine light)
   (%gx:destroy-engine-entity engine light))
+
+
+;;;
+;;; TEXTURE
+;;;
+(defclass texture-builder (builder) ())
+
+(defmethod %.width ((this texture-builder) value)
+  (%gx:texture-builder-width (handle-of this) value))
+
+(defmethod %.height ((this texture-builder) value)
+  (%gx:texture-builder-height (handle-of this) value))
+
+(defmethod %.depth ((this texture-builder) value)
+  (%gx:texture-builder-depth (handle-of this) value))
+
+(defmethod %.levels ((this texture-builder) value)
+  (%gx:texture-builder-levels (handle-of this) value))
+
+(defmethod %.sampler ((this texture-builder) value)
+  (%gx:texture-builder-sampler (handle-of this) value))
+
+(defmethod %.format ((this texture-builder) value)
+  (%gx:texture-builder-format (handle-of this) value))
+
+(defmethod %.usage ((this texture-builder) value)
+  (%gx:texture-builder-usage (handle-of this) value))
+
+(defmethod %.swizzle ((this texture-builder) &key r g b a)
+  (%gx:texture-builder-swizzle (handle-of this)
+                               (%gx:texture-swizzle-enum (or r :channel-0))
+                               (%gx:texture-swizzle-enum (or g :channel-1))
+                               (%gx:texture-swizzle-enum (or b :channel-2))
+                               (%gx:texture-swizzle-enum (or a :channel-3))))
+
+
+(defun make-texture (engine &rest options)
+  (%gx:with-texture-builder ((%build :instance handle))
+    (let ((builder (make-instance 'texture-builder :handle handle)))
+      (loop for opt in options
+            do (funcall opt builder))
+      (%build (handle-of engine)))))
+
+
+(defun destroy-texture (engine texture)
+  (%gx:destroy-texture (handle-of engine) texture))
+
+
+(defun update-texture-image (engine texture level pixel-buffer)
+  (%gx:update-texture-image (handle-of engine) texture level pixel-buffer))
+
+
+(defun make-pixel-buffer (data-ptr data-size pixel-format pixel-type &optional release-callback)
+  (%gx:make-pixel-buffer data-ptr data-size
+                         (%gx:pixel-format-enum pixel-format)
+                         (%gx:pixel-type-enum pixel-type)
+                         release-callback))
+
+
+(defun make-compressed-pixel-buffer (data-ptr data-size compressed-size compressed-pixel-type
+                                     &optional release-callback)
+  (%gx:make-compressed-pixel-buffer data-ptr data-size compressed-size
+                                    (%gx:pixel-compressed-type-enum compressed-pixel-type)
+                                    release-callback))
+
+(defun destroy-pixel-buffer (pixel-buffer)
+  (%gx:destory-pixel-buffer pixel-buffer))

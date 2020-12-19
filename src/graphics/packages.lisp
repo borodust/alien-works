@@ -118,7 +118,13 @@
            #:light-builder-sun-halo-size
            #:light-builder-sun-halo-falloff
 
+           #:texture-sampler-type-enum
+           #:texture-internal-format-enum
+           #:texture-cubemap-face-enum
+           #:texture-usage-enum
+           #:texture-swizzle-enum
            #:with-texture-builder
+           #:destroy-texture
            #:texture-builder-width
            #:texture-builder-height
            #:texture-builder-depth
@@ -133,7 +139,14 @@
            #:update-texture-array-subimage
            #:update-cubemap-images
            #:generate-texture-mipmaps
-           #:generate-texture-prefilter-mipmaps))
+           #:generate-texture-prefilter-mipmaps
+
+           #:pixel-format-enum
+           #:pixel-type-enum
+           #:pixel-compressed-type-enum
+           #:make-pixel-buffer
+           #:make-compressed-pixel-buffer
+           #:destory-pixel-buffer))
 
 
 (cl:defpackage :alien-works.graphics
@@ -168,6 +181,14 @@
 
            #:make-light
            #:destroy-light
+
+           #:make-texture
+           #:update-texture-image
+           #:destroy-texture
+
+           #:make-pixel-buffer
+           #:make-compressed-pixel-buffer
+           #:destroy-pixel-buffer
 
            #:.material
 
@@ -205,4 +226,13 @@
            #:.spot-light-cone
            #:.sun-angular-radius
            #:.sun-halo-size
-           #:.sun-halo-falloff))
+           #:.sun-halo-falloff
+
+           #:.width
+           #:.height
+           #:.depth
+           #:.levels
+           #:.sampler
+           #:.format
+           #:.usage
+           #:.swizzle))

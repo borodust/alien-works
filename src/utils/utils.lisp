@@ -13,18 +13,25 @@
 
 
 (defun enumval (enum value)
-  (cffi:foreign-enum-value enum value))
+  (if (integerp value)
+      (cffi:foreign-enum-keyword enum value)
+      (cffi:foreign-enum-value enum value)))
 
 
 (define-compiler-macro enumval (&whole whole enum value)
   (a:if-let ((quoted (when (and (listp enum)
                                 (eq 'quote (first enum)))
                        (second enum))))
-    (if (keywordp value)
-        (a:if-let ((value (cffi:foreign-enum-value quoted value :errorp nil)))
-          value
-          whole)
-        whole)
+    (cond
+      ((keywordp value)
+       (a:if-let ((value (cffi:foreign-enum-value quoted value :errorp nil)))
+         value
+         whole))
+      ((integerp value)
+       (a:if-let ((value (cffi:foreign-enum-keyword quoted value :errorp nil)))
+         value
+         whole))
+      (t whole))
     whole))
 
 

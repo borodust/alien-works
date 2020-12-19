@@ -59,9 +59,11 @@
 
 
 (defun destroy-scene (scene)
-  (with-slots (meshes) scene
+  (with-slots (meshes images) scene
     (loop for mesh in meshes
-          do (destroy-mesh mesh))))
+          do (destroy-mesh mesh))
+    (loop for image in images
+          do (destroy-image image))))
 
 
 (defun parse-scene (path)
@@ -70,4 +72,8 @@
       (make-instance 'scene
                      :meshes (parse-meshes)
                      :materials (parse-materials)
-                     :images *images*))))
+                     :images (loop for image in *images*
+                                   for full-path = (merge-pathnames
+                                                    image
+                                                    (uiop:pathname-directory-pathname path))
+                                   collect (load-image image full-path))))))

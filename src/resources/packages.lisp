@@ -7,6 +7,8 @@
   (:use :cl)
   (:export #:parse-scene
            #:scene-meshes
+           #:scene-images
+           #:scene-materials
            #:destroy-scene
 
            #:mesh-vertex-buffer
@@ -14,4 +16,10 @@
 
            #:buffer-data
            #:buffer-size
-           #:buffer-descriptor))
+           #:buffer-descriptor
+
+           #:image-name
+           #:image-data
+           #:image-width
+           #:image-height
+           #:image-channels))

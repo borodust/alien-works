@@ -3,7 +3,27 @@
 
 (defparameter *property-class-table* (make-hash-table :test #'equal))
 
+
+(cffi:defcenum texture-mag-filter
+  (:unset 0)
+  (:nearest 9728)
+  (:linear 9729))
+
+
+(cffi:defcenum texture-min-filter
+  (:unset 0)
+  (:nearest 9728)
+  (:linear 9729)
+  (:nearest_mipmap_nearest 9984)
+  (:linear_mipmap_nearest 9985)
+  (:nearest_mipmap_linear 9986)
+  (:linear_mipmap_linear 9987))
+
+
 (u:define-enumval-extractor texture-type-enum %assimp:texture-type)
+(u:define-enumval-extractor texture-map-mode-enum %assimp:texture-map-mode)
+(u:define-enumval-extractor texture-mag-filter-enum texture-mag-filter)
+(u:define-enumval-extractor texture-min-filter-enum texture-min-filter)
 
 
 (defun register-material-property-class (name class)
@@ -220,7 +240,7 @@
 ;;;
 (defun apply-texture-property (property material setter)
   (with-slots (value index type) property
-    (let ((tex (material-texture material type index t)))
+    (let ((tex (material-texture material (texture-type-enum type) index t)))
       (funcall setter value tex))))
 
 
@@ -235,9 +255,8 @@
                            material-string-property))
 (defmethod apply-material-property ((this material-texture-file) material)
   (flet ((setter (value texture)
-           (let ((name (substitute "-" "." value)))
-             (pushnew (list name value) *images* :test #'equal)
-             (setf (texture-name texture) name))))
+           (pushnew value *images* :test #'string=)
+           (setf (texture-name texture) value)))
     (apply-texture-property this material #'setter)))
 
 
@@ -246,7 +265,7 @@
                            material-integer-property))
 (defmethod apply-material-property ((this material-texture-map-mode-u) material)
   (flet ((setter (value texture)
-           (setf (texture-mapping-mode-u texture) value)))
+           (setf (texture-mapping-mode-u texture) (texture-map-mode-enum value))))
     (apply-texture-property this material #'setter)))
 
 
@@ -255,7 +274,7 @@
                            material-integer-property))
 (defmethod apply-material-property ((this material-texture-map-mode-v) material)
   (flet ((setter (value texture)
-           (setf (texture-mapping-mode-v texture) value)))
+           (setf (texture-mapping-mode-v texture) (texture-map-mode-enum value))))
     (apply-texture-property this material #'setter)))
 
 
@@ -292,7 +311,7 @@
                            material-integer-property))
 (defmethod apply-material-property ((this material-texture-mapping-filter-mag) material)
   (flet ((setter (value texture)
-           (setf (texture-mapping-filter-mag texture) value)))
+           (setf (texture-mapping-filter-mag texture) (texture-mag-filter-enum value))))
     (apply-texture-property this material #'setter)))
 
 
@@ -301,7 +320,7 @@
                            material-integer-property))
 (defmethod apply-material-property ((this material-texture-mapping-filter-min) material)
   (flet ((setter (value texture)
-           (setf (texture-mapping-filter-min texture) value)))
+           (setf (texture-mapping-filter-min texture) (texture-min-filter-enum value))))
     (apply-texture-property this material #'setter)))
 
 

@@ -39,5 +39,5 @@ it must replace pure CL variant
 * [OpenAL](https://github.com/kcat/openal-soft)
 * [Assimp](https://github.com/assimp/assimp)
 * [sndfile](https://github.com/libsndfile/libsndfile)
-* [SOIL2](https://github.com/SpartanJ/SOIL2)
+* [stb_image](https://github.com/nothings/stb/blob/master/stb_image.h)
 * [Nuklear](https://github.com/Immediate-Mode-UI/Nuklear)
