@@ -35,13 +35,7 @@
           (%gx:view-post-processing-enabled-p view) t)
     (%gx:update-view-viewport view 0 0 1280 960)
 
-    (let ((zoom 1)
-          (aspect (/ 1280 960)))
-      (%gx:update-camera-projection camera
-                                    (%gx:projection-enum :perspective)
-                                    (- (* aspect zoom)) (* aspect zoom)
-                                    (- zoom) zoom
-                                    0.01 10))))
+    (%gx:update-camera-lens-projection camera 28f0 (/ 1280 960) 0.01 100)))
 
 
 (defun create-engine (surface)
@@ -273,7 +267,7 @@
 
 (defmethod %.material ((this renderable-builder) index material)
   (%gx:renderable-builder-material (handle-of this)
-                                   index (%gx:material-default-instance material)))
+                                   index (%gx:default-material-instance material)))
 
 (defmethod %.bounding-box ((this renderable-builder) x-min y-min z-min x-max y-max z-max)
   (%gx:with-box (bounding-box x-min y-min z-min x-max y-max z-max)

@@ -2,11 +2,11 @@
 
 
 (defun mat4 (mat col row)
-  (vec4 (%glm:glm-operator[] '(:pointer %glm:glm-mat4) mat :int col) row))
+  (vec4 (%glm:glm+operator[] '(:pointer %glm:glm+mat4) mat :int col) row))
 
 
 (defun (setf mat4) (value mat col row)
-  (let ((ptr (%glm:glm-operator[] '(:pointer %glm:glm-mat4) mat :int col)))
+  (let ((ptr (%glm:glm+operator[] '(:pointer %glm:glm+mat4) mat :int col)))
     (setf (vec4 ptr row) value)))
 
 
@@ -14,7 +14,7 @@
                   y0 y1 y2 y3
                   z0 z1 z2 z3
                   w0 w1 w2 w3)
-  (let ((instance (iffi:make-intricate-instance '%glm:glm-mat4)))
+  (let ((instance (iffi:make-intricate-instance '%glm:glm+mat4)))
     (setf (mat4 instance 0 0) x0
           (mat4 instance 0 1) y0
           (mat4 instance 0 2) z0
@@ -38,7 +38,7 @@
 
 
 (defun destroy-mat4 (mat)
-  (iffi:destroy-intricate-instance '%glm:glm-mat4 mat))
+  (iffi:destroy-intricate-instance '%glm:glm+mat4 mat))
 
 
 (defmacro with-mat4 ((mat &key
@@ -57,22 +57,22 @@
 
 
 (defun rotate-mat4 (result source angle vec3)
-  (%glm:glm-rotate
-   '(:pointer %glm::glm-mat4) result
-   '(:pointer %glm::glm-mat4) source
+  (%glm:glm+rotate
+   '(:pointer %glm::glm+mat4) result
+   '(:pointer %glm::glm+mat4) source
    ':float (float angle 0f0)
-   '(:pointer %glm::glm-vec3) vec3))
+   '(:pointer %glm::glm+vec3) vec3))
 
 
 (defun translate-mat4 (result source vec3)
-  (%glm:glm-translate
-   '(:pointer %glm::glm-mat4) result
-   '(:pointer %glm::glm-mat4) source
-   '(:pointer %glm::glm-vec3) vec3))
+  (%glm:glm+translate
+   '(:pointer %glm::glm+mat4) result
+   '(:pointer %glm::glm+mat4) source
+   '(:pointer %glm::glm+vec3) vec3))
 
 
 (defun scale-mat4 (result source vec3)
-  (%glm:glm-scale
-   '(:pointer %glm::glm-mat4) result
-   '(:pointer %glm::glm-mat4) source
-   '(:pointer %glm::glm-vec3) vec3))
+  (%glm:glm+scale
+   '(:pointer %glm::glm+mat4) result
+   '(:pointer %glm::glm+mat4) source
+   '(:pointer %glm::glm+vec3) vec3))

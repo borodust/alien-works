@@ -14,7 +14,7 @@
                 (height :int)
                 (channels :int))
     (cffi:with-foreign-string (path (namestring path))
-      (let ((data (%stb.image:loadf path (width &) (height &) (channels &) 0)))
+      (let ((data (%stb.image:load path (width &) (height &) (channels &) 0)))
         (make-instance 'image
                        :name name
                        :data data

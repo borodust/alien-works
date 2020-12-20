@@ -8,7 +8,8 @@
            #:destroy-engine
 
            #:with-material-builder
-           #:material-default-instance
+           #:default-material-instance
+           #:make-material-instance
            #:bundled-material-data
            #:bundled-material-size
            #:parse-material

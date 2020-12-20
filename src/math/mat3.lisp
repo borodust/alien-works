@@ -2,11 +2,11 @@
 
 
 (defun mat3 (mat col row)
-  (vec4 (%glm:glm-operator[] '(:pointer %glm:glm-mat3) mat :int col) row))
+  (vec4 (%glm:glm+operator[] '(:pointer %glm:glm+mat3) mat :int col) row))
 
 
 (defun (setf mat3) (value mat col row)
-  (let ((ptr (%glm:glm-operator[] '(:pointer %glm:glm-mat3) mat :int col)))
+  (let ((ptr (%glm:glm+operator[] '(:pointer %glm:glm+mat3) mat :int col)))
     (setf (vec4 ptr row) value)))
 
 
@@ -14,7 +14,7 @@
                   y0 y1 y2
                   z0 z1 z2)
   (iffi:make-intricate-instance
-   '%glm:glm-mat3
+   '%glm:glm+mat3
    :float (float x0 0f0)
    :float (float y0 0f0)
    :float (float z0 0f0)
@@ -30,14 +30,14 @@
 
 (defun make-mat3-from-basis (x-vec3 y-vec3 z-vec3)
   (iffi:make-intricate-instance
-   '%glm:glm-mat3
-   '(:pointer %glm::glm-vec3) x-vec3
-   '(:pointer %glm::glm-vec3) y-vec3
-   '(:pointer %glm::glm-vec3) z-vec3))
+   '%glm:glm+mat3
+   '(:pointer %glm::glm+vec3) x-vec3
+   '(:pointer %glm::glm+vec3) y-vec3
+   '(:pointer %glm::glm+vec3) z-vec3))
 
 
 (defun destroy-mat3 (mat)
-  (iffi:destroy-intricate-instance '%glm:glm-mat3 mat))
+  (iffi:destroy-intricate-instance '%glm:glm+mat3 mat))
 
 
 (defmacro with-mat3 ((mat &key

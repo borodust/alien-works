@@ -1,4 +1,5 @@
 (cl:defpackage :alien-works.physics.physx
+  (:local-nicknames (:u :alien-works.utils))
   (:use :cl)
   (:export #:with-vec3
            #:x
