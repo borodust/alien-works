@@ -54,7 +54,6 @@
 
 (defclass scene ()
   ((meshes :initarg :meshes :initform nil :reader scene-meshes)
-   (materials :initarg :materials :initform nil :reader scene-materials)
    (images :initarg :images :initform nil :reader scene-images)))
 
 
@@ -68,10 +67,13 @@
 
 (defun parse-scene (path)
   (with-imported-scene (path)
-    (let ((*images* (list)))
+    (let* ((*images* (list))
+           (*materials* (loop with table = (make-hash-table :test #'equal)
+                              for material in (parse-materials)
+                              do (setf (gethash (material-id material) table) material)
+                              finally (return table))))
       (make-instance 'scene
                      :meshes (parse-meshes)
-                     :materials (parse-materials)
                      :images (loop for image in *images*
                                    for full-path = (merge-pathnames
                                                     image

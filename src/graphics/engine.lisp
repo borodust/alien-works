@@ -265,9 +265,9 @@
                                                (%gx:renderable-primitive-type-enum type)
                                                vertices offset indices count))
 
-(defmethod %.material ((this renderable-builder) index material)
+(defmethod %.material ((this renderable-builder) index material-instance)
   (%gx:renderable-builder-material (handle-of this)
-                                   index (%gx:default-material-instance material)))
+                                   index material-instance))
 
 (defmethod %.bounding-box ((this renderable-builder) x-min y-min z-min x-max y-max z-max)
   (%gx:with-box (bounding-box x-min y-min z-min x-max y-max z-max)
@@ -432,6 +432,10 @@
   (%gx:update-texture-image (handle-of engine) texture level pixel-buffer))
 
 
+(defun generate-texture-mipmaps (engine texture)
+  (%gx:generate-texture-mipmaps (handle-of engine) texture))
+
+
 (defun make-pixel-buffer (data-ptr data-size pixel-format pixel-type &optional release-callback)
   (%gx:make-pixel-buffer data-ptr data-size
                          (%gx:pixel-format-enum pixel-format)
@@ -447,3 +451,64 @@
 
 (defun destroy-pixel-buffer (pixel-buffer)
   (%gx:destory-pixel-buffer pixel-buffer))
+
+;;;
+;;; MATERIAL INSTANCE
+;;;
+(defun default-material-instance (material)
+  (%gx:default-material-instance material))
+
+
+(defun make-material-instance (material)
+  (%gx:make-material-instance material))
+
+
+(defun destroy-material-instance (engine instance)
+  (%gx:destroy-material-instance (handle-of engine) instance))
+
+(defun (setf material-instance-parameter-float) (value material name)
+  (setf (%gx:material-instance-parameter-float material name) value))
+
+(defun (setf material-instance-parameter-vec2) (value material name)
+  (%gx:with-vec2f (vec (m:vec2 value 0) (m:vec2 value 1))
+    (setf (%gx:material-instance-parameter-float2 material name) vec)))
+
+(defun (setf material-instance-parameter-vec3) (value material name)
+  (%gx:with-vec3f (vec (m:vec3 value 0) (m:vec3 value 1) (m:vec3 value 2))
+   (setf (%gx:material-instance-parameter-float3 material name) vec)))
+
+(defun (setf material-instance-parameter-vec4) (value material name)
+  (%gx:with-vec4f (vec (m:vec4 value 0) (m:vec4 value 1) (m:vec4 value 2) (m:vec4 value 3))
+    (setf (%gx:material-instance-parameter-float4 material name) vec)))
+
+(defun (setf material-instance-parameter-mat3) (value material name)
+  (%gx:with-mat3f (mat value)
+    (setf (%gx:material-instance-parameter-mat3 material name) mat)))
+
+(defun (setf material-instance-parameter-mat4) (value material name)
+  (%gx:with-mat4f (mat value)
+    (setf (%gx:material-instance-parameter-mat4 material name) mat)))
+
+(defun (setf material-instance-parameter-sampler) (value material name texture)
+  (setf (%gx:material-instance-parameter-sampler material name texture) value))
+
+;;;
+;;; SAMPLER
+;;;
+(defun make-sampler (&key (min :nearest)
+                       (mag :nearest)
+                       (s-wrap :clamp-to-edge)
+                       (r-wrap :clamp-to-edge)
+                       (t-wrap :clamp-to-edge)
+                       (compare-mode :none)
+                       (compare-func :le))
+  (%gx:make-sampler (%gx:min-filter-enum min)
+                    (%gx:mag-filter-enum mag)
+                    (%gx:wrap-mode-enum s-wrap)
+                    (%gx:wrap-mode-enum r-wrap)
+                    (%gx:wrap-mode-enum t-wrap)
+                    (%gx:compare-mode-enum compare-mode)
+                    (%gx:compare-func-enum compare-func)))
+
+(defun destroy-sampler (sampler)
+  (%gx:destroy-sampler sampler))

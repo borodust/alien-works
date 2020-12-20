@@ -250,9 +250,11 @@
                                                                        :primitive ,primitive))))))))))
 
 (defun parse-mesh ()
-  (make-instance 'mesh
-                 :vertex-buffer (parse-vertices)
-                 :index-buffers (parse-faces)))
+  (with-mesh (mesh)
+    (make-instance 'mesh
+                   :vertex-buffer (parse-vertices)
+                   :index-buffers (parse-faces)
+                   :material (gethash (mesh :material-index) *materials*))))
 
 
 (defun parse-meshes ()

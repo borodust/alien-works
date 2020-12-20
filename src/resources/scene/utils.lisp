@@ -4,7 +4,8 @@
 (declaim (special *scene*
                   *mesh*
                   *material*
-                  *images*))
+                  *images*
+                  *materials*))
 
 
 (a:define-constant +attribute-alignment+ 4)

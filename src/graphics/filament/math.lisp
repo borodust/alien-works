@@ -73,6 +73,41 @@
           (progn ,@body)
        (destroy-vec3f ,vec))))
 
+
+;;;
+;;; VEC2
+;;;
+(defun vec2f (vec idx)
+  (cffi:mem-ref (%filament::filament+math+details+operator[]
+                 '(:pointer %filament::filament+math+details+t-vec2<float>) vec
+                 '%filament::size-t idx)
+                :float))
+
+
+(defun (setf vec2f) (value vec idx)
+  (let ((mem (%filament::filament+math+details+operator[]
+              '(:pointer %filament::filament+math+details+t-vec2<float>) vec
+              '%filament::size-t idx)))
+    (setf (cffi:mem-ref mem :float) (float value 0f0))))
+
+
+(defun create-vec2f (x y)
+  (let ((vec (iffi:make-intricate-instance '%filament:filament+math+details+t-vec2<float>)))
+    (setf (vec2f vec 0) x
+          (vec2f vec 1) y)
+    vec))
+
+
+(defun destroy-vec2f (vec)
+  (iffi:destroy-intricate-instance '%filament:filament+math+details+t-vec2<float> vec))
+
+
+(defmacro with-vec2f ((vec &optional (x 0f0) (y 0f0)) &body body)
+  `(let ((,vec (create-vec2f ,x ,y)))
+     (unwind-protect
+          (progn ,@body)
+       (destroy-vec2f ,vec))))
+
 ;;;
 ;;; MAT4
 ;;;
@@ -123,3 +158,47 @@
      (unwind-protect
           (progn ,@body)
        (destroy-mat4f ,mat))))
+
+
+;;;
+;;; MAT3
+;;;
+(defun mat3f (mat row col)
+  (let ((column (%filament::filament+math+details+operator[]
+                 '(:pointer %filament::filament+math+details+t-mat33<float>) mat
+                 '%filament::size-t col)))
+    (vec4f column row)))
+
+
+(defun (setf mat3f) (value mat row col)
+  (let ((column (%filament::filament+math+details+operator[]
+                 '(:pointer %filament::filament+math+details+t-mat33<float>) mat
+                 '%filament::size-t col)))
+    (setf (vec4f column row) value)))
+
+
+(defun create-mat3f (source)
+  (let ((mat (iffi:make-intricate-instance '%filament:filament+math+mat3f)))
+    (setf (mat3f mat 0 0) (m:mat3 source 0 0)
+          (mat3f mat 0 1) (m:mat3 source 1 0)
+          (mat3f mat 0 2) (m:mat3 source 2 0)
+
+          (mat3f mat 1 0) (m:mat3 source 0 1)
+          (mat3f mat 1 1) (m:mat3 source 1 1)
+          (mat3f mat 1 2) (m:mat3 source 2 1)
+
+          (mat3f mat 2 0) (m:mat3 source 0 2)
+          (mat3f mat 2 1) (m:mat3 source 1 2)
+          (mat3f mat 2 2) (m:mat3 source 2 2))
+    mat))
+
+
+(defun destroy-mat3f (mat)
+  (iffi:destroy-intricate-instance '%filament:filament+math+mat3f mat))
+
+
+(defmacro with-mat3f ((mat source) &body body)
+  `(let ((,mat (create-mat3f ,source)))
+     (unwind-protect
+          (progn ,@body)
+       (destroy-mat3f ,mat))))

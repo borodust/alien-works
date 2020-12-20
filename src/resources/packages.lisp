@@ -13,10 +13,16 @@
 
            #:mesh-vertex-buffer
            #:mesh-index-buffers
+           #:mesh-material-index
+           #:mesh-material
 
            #:buffer-data
            #:buffer-size
            #:buffer-descriptor
+
+           #:material-texture
+
+           #:texture-name
 
            #:image-name
            #:image-data

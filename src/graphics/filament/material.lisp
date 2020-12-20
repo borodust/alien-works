@@ -71,9 +71,16 @@
    '(:pointer %filament::filament+material) material))
 
 
-(defun make-instance-instance (material)
-  (%filament:filament+get-default-instance
-   '(:pointer %filament::filament+material) material))
+(defun make-material-instance (material &optional name)
+  (%filament:filament+create-instance
+   '(:pointer %filament::filament+material) material
+   'claw-utils:claw-string (or name (cffi:null-pointer))))
+
+
+(defun destroy-material-instance (engine instance)
+  (%filament:filament+destroy
+   '(:pointer %filament::filament+engine) engine
+   '(:pointer %filament::filament+material-instance) instance))
 
 
 (defun (setf material-instance-parameter-float) (value material name)
@@ -118,7 +125,7 @@
    '(:pointer %filament::filament+math+mat4f) mat4))
 
 
-(defun material-instance-parameter-sampler (value material name texture)
+(defun (setf material-instance-parameter-sampler) (value material name texture)
   (%filament::filament+set-parameter
    '(:pointer %filament::filament+material-instance) material
    'claw-utils:claw-string name

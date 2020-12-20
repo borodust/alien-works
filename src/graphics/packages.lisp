@@ -10,6 +10,15 @@
            #:with-material-builder
            #:default-material-instance
            #:make-material-instance
+           #:destroy-material-instance
+           #:material-instance-parameter-float
+           #:material-instance-parameter-float2
+           #:material-instance-parameter-float3
+           #:material-instance-parameter-float4
+           #:material-instance-parameter-mat3
+           #:material-instance-parameter-mat4
+           #:material-instance-parameter-sampler
+
            #:bundled-material-data
            #:bundled-material-size
            #:parse-material
@@ -100,9 +109,11 @@
            #:transform
 
            #:with-mat4f
+           #:with-mat3f
 
            #:with-vec4f
            #:with-vec3f
+           #:with-vec2f
 
            #:with-light-builder
            #:light-builder-cast-shadows
@@ -147,7 +158,16 @@
            #:pixel-compressed-type-enum
            #:make-pixel-buffer
            #:make-compressed-pixel-buffer
-           #:destory-pixel-buffer))
+           #:destory-pixel-buffer
+
+           #:min-filter-enum
+           #:mag-filter-enum
+           #:wrap-mode-enum
+           #:compare-mode-enum
+           #:compare-func-enum
+
+           #:make-sampler
+           #:destroy-sampler))
 
 
 (cl:defpackage :alien-works.graphics
@@ -168,6 +188,17 @@
            #:make-material
            #:destroy-material
 
+           #:default-material-instance
+           #:make-material-instance
+           #:destroy-material-instance
+           #:material-instance-parameter-float
+           #:material-instance-parameter-vec2
+           #:material-instance-parameter-vec3
+           #:material-instance-parameter-vec4
+           #:material-instance-parameter-mat3
+           #:material-instance-parameter-mat4
+           #:material-instance-parameter-sampler
+
            #:make-vertex-buffer
            #:destroy-vertex-buffer
            #:fill-vertex-buffer
@@ -185,7 +216,11 @@
 
            #:make-texture
            #:update-texture-image
+           #:generate-texture-mipmaps
            #:destroy-texture
+
+           #:make-sampler
+           #:destroy-sampler
 
            #:make-pixel-buffer
            #:make-compressed-pixel-buffer

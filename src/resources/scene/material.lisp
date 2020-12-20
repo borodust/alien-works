@@ -58,7 +58,8 @@
 
 
 (defstruct (material
-            (:constructor %make-material))
+            (:constructor %make-material (id)))
+  id
   name
   shininess
   two-sided
@@ -84,7 +85,7 @@
   (texture-table (make-hash-table :test #'equal)))
 
 
-(defun material-texture (material type id &optional ensure-texture)
+(defun material-texture (material type &optional (id 0) ensure-texture)
   (let* ((tex-table (material-texture-table material))
          (key (cons type id))
          (texture (gethash key tex-table)))
@@ -93,7 +94,7 @@
         texture)))
 
 
-(defun (setf material-texture) (value material type id)
+(defun (setf material-texture) (value material type &optional (id 0))
   (setf (gethash (cons type id) (material-texture-table material)) value))
 
 
@@ -401,9 +402,9 @@
         (warn "Ignoring property ~A" property-name)))))
 
 
-(defun parse-material (material)
+(defun parse-material (id material)
   (with-material (material material)
-    (loop with parsed = (%make-material)
+    (loop with parsed = (%make-material id)
           for i from 0 below (material :num-properties)
           do (set-material-property parsed (material &) (material :properties * i))
           finally (return parsed))))
@@ -412,4 +413,4 @@
 (defun parse-materials ()
   (with-scene (scene)
     (loop for i from 0 below (scene :num-materials)
-          collect (parse-material (scene :materials * i)))))
+          collect (parse-material i (scene :materials * i)))))

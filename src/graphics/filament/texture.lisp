@@ -202,3 +202,27 @@
 ;;;
 ;;; SAMPLER
 ;;;
+(u:define-enumval-extractor min-filter-enum %filament:filament+backend+sampler-min-filter)
+(u:define-enumval-extractor mag-filter-enum %filament:filament+backend+sampler-mag-filter)
+(u:define-enumval-extractor wrap-mode-enum %filament:filament+backend+sampler-wrap-mode)
+(u:define-enumval-extractor compare-mode-enum %filament:filament+backend+sampler-compare-mode)
+(u:define-enumval-extractor compare-func-enum %filament:filament+backend+sampler-compare-func)
+
+
+(defun make-sampler (min mag s-wrap r-wrap t-wrap compare-mode compare-func)
+  (let ((instance (iffi:make-intricate-instance
+                   '%filament:filament+texture-sampler
+                   '%filament::filament+texture-sampler+min-filter min
+                   '%filament::filament+texture-sampler+mag-filter mag
+                   '%filament::filament+texture-sampler+wrap-mode s-wrap
+                   '%filament::filament+texture-sampler+wrap-mode r-wrap
+                   '%filament::filament+texture-sampler+wrap-mode t-wrap)))
+    (%filament:filament+set-compare-mode
+     '(:pointer %filament::filament+texture-sampler) instance
+     '%filament::filament+texture-sampler+compare-mode compare-mode
+     '%filament::filament+texture-sampler+compare-func compare-func)
+    instance))
+
+
+(defun destroy-sampler (sampler)
+  (iffi:destroy-intricate-instance '%filament:filament+texture-sampler sampler))
