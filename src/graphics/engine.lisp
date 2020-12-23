@@ -10,10 +10,20 @@
 ;;;
 ;;; SKYBOX
 ;;;
-(defun create-color-skybox (engine r g b a)
+(defun make-color-skybox (engine r g b a)
   (%gx:with-vec4f (color r g b a)
     (%gx:with-skybox-builder (%make-skybox (:color color))
-      (%make-skybox engine))))
+      (%make-skybox (handle-of engine)))))
+
+
+(defun make-cubemap-skybox (engine cubemap)
+  (%gx:with-skybox-builder (%make-skybox (:environment cubemap))
+    (%make-skybox (handle-of engine))))
+
+
+(defun (setf skybox) (skybox engine)
+  (with-slots (scene) engine
+    (setf (%gx:scene-skybox scene) skybox)))
 
 
 (defmethod initialize-instance :after ((this engine) &key surface)
@@ -24,9 +34,6 @@
           camera (%gx:create-camera engine)
           view (%gx:create-view engine)
           scene (%gx:create-scene engine))
-
-    ;; scene setup
-    (setf (%gx:scene-skybox scene) (create-color-skybox engine 0.2 0.2 0.2 1))
 
     ;; view setup
     (setf (%gx:view-camera view) camera
@@ -157,6 +164,13 @@
 (define-builder-option format (value))
 (define-builder-option usage (value))
 (define-builder-option swizzle (&key r g b a))
+
+(define-builder-option reflections (texture))
+(define-builder-option radiance (bands harmonics))
+(define-builder-option irradiance (bands harmonics))
+(define-builder-option cubemap-irradiance (cubemap))
+(define-builder-option rotation (mat3))
+
 
 (defclass builder ()
   ((handle :initarg :handle :initform (error ":handle missing") :reader handle-of)))
@@ -400,13 +414,13 @@
   (%gx:texture-builder-levels (handle-of this) value))
 
 (defmethod %.sampler ((this texture-builder) value)
-  (%gx:texture-builder-sampler (handle-of this) value))
+  (%gx:texture-builder-sampler (handle-of this) (%gx:texture-sampler-type-enum value)))
 
 (defmethod %.format ((this texture-builder) value)
-  (%gx:texture-builder-format (handle-of this) value))
+  (%gx:texture-builder-format (handle-of this) (%gx:texture-internal-format-enum value)))
 
 (defmethod %.usage ((this texture-builder) value)
-  (%gx:texture-builder-usage (handle-of this) value))
+  (%gx:texture-builder-usage (handle-of this) (%gx:texture-usage-enum value)))
 
 (defmethod %.swizzle ((this texture-builder) &key r g b a)
   (%gx:texture-builder-swizzle (handle-of this)
@@ -430,6 +444,17 @@
 
 (defun update-texture-image (engine texture level pixel-buffer)
   (%gx:update-texture-image (handle-of engine) texture level pixel-buffer))
+
+
+(defun update-cubemap-images (engine texture level pixel-buffer face-size &rest rest-sizes)
+  (%gx:with-face-offsets (offsets)
+    (loop with current-offset = 0
+          for sizes = (list* face-size rest-sizes) then (rest sizes)
+          for current-size = (or (first sizes) current-size)
+          for i from 0 below 6
+          do (setf (%gx:face-offset offsets i) current-offset)
+             (incf current-offset current-size))
+    (%gx:update-cubemap-images (handle-of engine) texture level pixel-buffer offsets)))
 
 
 (defun generate-texture-mipmaps (engine texture)
@@ -512,3 +537,41 @@
 
 (defun destroy-sampler (sampler)
   (%gx:destroy-sampler sampler))
+
+;;;
+;;; INDIRECT LIGHT
+;;;
+(defclass indirect-light-builder (builder) ())
+
+(defmethod %.reflections ((this indirect-light-builder) texture)
+  (%gx:indirect-light-reflections (handle-of this) texture))
+
+(defmethod %.radiance ((this indirect-light-builder) bands harmonics)
+  (%gx:with-vec3f (vec (m:vec3 harmonics 0) (m:vec3 harmonics 1) (m:vec3 harmonics 2))
+    (%gx:indirect-light-radiance (handle-of this) bands vec)))
+
+(defmethod %.irradiance ((this indirect-light-builder) bands harmonics)
+  (%gx:with-vec3f (vec (m:vec3 harmonics 0) (m:vec3 harmonics 1) (m:vec3 harmonics 2))
+    (%gx:indirect-light-irradiance (handle-of this) bands vec)))
+
+(defmethod %.cubemap-irradiance ((this indirect-light-builder) cubemap)
+  (%gx:indirect-light-cubemap-irradiance (handle-of this) cubemap))
+
+(defmethod %.intensity ((this indirect-light-builder) value)
+  (%gx:indirect-light-intensity (handle-of this) value))
+
+(defmethod %.rotation ((this indirect-light-builder) value)
+  (%gx:with-mat3f (mat value)
+    (%gx:indirect-light-rotation (handle-of this) mat)))
+
+
+(defun make-indirect-light (engine &rest options)
+  (%gx:with-indirect-light-builder ((%build :instance handle))
+    (let ((builder (make-instance 'indirect-light-builder :handle handle)))
+      (loop for opt in options
+            do (funcall opt builder))
+      (%build (handle-of engine)))))
+
+
+(defun destroy-indirect-light (engine light)
+  (%gx:destroy-indirect-light (handle-of engine) light))

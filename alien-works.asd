@@ -66,12 +66,12 @@
                (:module "resources"
                 :serial t
                 :components ((:file "packages")
+                             (:file "image")
                              (:file "resources")
                              (:module "scene"
                               :serial t
                               :components ((:file "utils")
                                            (:file "material")
                                            (:file "mesh")
-                                           (:file "image")
                                            (:file "scene")))))
                (:file "packages")))

@@ -139,3 +139,9 @@
                      '(!::engine)
                      steps
                      body)))
+
+
+(defun destroy-indirect-light (engine light)
+  (%filament:filament+destroy
+   '(:pointer %filament::filament+engine) engine
+   '(:pointer %filament::filament+indirect-light) light))

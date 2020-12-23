@@ -86,6 +86,7 @@
 
 (defun update-texture-image (engine texture level pixel-buffer)
   (%filament:filament+set-image
+   :const
    '(:pointer %filament:filament+texture) texture
    '(:pointer %filament:filament+engine) engine
    '%filament:size-t level
@@ -94,6 +95,7 @@
 
 (defun update-texture-subimage (engine texture level x-offset y-offset width height pixel-buffer)
   (%filament:filament+set-image
+   :const
    '(:pointer %filament:filament+texture) texture
    '(:pointer %filament:filament+engine) engine
    '%filament:size-t level
@@ -108,6 +110,7 @@
                                       width height depth
                                       pixel-buffer)
   (%filament:filament+set-image
+   :const
    '(:pointer %filament:filament+texture) texture
    '(:pointer %filament:filament+engine) engine
    '%filament:size-t level
@@ -120,8 +123,28 @@
    '(:pointer %filament:filament+texture+pixel-buffer-descriptor) pixel-buffer))
 
 
+(defmacro with-face-offsets ((val) &body body)
+  `(iffi:with-intricate-instance (,val %filament:filament+backend+face-offsets)
+     ,@body))
+
+
+(defun face-offset (offsets idx)
+  (%filament:filament+backend+operator[]
+   :const
+   '(:pointer %filament:filament+backend+face-offsets) offsets
+   '%filament::size-t idx))
+
+
+(defun (setf face-offset) (value offsets idx)
+  (let ((ptr (%filament:filament+backend+operator[]
+              '(:pointer %filament:filament+backend+face-offsets) offsets
+              '%filament::size-t idx)))
+    (setf (cffi:mem-ref ptr '%filament:filament+backend+face-offsets+size-type) value)))
+
+
 (defun update-cubemap-images (engine texture level pixel-buffer face-offsets)
   (%filament:filament+set-image
+   :const
    '(:pointer %filament:filament+texture) texture
    '(:pointer %filament:filament+engine) engine
    '%filament:size-t level
@@ -131,6 +154,7 @@
 
 (defun generate-texture-mipmaps (engine texture)
   (%filament:filament+generate-mipmaps
+   :const
    '(:pointer %filament:filament+texture) texture
    '(:pointer %filament:filament+engine) engine))
 

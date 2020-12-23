@@ -37,5 +37,6 @@
 
 
 (defun actor-global-pose (transform actor)
-  (%physx:physx+get-global-pose '(:pointer %physx:physx+px-transform) transform
+  (%physx:physx+get-global-pose :const
+                                '(:pointer %physx:physx+px-transform) transform
                                 '(:pointer %physx:physx+px-rigid-actor) actor))

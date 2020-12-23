@@ -73,6 +73,7 @@
 
 (defun make-material-instance (material &optional name)
   (%filament:filament+create-instance
+   :const
    '(:pointer %filament::filament+material) material
    'claw-utils:claw-string (or name (cffi:null-pointer))))
 
@@ -151,6 +152,7 @@
                           '(:pointer %filament::matc+config) config)
 
       (let* ((out (%filament:claw+filament+get-output
+                   :const
                    '(:pointer %filament::claw+filament+in-memory-config) config)))
         (%filament:claw+filament+material-data
          '(:pointer %filament::claw+filament+in-memory-output) out)))))

@@ -9,6 +9,7 @@
 (defmacro with-transform-instance ((instance entity) transform-manager &body body)
   `(iffi:with-intricate-instance (,instance %filament::filament+transform-manager+instance)
      (%filament:filament+get-instance
+      :const
       '(:pointer %filament::filament+transform-manager+instance) ,instance
       '(:pointer %filament::filament+transform-manager) ,transform-manager
       '(:pointer %filament::utils+entity) ,entity)

@@ -99,6 +99,7 @@
 
            #:with-skybox-builder
            #:create-color-skybox
+           #:create-cubemap-skybox
 
            #:create-box
            #:destroy-box
@@ -130,6 +131,15 @@
            #:light-builder-sun-halo-size
            #:light-builder-sun-halo-falloff
 
+           #:with-indirect-light-builder
+           #:indirect-light-reflections
+           #:indirect-light-radiance
+           #:indirect-light-irradiance
+           #:indirect-light-cubemap-irradiance
+           #:indirect-light-intensity
+           #:indirect-light-rotation
+           #:destroy-indirect-light
+
            #:texture-sampler-type-enum
            #:texture-internal-format-enum
            #:texture-cubemap-face-enum
@@ -152,6 +162,8 @@
            #:update-cubemap-images
            #:generate-texture-mipmaps
            #:generate-texture-prefilter-mipmaps
+           #:with-face-offsets
+           #:face-offset
 
            #:pixel-format-enum
            #:pixel-type-enum
@@ -185,6 +197,10 @@
 
            #:transform-camera
 
+           #:skybox
+           #:make-color-skybox
+           #:make-cubemap-skybox
+
            #:make-material
            #:destroy-material
 
@@ -214,8 +230,12 @@
            #:make-light
            #:destroy-light
 
+           #:make-indirect-light
+           #:destroy-indirect-light
+
            #:make-texture
            #:update-texture-image
+           #:update-cubemap-images
            #:generate-texture-mipmaps
            #:destroy-texture
 
@@ -271,4 +291,11 @@
            #:.sampler
            #:.format
            #:.usage
-           #:.swizzle))
+           #:.swizzle
+
+           #:.reflections
+           #:.radiance
+           #:.irradiance
+           #:.cubemap-irradiance
+           #:.intensity
+           #:.rotation))

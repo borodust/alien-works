@@ -2,7 +2,9 @@
 
 
 (defun make-scene-descriptor (physics dispatcher)
-  (let* ((scale (%physx:physx+get-tolerances-scale '(:pointer %physx:physx+px-physics) physics))
+  (let* ((scale (%physx:physx+get-tolerances-scale
+                 :const
+                 '(:pointer %physx:physx+px-physics) physics))
          (descriptor (iffi:make-intricate-instance '%physx:physx+px-scene-desc
                                                    '(:pointer %physx:physx+px-tolerances-scale) scale))
          (default-filter (iffi:intricate-function-pointer
@@ -22,7 +24,7 @@
 
 
 (defun scene-descriptor-valid-p (descriptor)
-  (%physx:physx+is-valid '(:pointer %physx:physx+px-scene-desc) descriptor))
+  (%physx:physx+is-valid :const '(:pointer %physx:physx+px-scene-desc) descriptor))
 
 
 (defun destroy-scene-descriptor (descriptor)

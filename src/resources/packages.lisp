@@ -24,6 +24,9 @@
 
            #:texture-name
 
+           #:load-image
+           #:destroy-image
+
            #:image-name
            #:image-data
            #:image-width
