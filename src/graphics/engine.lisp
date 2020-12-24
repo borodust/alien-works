@@ -26,6 +26,11 @@
     (setf (%gx:scene-skybox scene) skybox)))
 
 
+(defun (setf indirect-light) (indirect-light engine)
+  (with-slots (scene) engine
+    (setf (%gx:scene-indirect-light scene) indirect-light)))
+
+
 (defmethod initialize-instance :after ((this engine) &key surface)
   (with-slots (engine swap-chain renderer scene camera view) this
     (setf engine (%gx:create-engine)

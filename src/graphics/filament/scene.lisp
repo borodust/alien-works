@@ -19,6 +19,13 @@
   skybox)
 
 
+(defun (setf scene-indirect-light) (indirect-light scene)
+  (%filament::filament+set-indirect-light
+   '(:pointer %filament::filament+scene) scene
+   '(:pointer %filament::filament+indirect-light) indirect-light)
+  indirect-light)
+
+
 (defun add-scene-entity (scene entity)
   (%filament::filament+add-entity
    '(:pointer %filament::filament+scene) scene

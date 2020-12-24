@@ -9,7 +9,8 @@
                :cffi :cffi-c-ref :claw-utils :claw
                :static-vectors :uiop
                :claw-sdl :claw-glm :claw-physx :claw-filament
-               :claw-assimp :claw-stb/image :defpackage-plus)
+               :claw-assimp :defpackage-plus
+               :claw-stb/image  :claw-stb/image-write)
   :serial t
   :components ((:module "utils"
                 :serial t

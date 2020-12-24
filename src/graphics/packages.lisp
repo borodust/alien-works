@@ -95,6 +95,7 @@
            #:create-scene
            #:destroy-scene
            #:scene-skybox
+           #:scene-indirect-light
            #:add-scene-entity
 
            #:with-skybox-builder
@@ -198,6 +199,7 @@
            #:transform-camera
 
            #:skybox
+           #:indirect-light
            #:make-color-skybox
            #:make-cubemap-skybox
 
