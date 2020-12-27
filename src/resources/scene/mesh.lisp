@@ -90,18 +90,12 @@
       (values
        (+ shift
           (ecase channels
-            (1 (write-int16 buffer
-                            (normalize-int16 (uv :x))))
-            (2 (write-int16 buffer
-                            (normalize-int16 (uv :x))
-                            (normalize-int16 (uv :y))))
-            (3 (write-int16 buffer
-                            (normalize-int16 (uv :x))
-                            (normalize-int16 (uv :y))
-                            (normalize-int16 (uv :z))))))
+            (1 (write-float buffer (uv :x)))
+            (2 (write-float buffer (uv :x) (uv :y)))
+            (3 (write-float buffer (uv :x) (uv :y) (uv :z)))))
        `(,@(unless (zerop shift)
              `((:offset :byte ,shift)))
-         (:uv :short ,channels :normalized t))))))
+         (:uv :float ,channels :normalized t))))))
 
 
 (defun write-face (buffer face)
@@ -168,38 +162,55 @@
           do (destroy-buffer buf))))
 
 
+(defun position-writer (buffer idx)
+  (with-mesh (mesh)
+    (write-position buffer (mesh :vertices * idx &))))
+
+
+(defun tangent-writer (buffer idx)
+  (with-mesh (mesh)
+    (write-quat-tangent buffer
+                        (mesh :normals * idx &)
+                        (mesh :tangents * idx &)
+                        (mesh :bitangents * idx &))))
+
+
+(defun make-color-writer (color-idx)
+  (lambda (buffer idx)
+    (with-mesh (mesh)
+      (write-color buffer (mesh :colors color-idx * idx &)))))
+
+
+(defun make-uv-writer (uv-idx component-count)
+  (lambda (buffer idx)
+    (with-mesh (mesh)
+      (write-uv buffer
+                (mesh :texture-coords uv-idx * idx &)
+                component-count))))
+
+
 (defun parse-vertices ()
   (with-mesh (mesh)
     (let* ((vertex-count (mesh :num-vertices))
-           (writers (append (list
-                             (lambda (buffer idx)
-                               (write-position buffer (mesh :vertices * idx &))))
-                            (unless (or (cffi:null-pointer-p (mesh :normals))
-                                        (cffi:null-pointer-p (mesh :tangents))
-                                        (cffi:null-pointer-p (mesh :bitangents)))
-                              (list
-                               (lambda (buffer idx)
-                                 (write-quat-tangent buffer
-                                                     (mesh :normals * idx &)
-                                                     (mesh :tangents * idx &)
-                                                     (mesh :bitangents * idx &)))))
-                            (a:when-let ((color-indices
-                                          (loop for idx below %ai:+max-number-of-color-sets+
-                                                unless (cffi:null-pointer-p (mesh :colors idx))
-                                                  collect idx)))
-                              (loop for color-idx in color-indices
-                                    collect (lambda (buffer idx)
-                                              (write-color buffer (mesh :colors color-idx * idx &)))))
-                            (a:when-let ((uv-config
-                                          (loop for idx below %ai:+max-number-of-texturecoords+
-                                                unless (cffi:null-pointer-p
-                                                        (mesh :texture-coords idx))
-                                                  collect (list idx (mesh :num-uv-components idx)))))
-                              (loop for (uv-idx component-count) in uv-config
-                                    collect (lambda (buffer idx)
-                                              (write-uv buffer
-                                                        (mesh :texture-coords uv-idx * idx &)
-                                                        component-count))))))
+           (writers (append
+                     (list #'position-writer)
+                     (unless (or (cffi:null-pointer-p (mesh :normals))
+                                 (cffi:null-pointer-p (mesh :tangents))
+                                 (cffi:null-pointer-p (mesh :bitangents)))
+                       (list #'tangent-writer))
+                     (a:when-let ((color-indices
+                                   (loop for idx below %ai:+max-number-of-color-sets+
+                                         unless (cffi:null-pointer-p (mesh :colors idx))
+                                           collect idx)))
+                       (loop for color-idx in color-indices
+                             collect (make-color-writer color-idx)))
+                     (a:when-let ((uv-config
+                                   (loop for idx below %ai:+max-number-of-texturecoords+
+                                         unless (cffi:null-pointer-p
+                                                 (mesh :texture-coords idx))
+                                           collect (list idx (mesh :num-uv-components idx)))))
+                       (loop for (uv-idx component-count) in uv-config
+                             collect (make-uv-writer uv-idx component-count)))))
            (uber-writer (apply #'combine-binary-writers writers)))
       (unless (zerop vertex-count)
         (multiple-value-bind (vert-len descriptor)

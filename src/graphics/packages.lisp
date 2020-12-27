@@ -204,7 +204,9 @@
            #:make-cubemap-skybox
 
            #:make-material
+           #:make-material-from-memory
            #:destroy-material
+           #:parse-material
 
            #:default-material-instance
            #:make-material-instance

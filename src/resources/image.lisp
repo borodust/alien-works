@@ -9,12 +9,21 @@
    (channels :initarg :channels :initform (error ":channels missing") :reader image-channels)))
 
 
-(defun load-image (name path)
+(defun load-image (name path &key (premultiply-alpha t))
   (cref:c-with ((width :int)
                 (height :int)
                 (channels :int))
     (cffi:with-foreign-string (path (namestring path))
+      (%stb.image:set-unpremultiply-on-load 1)
       (let ((data (%stb.image:load path (width &) (height &) (channels &) 0)))
+        (when (and (= channels 4) premultiply-alpha)
+          (loop for pixel = data then (cffi:inc-pointer pixel channels)
+                for idx from 0 below (* width height)
+                do (cref:c-val ((pixel :uint8))
+                     (let ((alpha (denormalize-uint8 (pixel 3))))
+                       (setf (pixel 0) (floor (* (pixel 0) alpha))
+                             (pixel 1) (floor (* (pixel 1) alpha))
+                             (pixel 2) (floor (* (pixel 2) alpha)))))))
         (make-instance 'image
                        :name name
                        :data data

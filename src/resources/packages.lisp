@@ -3,6 +3,7 @@
                     (:a :alexandria)
                     (:u :alien-works.utils)
                     (:m :alien-works.math)
+                    (:cref :cffi-c-ref)
                     (:%ai :%assimp))
   (:use :cl)
   (:export #:parse-scene
@@ -23,6 +24,7 @@
            #:material-texture
 
            #:texture-name
+           #:texture-channels
 
            #:load-image
            #:destroy-image

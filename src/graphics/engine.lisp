@@ -261,6 +261,17 @@
                                           (%gx:material-size material)))
       (%make-material (handle-of engine)))))
 
+
+(defun make-material-from-memory (engine data size)
+  (%gx:with-material-builder (%make-material
+                              (:package data size))
+    (%make-material (handle-of engine))))
+
+
+(defun parse-material (source &optional base-path)
+  (let ((material (%gx:parse-material source base-path)))
+    (values (%gx:material-data material) (%gx:material-size material))))
+
 ;;;
 ;;; RENDERABLE
 ;;;
@@ -451,10 +462,10 @@
   (%gx:update-texture-image (handle-of engine) texture level pixel-buffer))
 
 
-(defun update-cubemap-images (engine texture level pixel-buffer face-size &rest rest-sizes)
+(defun update-cubemap-images (engine texture level pixel-buffer face-stride &rest rest-strides)
   (%gx:with-face-offsets (offsets)
     (loop with current-offset = 0
-          for sizes = (list* face-size rest-sizes) then (rest sizes)
+          for sizes = (list* face-stride rest-strides) then (rest sizes)
           for current-size = (or (first sizes) current-size)
           for i from 0 below 6
           do (setf (%gx:face-offset offsets i) current-offset)
@@ -525,11 +536,11 @@
 ;;;
 ;;; SAMPLER
 ;;;
-(defun make-sampler (&key (min :nearest)
-                       (mag :nearest)
-                       (s-wrap :clamp-to-edge)
-                       (r-wrap :clamp-to-edge)
-                       (t-wrap :clamp-to-edge)
+(defun make-sampler (&key (min :linear-mipmap-linear)
+                       (mag :linear)
+                       (s-wrap :repeat)
+                       (r-wrap :repeat)
+                       (t-wrap :repeat)
                        (compare-mode :none)
                        (compare-func :le))
   (%gx:make-sampler (%gx:min-filter-enum min)

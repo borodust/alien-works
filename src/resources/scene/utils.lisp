@@ -90,6 +90,10 @@
   (write-primitives buffer :int16 values))
 
 
+(defun write-uint16 (buffer &rest values)
+  (write-primitives buffer :uint16 values))
+
+
 (defun write-uint32 (buffer &rest values)
   (write-primitives buffer :uint32 values))
 
@@ -100,12 +104,22 @@
 
 (defun normalize-uint8 (float)
   (let ((uint8-size (1- (ash 1 8))))
-    (round (* uint8-size float))))
+    (round (* uint8-size (rem float 1f0)))))
+
+
+(defun denormalize-uint8 (value)
+  (let ((uint8-size (1- (ash 1 8))))
+    (float (/ value uint8-size) 0f0)))
 
 
 (defun normalize-int16 (float)
   (let ((int16-size (1- (ash 1 15))))
-    (round (* int16-size float))))
+    (round (* int16-size (rem float 1f0)))))
+
+
+(defun normalize-uint16 (float)
+  (let ((int16-size (1- (ash 1 16))))
+    (round (* int16-size (rem float 1f0)))))
 
 
 (defun calc-alignment-padding (bytes)

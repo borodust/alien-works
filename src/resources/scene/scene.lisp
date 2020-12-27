@@ -32,7 +32,6 @@
                                              (post-process-steps-bit :optimize-graph
                                                                      :find-instances
                                                                      :optimize-meshes
-                                                                     :join-identical-vertices
                                                                      :calc-tangent-space
                                                                      :gen-smooth-normals
                                                                      :gen-uv-coords
