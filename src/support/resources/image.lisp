@@ -1,4 +1,4 @@
-(cl:in-package :alien-works.resources)
+(cl:in-package :alien-works.support.resources)
 
 
 (defclass image ()
@@ -62,7 +62,7 @@
            (target-height (* height 3))
            (target-size (* channels target-width target-height))
            (target-data (cffi:foreign-alloc :char :count target-size)))
-      (u:memset target-data 0 target-size)
+      (host:memset target-data 0 target-size)
       (flet ((%insert (image x-sector y-sector)
                (let ((x (* x-sector width))
                      (y (* y-sector height)))
@@ -73,7 +73,7 @@
                        for dst-ptr = (cffi:inc-pointer target-data (+ (* x channels) (* y dst-stride)))
                          then (cffi:inc-pointer dst-ptr dst-stride)
                        for src-ptr = src-data then (cffi:inc-pointer src-ptr src-stride)
-                       do (u:memcpy dst-ptr src-ptr src-stride)))))
+                       do (host:memcpy dst-ptr src-ptr src-stride)))))
         (destructuring-bind (px nx py ny pz nz) images
           (%insert px 2 1)
           (%insert nx 0 1)

@@ -1,8 +1,9 @@
-(cl:defpackage :alien-works.resources
+(cl:defpackage :alien-works.support.resources
   (:local-nicknames (:cref :cffi-c-ref)
                     (:a :alexandria)
                     (:u :alien-works.utils)
                     (:m :alien-works.math)
+                    (:host :alien-works.host)
                     (:cref :cffi-c-ref)
                     (:%ai :%assimp))
   (:use :cl)

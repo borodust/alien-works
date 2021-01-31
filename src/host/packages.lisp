@@ -6,4 +6,10 @@
            #:window-surface
 
            #:handle-events
-           #:event-type))
+           #:event-type
+
+           #:run
+           #:definit
+
+           #:memcpy
+           #:memset))

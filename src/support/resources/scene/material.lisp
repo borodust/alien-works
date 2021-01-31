@@ -1,4 +1,4 @@
-(cl:in-package :alien-works.resources)
+(cl:in-package :alien-works.support.resources)
 
 
 (defparameter *property-class-table* (make-hash-table :test #'equal))

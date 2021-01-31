@@ -1,6 +1,8 @@
 (cl:in-package :alien-works.host)
 
 
+(defvar *init-hooks* nil)
+
 (declaim (special *event*))
 
 (defun call-with-window (callback)
@@ -32,9 +34,7 @@
           (wm-info :version :patch) %sdl:+patchlevel+)
 
     (%sdl:get-window-wm-info window (wm-info &))
-
-    (ecase (wm-info :subsystem)
-      (:x11 (cffi:make-pointer (wm-info :info :x11 :window))))))
+    (%window-surface (wm-info &))))
 
 
 ;;;
@@ -50,3 +50,33 @@
   (let* ((id (cref:c-ref event %sdl:event :type))
          (type (cffi:foreign-enum-keyword '%sdl:event-type id :errorp nil)))
     (if type type :uknown)))
+
+
+(defun run ()
+  (loop with args = (uiop:command-line-arguments)
+        for hook in *init-hooks*
+        do (apply hook args)))
+
+
+(defmacro definit (name (&rest lambda-list) &body body)
+  (let ((initializer (a:symbolicate 'alien-works-init$ name)))
+    `(progn
+       (pushnew ',initializer *init-hooks*)
+       (defun ,initializer ,@(if lambda-list
+                                 `(,lambda-list)
+                                 (a:with-gensyms (args-param)
+                                   `((&rest ,args-param)
+                                     (declare (ignore ,args-param)))))
+         ,@body))))
+
+
+
+;;;
+;;;
+;;;
+(defun memcpy (destination source size)
+  (%sdl:memcpy destination source size))
+
+
+(defun memset (destination value size)
+  (%sdl:memset destination value size))

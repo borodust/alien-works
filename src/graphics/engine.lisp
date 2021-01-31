@@ -254,23 +254,11 @@
 ;;;
 ;;; MATERIAL
 ;;;
-(defun make-material (engine source &optional base-path)
-  (%gx:with-parsed-material (material source base-path)
-    (%gx:with-material-builder (%make-material
-                                (:package (%gx:material-data material)
-                                          (%gx:material-size material)))
-      (%make-material (handle-of engine)))))
-
-
 (defun make-material-from-memory (engine data size)
   (%gx:with-material-builder (%make-material
                               (:package data size))
     (%make-material (handle-of engine))))
 
-
-(defun parse-material (source &optional base-path)
-  (let ((material (%gx:parse-material source base-path)))
-    (values (%gx:material-data material) (%gx:material-size material))))
 
 ;;;
 ;;; RENDERABLE

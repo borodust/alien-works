@@ -56,6 +56,10 @@
        (destroy-mat4 ,mat))))
 
 
+(defmacro with-mat4* ((&rest declarations) &body body)
+  (u:expand-multibinding 'with-mat4 declarations body))
+
+
 (defun rotate-mat4 (result source angle vec3)
   (%glm:glm+rotate
    '(:pointer %glm::glm+mat4) result
@@ -76,3 +80,10 @@
    '(:pointer %glm::glm+mat4) result
    '(:pointer %glm::glm+mat4) source
    '(:pointer %glm::glm+vec3) vec3))
+
+
+(defun mat4-mult (result this that)
+  (%glm:glm+operator*
+   '(:pointer %glm::glm+mat4) result
+   '(:pointer %glm::glm+mat4) this
+   '(:pointer %glm::glm+mat4) that))

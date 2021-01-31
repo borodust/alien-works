@@ -5,12 +5,11 @@
   :author "Pavel Korolev"
   :mailto "dev@borodust.org"
   :pathname "src/"
-  :depends-on (:alexandria :trivial-main-thread
-               :cffi :cffi-c-ref :claw-utils :claw
-               :static-vectors :uiop
-               :claw-sdl :claw-glm :claw-physx :claw-filament
-               :claw-assimp :defpackage-plus
-               :claw-stb/image  :claw-stb/image-write)
+  :depends-on (:alexandria :uiop
+               :trivial-main-thread :static-vectors
+               :cffi :cffi-c-ref :claw-utils :defpackage-plus
+               :claw-sdl :claw-glm :claw-filament/runtime :claw-stb/image
+               #++ :claw-physx)
   :serial t
   :components ((:module "utils"
                 :serial t
@@ -28,20 +27,22 @@
                (:module "host"
                 :serial t
                 :components ((:file "packages")
+                             (:file "system/linux" :if-feature :linux)
+                             (:file "system/android" :if-feature :android)
                              (:file "host")))
-               (:module "physics"
-                :serial t
-                :components ((:file "packages")
-                             (:module "physx"
-                              :components ((:file "math")
-                                           (:file "foundation")
-                                           (:file "vdb")
-                                           (:file "physics")
-                                           (:file "dispatcher")
-                                           (:file "material")
-                                           (:file "scene")
-                                           (:file "actor")))
-                             (:file "physics")))
+               #++(:module "physics"
+                   :serial t
+                   :components ((:file "packages")
+                                (:module "physx"
+                                 :components ((:file "math")
+                                              (:file "foundation")
+                                              (:file "vdb")
+                                              (:file "physics")
+                                              (:file "dispatcher")
+                                              (:file "material")
+                                              (:file "scene")
+                                              (:file "actor")))
+                                (:file "physics")))
                (:module "graphics"
                 :serial t
                 :components ((:file "packages")
@@ -64,6 +65,26 @@
                                            (:file "texture")
                                            (:file "light")))
                              (:file "engine")))
+               (:file "packages")))
+
+
+(asdf:defsystem :alien-works/support
+  :description "High-performance game foundation framework"
+  :version "0.0.0"
+  :license "MIT"
+  :author "Pavel Korolev"
+  :mailto "dev@borodust.org"
+  :depends-on (:alien-works
+               :claw-filament/support :claw-assimp :claw-stb/image-write
+               :defpackage-plus)
+  :serial t
+  :pathname "src/support/"
+  :components ((:module "graphics"
+                :serial t
+                :components ((:file "packages")
+                             (:module "filament"
+                              :components ((:file "material")))
+                             (:file "graphics")))
                (:module "resources"
                 :serial t
                 :components ((:file "packages")

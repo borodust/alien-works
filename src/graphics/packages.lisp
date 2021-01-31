@@ -19,8 +19,6 @@
            #:material-instance-parameter-mat4
            #:material-instance-parameter-sampler
 
-           #:bundled-material-data
-           #:bundled-material-size
            #:parse-material
            #:destroy-material
            #:material-data
@@ -203,10 +201,7 @@
            #:make-color-skybox
            #:make-cubemap-skybox
 
-           #:make-material
            #:make-material-from-memory
-           #:destroy-material
-           #:parse-material
 
            #:default-material-instance
            #:make-material-instance

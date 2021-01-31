@@ -1,4 +1,4 @@
-(cl:in-package :alien-works.resources)
+(cl:in-package :alien-works.support.resources)
 
 
 (declaim (special *scene*

@@ -8,10 +8,7 @@
            #:enumbit
            #:define-enumbit-combiner
 
-           #:expand-multibinding
-
-           #:memcpy
-           #:memset))
+           #:expand-multibinding))
 (cl:in-package :alien-works.utils)
 
 
@@ -79,24 +76,7 @@
 (defun expand-multibinding (name bindings body)
   (labels ((%expand (bindings)
              (if bindings
-                 `((,name ,(first bindings)
+                 `((,name ,(a:ensure-list (first bindings))
                           ,@(%expand (rest bindings))))
                  body)))
     (first (%expand bindings))))
-
-
-;; FIXME: remove, newer CFFI has it
-(cffi:defctype :size-t :unsigned-int)
-
-;; void * memcpy ( void * destination, const void * source, size_t num );
-(cffi:defcfun memcpy :pointer
-  (destination :pointer)
-  (source :pointer)
-  (size :size-t))
-
-
-;; void * memset ( void * ptr, int value, size_t num );
-(cffi:defcfun memset :pointer
-  (destination :pointer)
-  (value :int)
-  (size :size-t))

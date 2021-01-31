@@ -1,4 +1,4 @@
-(cl:in-package :alien-works.resources)
+(cl:in-package :alien-works.support.resources)
 
 
 (u:define-enumval-extractor primitive-type-enum %assimp:primitive-type)
