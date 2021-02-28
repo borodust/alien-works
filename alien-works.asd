@@ -9,7 +9,7 @@
                :trivial-main-thread :static-vectors
                :cffi :cffi-c-ref :claw-utils :defpackage-plus
                :claw-sdl :claw-glm :claw-filament/runtime :claw-stb/image
-               #++ :claw-physx)
+               :claw-physx :trivial-gray-streams)
   :serial t
   :components ((:module "utils"
                 :serial t
@@ -30,19 +30,19 @@
                              (:file "system/linux" :if-feature :linux)
                              (:file "system/android" :if-feature :android)
                              (:file "host")))
-               #++(:module "physics"
-                   :serial t
-                   :components ((:file "packages")
-                                (:module "physx"
-                                 :components ((:file "math")
-                                              (:file "foundation")
-                                              (:file "vdb")
-                                              (:file "physics")
-                                              (:file "dispatcher")
-                                              (:file "material")
-                                              (:file "scene")
-                                              (:file "actor")))
-                                (:file "physics")))
+               (:module "physics"
+                :serial t
+                :components ((:file "packages")
+                             (:module "physx"
+                              :components ((:file "math")
+                                           (:file "foundation")
+                                           (:file "vdb")
+                                           (:file "physics")
+                                           (:file "dispatcher")
+                                           (:file "material")
+                                           (:file "scene")
+                                           (:file "actor")))
+                             (:file "physics")))
                (:module "graphics"
                 :serial t
                 :components ((:file "packages")

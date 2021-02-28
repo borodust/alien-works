@@ -1,19 +1,19 @@
 (cl:in-package :alien-works.math)
 
 
-(defun mat4 (mat col row)
+(u:definline mat4 (mat col row)
   (vec4 (%glm:glm+operator[] '(:pointer %glm:glm+mat4) mat :int col) row))
 
 
-(defun (setf mat4) (value mat col row)
+(u:definline (setf mat4) (value mat col row)
   (let ((ptr (%glm:glm+operator[] '(:pointer %glm:glm+mat4) mat :int col)))
     (setf (vec4 ptr row) value)))
 
 
-(defun make-mat4 (x0 x1 x2 x3
-                  y0 y1 y2 y3
-                  z0 z1 z2 z3
-                  w0 w1 w2 w3)
+(u:definline make-mat4 (x0 x1 x2 x3
+                        y0 y1 y2 y3
+                        z0 z1 z2 z3
+                        w0 w1 w2 w3)
   (let ((instance (iffi:make-intricate-instance '%glm:glm+mat4)))
     (setf (mat4 instance 0 0) x0
           (mat4 instance 0 1) y0
@@ -37,7 +37,7 @@
     instance))
 
 
-(defun destroy-mat4 (mat)
+(u:definline destroy-mat4 (mat)
   (iffi:destroy-intricate-instance '%glm:glm+mat4 mat))
 
 
@@ -60,7 +60,7 @@
   (u:expand-multibinding 'with-mat4 declarations body))
 
 
-(defun rotate-mat4 (result source angle vec3)
+(u:definline rotate-mat4 (result source angle vec3)
   (%glm:glm+rotate
    '(:pointer %glm::glm+mat4) result
    '(:pointer %glm::glm+mat4) source
@@ -68,21 +68,21 @@
    '(:pointer %glm::glm+vec3) vec3))
 
 
-(defun translate-mat4 (result source vec3)
+(u:definline translate-mat4 (result source vec3)
   (%glm:glm+translate
    '(:pointer %glm::glm+mat4) result
    '(:pointer %glm::glm+mat4) source
    '(:pointer %glm::glm+vec3) vec3))
 
 
-(defun scale-mat4 (result source vec3)
+(u:definline scale-mat4 (result source vec3)
   (%glm:glm+scale
    '(:pointer %glm::glm+mat4) result
    '(:pointer %glm::glm+mat4) source
    '(:pointer %glm::glm+vec3) vec3))
 
 
-(defun mat4-mult (result this that)
+(u:definline mat4-mult (result this that)
   (%glm:glm+operator*
    '(:pointer %glm::glm+mat4) result
    '(:pointer %glm::glm+mat4) this

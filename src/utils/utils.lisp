@@ -8,7 +8,8 @@
            #:enumbit
            #:define-enumbit-combiner
 
-           #:expand-multibinding))
+           #:expand-multibinding
+           #:definline))
 (cl:in-package :alien-works.utils)
 
 
@@ -80,3 +81,10 @@
                           ,@(%expand (rest bindings))))
                  body)))
     (first (%expand bindings))))
+
+
+(defmacro definline (name (&rest lambda-list) &body body)
+  `(progn
+     (declaim (inline ,name))
+     (defun ,name ,lambda-list
+       ,@body)))

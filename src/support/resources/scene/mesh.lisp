@@ -95,7 +95,7 @@
             (3 (write-float buffer (uv :x) (uv :y) (uv :z)))))
        `(,@(unless (zerop shift)
              `((:offset :byte ,shift)))
-         (:uv :float ,channels :normalized t))))))
+         (:uv :float ,channels))))))
 
 
 (defun write-face (buffer face)

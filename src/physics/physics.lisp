@@ -36,8 +36,8 @@
                     (px:finish-simulation scene)
                     (report-actor-position box)))
       (px:destroy-material material)
-      (px:destroy-cpu-dispatcher dispatcher)
-      (px:destroy-scene scene))))
+      (px:destroy-scene scene)
+      (px:destroy-cpu-dispatcher dispatcher))))
 
 
 (defun run-with-physics (foundation action)

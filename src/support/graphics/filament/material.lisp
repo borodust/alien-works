@@ -4,24 +4,25 @@
 ;;; MATERIAL COMPILER
 ;;;
 (defun parse-material (source &optional material-base-path)
-  (let ((name (namestring (merge-pathnames
-                           "in-memory"
-                           (uiop:ensure-directory-pathname (or material-base-path ""))))))
-    (iffi:with-intricate-instances ((config %filament.util:claw+filament+in-memory-config
-                                            'claw-utils:claw-string name
-                                            'claw-utils:claw-string source
-                                            ;; FIXME: this is not really a good way
-                                            ;; to figure out real unicode string length
-                                            '%filament.util:size-t (length source))
-                                    (compiler %filament.util:matc+material-compiler))
-      (%filament.util:matc+run '(:pointer %filament.util::matc+material-compiler) compiler
-                          '(:pointer %filament.util::matc+config) config)
+  ;; fixme: pray i can convince filament authors to remove assert for material
+  ;; file existence
+  (uiop:with-temporary-file (:pathname temp-file :directory material-base-path)
+    (let ((name (uiop:native-namestring temp-file)))
+      (iffi:with-intricate-instances ((config %filament.util:claw+filament+in-memory-config
+                                              'claw-utils:claw-string name
+                                              'claw-utils:claw-string source
+                                              ;; FIXME: this is not really a good way
+                                              ;; to figure out real unicode string length
+                                              '%filament.util:size-t (length source))
+                                      (compiler %filament.util:matc+material-compiler))
+        (%filament.util:matc+run '(:pointer %filament.util::matc+material-compiler) compiler
+                                 '(:pointer %filament.util::matc+config) config)
 
-      (let* ((out (%filament.util:claw+filament+get-output
-                   :const
-                   '(:pointer %filament.util::claw+filament+in-memory-config) config)))
-        (%filament.util:claw+filament+material-data
-         '(:pointer %filament.util::claw+filament+in-memory-output) out)))))
+        (let* ((out (%filament.util:claw+filament+get-output
+                     :const
+                     '(:pointer %filament.util::claw+filament+in-memory-config) config)))
+          (%filament.util:claw+filament+material-data
+           '(:pointer %filament.util::claw+filament+in-memory-output) out))))))
 
 
 (defun destroy-material (data)

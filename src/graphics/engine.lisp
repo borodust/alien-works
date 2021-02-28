@@ -1,6 +1,5 @@
 (cl:in-package :alien-works.graphics)
 
-
 (defclass engine ()
   ((engine :reader handle-of)
    (scene :reader scene-of)
@@ -31,7 +30,7 @@
     (setf (%gx:scene-indirect-light scene) indirect-light)))
 
 
-(defmethod initialize-instance :after ((this engine) &key surface)
+(defmethod initialize-instance :after ((this engine) &key surface width height)
   (with-slots (engine swap-chain renderer scene camera view) this
     (setf engine (%gx:create-engine)
           swap-chain (%gx:create-swap-chain engine surface)
@@ -45,13 +44,14 @@
           (%gx:view-scene view) scene
           (%gx:view-anti-aliasing view) :fxaa
           (%gx:view-post-processing-enabled-p view) t)
-    (%gx:update-view-viewport view 0 0 1280 960)
+    (let ((width (or width 1280))
+          (height (or height width 960)))
+      (%gx:update-view-viewport view 0 0 width height)
+      (%gx:update-camera-lens-projection camera 28f0 (/ width height) 0.01 100))))
 
-    (%gx:update-camera-lens-projection camera 28f0 (/ 1280 960) 0.01 100)))
 
-
-(defun create-engine (surface)
-  (make-instance 'engine :surface surface))
+(defun create-engine (surface &key width height)
+  (make-instance 'engine :surface surface :width width :height height))
 
 
 (defun destroy-engine (engine)
@@ -71,8 +71,8 @@
       (%gx:end-frame renderer))))
 
 
-(defmacro with-engine ((engine &key (surface (error ":surface missing"))) &body body)
-  `(let ((,engine (create-engine ,surface)))
+(defmacro with-engine ((engine &key (surface (error ":surface missing")) width height) &body body)
+  `(let ((,engine (create-engine ,surface :width ,width :height ,height)))
      (unwind-protect
           (progn ,@body)
        (destroy-engine ,engine))))
