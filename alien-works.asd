@@ -9,7 +9,8 @@
                :trivial-main-thread :static-vectors
                :cffi :cffi-c-ref :claw-utils :defpackage-plus
                :claw-sdl :claw-glm :claw-filament/runtime :claw-stb/image
-               :claw-physx :trivial-gray-streams)
+               :claw-physx :claw-imgui :claw-skia :trivial-gray-streams
+               :cl-opengl :bordeaux-threads :atomics)
   :serial t
   :components ((:module "utils"
                 :serial t
@@ -47,6 +48,7 @@
                 :serial t
                 :components ((:file "packages")
                              (:module "filament"
+                              :serial t
                               :components ((:file "utils")
                                            (:file "math")
                                            (:file "box")
@@ -64,6 +66,10 @@
                                            (:file "skybox")
                                            (:file "texture")
                                            (:file "light")))
+                             (:module "skia"
+                              :serial t
+                              :components ((:file "skia")))
+                             (:file "surface")
                              (:file "engine")))
                (:file "packages")))
 

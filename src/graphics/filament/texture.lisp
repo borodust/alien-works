@@ -1,4 +1,4 @@
-(cl:in-package :%alien-works.graphics)
+(cl:in-package :%alien-works.filament)
 
 
 (u:define-enumval-extractor texture-sampler-type-enum %filament:filament+backend+sampler-type)

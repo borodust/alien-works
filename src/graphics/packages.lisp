@@ -1,4 +1,4 @@
-(cl:defpackage :%alien-works.graphics
+(cl:defpackage :%alien-works.filament
   (:local-nicknames (:a :alexandria)
                     (:! :alien-works.utils.empty)
                     (:u :alien-works.utils)
@@ -181,9 +181,18 @@
            #:destroy-sampler))
 
 
+(cl:defpackage :%alien-works.skia
+  (:local-nicknames (:a :alexandria)
+                    (:! :alien-works.utils.empty)
+                    (:u :alien-works.utils)
+                    (:m :alien-works.math))
+  (:use :cl)
+  (:export))
+
+
 (cl:defpackage :alien-works.graphics
   (:local-nicknames (:a :alexandria)
-                    (:%gx :%alien-works.graphics)
+                    (:%fm :%alien-works.filament)
                     (:u :alien-works.utils)
                     (:sv :static-vectors)
                     (:cref :cffi-c-ref)
@@ -291,6 +300,7 @@
            #:.format
            #:.usage
            #:.swizzle
+           #:.import
 
            #:.reflections
            #:.radiance

@@ -1,4 +1,4 @@
-(cl:defpackage :%alien-works.support.graphics
+(cl:defpackage :%alien-works.support.filament
   (:local-nicknames (:a :alexandria)
                     (:! :alien-works.utils.empty)
                     (:u :alien-works.utils)
@@ -13,9 +13,9 @@
 
 (cl:defpackage :alien-works.support.graphics
   (:local-nicknames (:a :alexandria)
-                    (:%gx :%alien-works.graphics)
+                    (:%gx :%alien-works.filament)
                     (:gx :alien-works.graphics)
-                    (:%gxs :%alien-works.support.graphics)
+                    (:%gxs :%alien-works.support.filament)
                     (:u :alien-works.utils)
                     (:sv :static-vectors)
                     (:cref :cffi-c-ref)

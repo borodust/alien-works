@@ -21,6 +21,8 @@
            #:framebuffer-width
            #:framebuffer-height
 
+           #:make-shared-context-thread
+
            #:handle-events
            #:event-type
 

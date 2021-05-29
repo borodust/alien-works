@@ -10,89 +10,108 @@
 ;;; SKYBOX
 ;;;
 (defun make-color-skybox (engine r g b a)
-  (%gx:with-vec4f (color r g b a)
-    (%gx:with-skybox-builder (%make-skybox (:color color))
+  (%fm:with-vec4f (color r g b a)
+    (%fm:with-skybox-builder (%make-skybox (:color color))
       (%make-skybox (handle-of engine)))))
 
 
 (defun make-cubemap-skybox (engine cubemap)
-  (%gx:with-skybox-builder (%make-skybox (:environment cubemap))
+  (%fm:with-skybox-builder (%make-skybox (:environment cubemap))
     (%make-skybox (handle-of engine))))
 
 
 (defun (setf skybox) (skybox engine)
   (with-slots (scene) engine
-    (setf (%gx:scene-skybox scene) skybox)))
+    (setf (%fm:scene-skybox scene) skybox)))
 
 
 (defun (setf indirect-light) (indirect-light engine)
   (with-slots (scene) engine
-    (setf (%gx:scene-indirect-light scene) indirect-light)))
+    (setf (%fm:scene-indirect-light scene) indirect-light)))
 
 
-(defmethod initialize-instance :after ((this engine) &key surface width height)
+(defmethod initialize-instance :after ((this engine) &key surface width height shared-context)
   (with-slots (engine swap-chain renderer scene camera view) this
-    (setf engine (%gx:create-engine)
-          swap-chain (%gx:create-swap-chain engine surface)
-          renderer (%gx:create-renderer engine)
-          camera (%gx:create-camera engine)
-          view (%gx:create-view engine)
-          scene (%gx:create-scene engine))
+    (setf engine (%fm:create-engine shared-context)
+          swap-chain (%fm:create-swap-chain engine surface)
+          renderer (%fm:create-renderer engine)
+          camera (%fm:create-camera engine)
+          view (%fm:create-view engine)
+          scene (%fm:create-scene engine))
 
     ;; view setup
-    (setf (%gx:view-camera view) camera
-          (%gx:view-scene view) scene
-          (%gx:view-anti-aliasing view) :fxaa
-          (%gx:view-post-processing-enabled-p view) t)
+    (setf (%fm:view-camera view) camera
+          (%fm:view-scene view) scene
+          (%fm:view-anti-aliasing view) :fxaa
+          (%fm:view-post-processing-enabled-p view) t)
     (let ((width (or width 1280))
           (height (or height width 960)))
-      (%gx:update-view-viewport view 0 0 width height)
-      (%gx:update-camera-lens-projection camera 28f0 (/ width height) 0.01 100))))
+      (%fm:update-view-viewport view 0 0 width height)
+      (%fm:update-camera-lens-projection camera 28f0 (/ width height) 0.01 100))))
 
 
-(defun create-engine (surface &key width height)
-  (make-instance 'engine :surface surface :width width :height height))
+(defun create-engine (surface &key width height shared-context)
+  (make-instance 'engine :surface surface :width width :height height :shared-context shared-context))
 
 
 (defun destroy-engine (engine)
   (with-slots (engine swap-chain renderer scene camera view) engine
-    (%gx:destroy-view engine view)
-    (%gx:destroy-camera engine camera)
-    (%gx:destroy-scene engine scene)
-    (%gx:destroy-renderer engine renderer)
-    (%gx:destroy-swap-chain engine swap-chain)
-    (%gx:destroy-engine engine)))
+    (%fm:destroy-view engine view)
+    (%fm:destroy-camera engine camera)
+    (%fm:destroy-scene engine scene)
+    (%fm:destroy-renderer engine renderer)
+    (%fm:destroy-swap-chain engine swap-chain)
+    (%fm:destroy-engine engine)))
 
 
 (defun render-frame (engine)
   (with-slots (renderer view swap-chain) engine
-    (when (%gx:begin-frame renderer swap-chain)
-      (%gx:render-view renderer view)
-      (%gx:end-frame renderer))))
+    (when (%fm:begin-frame renderer swap-chain)
+      (%fm:render-view renderer view)
+      (%fm:end-frame renderer))))
 
 
-(defmacro with-engine ((engine &key (surface (error ":surface missing")) width height) &body body)
-  `(let ((,engine (create-engine ,surface :width ,width :height ,height)))
+(defmacro with-engine ((engine &key (surface (error ":surface missing")) shared-context width height)
+                       &body body)
+  `(let ((,engine (create-engine ,surface :width ,width :height ,height
+                                          :shared-context ,shared-context)))
      (unwind-protect
           (progn ,@body)
        (destroy-engine ,engine))))
 
 
+(defun init-shared-context-thread (surface stop-fu)
+  (format t "GL Version: ~A" (gl:get-string :version))
+  (bind-buffered-surface surface)
+  (let* ((framebuffer (buffered-surface-framebuffer surface)))
+    (%alien-works.skia::call-with-skia-canvas
+     (buffered-surface-framebuffer-id framebuffer)
+     (buffered-surface-width surface)
+     (buffered-surface-height surface)
+     (lambda (canvas)
+       (loop until (funcall stop-fu)
+             do (render-buffered-surface
+                 surface
+                 (lambda ()
+                   (%alien-works.skia::draw-skia canvas)))
+                (sleep 0.014))))))
+
+
 (defun transform-camera (engine transform)
   (with-slots (camera) engine
-    (%gx:with-mat4f (mat transform)
-      (%gx:update-camera-model-matrix camera mat))))
+    (%fm:with-mat4f (mat transform)
+      (%fm:update-camera-model-matrix camera mat))))
 
 
 (defun add-scene-entity (engine entity)
-  (%gx:add-scene-entity (scene-of engine) entity))
+  (%fm:add-scene-entity (scene-of engine) entity))
 
 
 (defun transform-entity (engine entity transform)
-  (let ((transform-manager (%gx:transform-manager (handle-of engine))))
-    (%gx:with-transform-instance (instance entity) transform-manager
-      (%gx:with-mat4f (mat transform)
-        (setf (%gx:transform transform-manager instance) mat)))))
+  (let ((transform-manager (%fm:transform-manager (handle-of engine))))
+    (%fm:with-transform-instance (instance entity) transform-manager
+      (%fm:with-mat4f (mat transform)
+        (setf (%fm:transform transform-manager instance) mat)))))
 
 
 ;;;
@@ -169,6 +188,7 @@
 (define-builder-option format (value))
 (define-builder-option usage (value))
 (define-builder-option swizzle (&key r g b a))
+(define-builder-option import (value))
 
 (define-builder-option reflections (texture))
 (define-builder-option radiance (bands harmonics))
@@ -188,24 +208,24 @@
 
 
 (defmethod %.vertex-count ((this vertex-buffer-builder) count)
-  (%gx:vertex-buffer-builder-vertex-count (handle-of this) count))
+  (%fm:vertex-buffer-builder-vertex-count (handle-of this) count))
 
 
 (defmethod %.attribute ((this vertex-buffer-builder) attribute type offset stride)
-  (%gx:vertex-buffer-builder-attribute (handle-of this)
-                                       (%gx:vertex-attribute-enum attribute)
+  (%fm:vertex-buffer-builder-attribute (handle-of this)
+                                       (%fm:vertex-attribute-enum attribute)
                                        0
-                                       (%gx:vertex-attribute-type-enum type)
+                                       (%fm:vertex-attribute-type-enum type)
                                        offset stride))
 
 
 (defmethod %.normalized ((this vertex-buffer-builder) attribute normalized-p)
-  (%gx:vertex-buffer-builder-normalized (handle-of this)
-                                        (%gx:vertex-attribute-enum attribute) normalized-p))
+  (%fm:vertex-buffer-builder-normalized (handle-of this)
+                                        (%fm:vertex-attribute-enum attribute) normalized-p))
 
 
 (defun make-vertex-buffer (engine vertex-count &rest options)
-  (%gx:with-vertex-buffer-builder ((%make-vertex-buffer :instance handle)
+  (%fm:with-vertex-buffer-builder ((%make-vertex-buffer :instance handle)
                                    (:buffer-count 1)
                                    (:vertex-count vertex-count))
     (let ((builder (make-instance 'vertex-buffer-builder :handle handle)))
@@ -215,11 +235,11 @@
 
 
 (defun destroy-vertex-buffer (engine buffer)
-  (%gx:destroy-vertex-buffer (handle-of engine) buffer))
+  (%fm:destroy-vertex-buffer (handle-of engine) buffer))
 
 
 (defun fill-vertex-buffer (engine buffer data-ptr data-size &optional (offset 0))
-  (%gx:update-vertex-buffer buffer (handle-of engine) 0 data-ptr data-size offset))
+  (%fm:update-vertex-buffer buffer (handle-of engine) 0 data-ptr data-size offset))
 
 ;;;
 ;;; INDEX BUFFER
@@ -228,15 +248,15 @@
 
 
 (defmethod %.index-count ((this index-buffer-builder) count)
-  (%gx:index-buffer-builder-index-count (handle-of this) count))
+  (%fm:index-buffer-builder-index-count (handle-of this) count))
 
 
 (defmethod %.type ((this index-buffer-builder) type)
-  (%gx:index-buffer-builder-buffer-type (handle-of this) (%gx:index-type-enum type)))
+  (%fm:index-buffer-builder-buffer-type (handle-of this) (%fm:index-type-enum type)))
 
 
 (defun make-index-buffer (engine index-count &rest options)
-  (%gx:with-index-buffer-builder ((%make-index-buffer :instance handle)
+  (%fm:with-index-buffer-builder ((%make-index-buffer :instance handle)
                                   (:index-count index-count))
     (let ((builder (make-instance 'index-buffer-builder :handle handle)))
       (loop for step in options
@@ -245,17 +265,17 @@
 
 
 (defun destroy-index-buffer (engine buffer)
-  (%gx:destroy-index-buffer (handle-of engine) buffer))
+  (%fm:destroy-index-buffer (handle-of engine) buffer))
 
 
 (defun fill-index-buffer (engine buffer data-ptr data-size &optional (offset 0))
-  (%gx:update-index-buffer buffer (handle-of engine) data-ptr data-size offset))
+  (%fm:update-index-buffer buffer (handle-of engine) data-ptr data-size offset))
 
 ;;;
 ;;; MATERIAL
 ;;;
 (defun make-material-from-memory (engine data size)
-  (%gx:with-material-builder (%make-material
+  (%fm:with-material-builder (%make-material
                               (:package data size))
     (%make-material (handle-of engine))))
 
@@ -266,70 +286,70 @@
 (defclass renderable-builder (builder) ())
 
 (defmethod %.geometry ((this renderable-builder) index type vertices indices)
-  (%gx:renderable-builder-geometry (handle-of this)
-                                   index (%gx:renderable-primitive-type-enum type) vertices indices))
+  (%fm:renderable-builder-geometry (handle-of this)
+                                   index (%fm:renderable-primitive-type-enum type) vertices indices))
 
 (defmethod %.index-bound-geometry ((this renderable-builder)
                                    index type vertices indices offset min-index max-index count)
-  (%gx:renderable-builder-index-bound-geometry (handle-of this)
+  (%fm:renderable-builder-index-bound-geometry (handle-of this)
                                                index
-                                               (%gx:renderable-primitive-type-enum type)
+                                               (%fm:renderable-primitive-type-enum type)
                                                vertices indices
                                                offset min-index max-index count))
 
 (defmethod %.count-bound-geometry ((this renderable-builder) index type vertices indices offset count)
-  (%gx:renderable-builder-count-bound-geometry (handle-of this)
+  (%fm:renderable-builder-count-bound-geometry (handle-of this)
                                                index
-                                               (%gx:renderable-primitive-type-enum type)
-                                               vertices offset indices count))
+                                               (%fm:renderable-primitive-type-enum type)
+                                               vertices indices offset count))
 
 (defmethod %.material ((this renderable-builder) index material-instance)
-  (%gx:renderable-builder-material (handle-of this)
+  (%fm:renderable-builder-material (handle-of this)
                                    index material-instance))
 
 (defmethod %.bounding-box ((this renderable-builder) x-min y-min z-min x-max y-max z-max)
-  (%gx:with-box (bounding-box x-min y-min z-min x-max y-max z-max)
-    (%gx:renderable-builder-bounding-box (handle-of this) bounding-box)))
+  (%fm:with-box (bounding-box x-min y-min z-min x-max y-max z-max)
+    (%fm:renderable-builder-bounding-box (handle-of this) bounding-box)))
 
 (defmethod %.layer-mask ((this renderable-builder) select values)
-  (%gx:renderable-builder-layer-mask (handle-of this) select values))
+  (%fm:renderable-builder-layer-mask (handle-of this) select values))
 
 (defmethod %.priority ((this renderable-builder) priority)
-  (%gx:renderable-builder-priority (handle-of this) priority))
+  (%fm:renderable-builder-priority (handle-of this) priority))
 
 (defmethod %.culling ((this renderable-builder) enabled)
-  (%gx:renderable-builder-culling (handle-of this) enabled))
+  (%fm:renderable-builder-culling (handle-of this) enabled))
 
 (defmethod %.cast-shadows ((this renderable-builder) enabled)
-  (%gx:renderable-builder-cast-shadows (handle-of this) enabled))
+  (%fm:renderable-builder-cast-shadows (handle-of this) enabled))
 
 (defmethod %.receive-shadows ((this renderable-builder) enabled)
-  (%gx:renderable-builder-receive-shadows (handle-of this) enabled))
+  (%fm:renderable-builder-receive-shadows (handle-of this) enabled))
 
 (defmethod %.screen-space-contact-shadows ((this renderable-builder) enabled)
-  (%gx:renderable-builder-screen-space-contact-shadows (handle-of this) enabled))
+  (%fm:renderable-builder-screen-space-contact-shadows (handle-of this) enabled))
 
 (defmethod %.transform-skinning ((this renderable-builder) bone-count transforms)
   ;; FIXME: convert transforms into filament format
-  (%gx:renderable-builder-transform-skinning (handle-of this) bone-count transforms))
+  (%fm:renderable-builder-transform-skinning (handle-of this) bone-count transforms))
 
 (defmethod %.bone-skinning ((this renderable-builder) bone-count bones)
-  (%gx:renderable-builder-bone-skinning (handle-of this) bone-count bones))
+  (%fm:renderable-builder-bone-skinning (handle-of this) bone-count bones))
 
 (defmethod %.skinning ((this renderable-builder) bone-count)
-  (%gx:renderable-builder-skinning (handle-of this) bone-count))
+  (%fm:renderable-builder-skinning (handle-of this) bone-count))
 
 (defmethod %.morphing ((this renderable-builder) enabled)
-  (%gx:renderable-builder-morphing (handle-of this) enabled))
+  (%fm:renderable-builder-morphing (handle-of this) enabled))
 
 (defmethod %.blend-order ((this renderable-builder) index order)
-  (%gx:renderable-builder-blend-order (handle-of this) index order))
+  (%fm:renderable-builder-blend-order (handle-of this) index order))
 
 
 (defun make-renderable (engine count &rest options)
-  (%gx:with-renderable-builder ((%make-renderable :instance handle) (count))
+  (%fm:with-renderable-builder ((%make-renderable :instance handle) (count))
     (let ((builder (make-instance 'renderable-builder :handle handle))
-          (entity (%gx:create-entity)))
+          (entity (%fm:create-entity)))
       (loop for opt in options
             do (funcall opt builder))
       (%make-renderable (handle-of engine) entity)
@@ -337,7 +357,7 @@
 
 
 (defun destroy-renderable (engine renderable)
-  (%gx:destroy-engine-entity engine renderable))
+  (%fm:destroy-engine-entity engine renderable))
 
 ;;;
 ;;; LIGHT
@@ -345,59 +365,59 @@
 (defclass light-builder (builder) ())
 
 (defmethod %.cast-shadows ((this light-builder) enabled)
-  (%gx:light-builder-cast-shadows (handle-of this) enabled))
+  (%fm:light-builder-cast-shadows (handle-of this) enabled))
 
 (defmethod %.cast-light ((this light-builder) enabled)
-  (%gx:light-builder-cast-light (handle-of this) enabled))
+  (%fm:light-builder-cast-light (handle-of this) enabled))
 
 (defmethod %.position ((this light-builder) vec3)
-  (%gx:with-vec3f (vec (m:vec3 vec3 0) (m:vec3 vec3 1) (m:vec3 vec3 2))
-    (%gx:light-builder-position (handle-of this) vec)))
+  (%fm:with-vec3f (vec (m:vec3 vec3 0) (m:vec3 vec3 1) (m:vec3 vec3 2))
+    (%fm:light-builder-position (handle-of this) vec)))
 
 (defmethod %.direction ((this light-builder) vec3)
-  (%gx:with-vec3f (vec (m:vec3 vec3 0) (m:vec3 vec3 1) (m:vec3 vec3 2))
-    (%gx:light-builder-direction (handle-of this) vec)))
+  (%fm:with-vec3f (vec (m:vec3 vec3 0) (m:vec3 vec3 1) (m:vec3 vec3 2))
+    (%fm:light-builder-direction (handle-of this) vec)))
 
 (defmethod %.color ((this light-builder) vec3)
-  (%gx:with-vec3f (vec (m:vec3 vec3 0) (m:vec3 vec3 1) (m:vec3 vec3 2))
-    (%gx:light-builder-color (handle-of this) vec)))
+  (%fm:with-vec3f (vec (m:vec3 vec3 0) (m:vec3 vec3 1) (m:vec3 vec3 2))
+    (%fm:light-builder-color (handle-of this) vec)))
 
 (defmethod %.intensity ((this light-builder) value)
-  (%gx:light-builder-intensity (handle-of this) (float value 0f0)))
+  (%fm:light-builder-intensity (handle-of this) (float value 0f0)))
 
 (defmethod %.intensity-efficiency ((this light-builder) intensity efficiency)
-  (%gx:light-builder-intensity-efficiency (handle-of this)
+  (%fm:light-builder-intensity-efficiency (handle-of this)
                                           (float intensity 0f0)
                                           (float efficiency 0f0)))
 
 (defmethod %.falloff ((this light-builder) value)
-  (%gx:light-builder-falloff (handle-of this) value))
+  (%fm:light-builder-falloff (handle-of this) value))
 
 (defmethod %.spot-light-cone ((this light-builder) inner outer)
-  (%gx:light-builder-spot-light-cone (handle-of this)
+  (%fm:light-builder-spot-light-cone (handle-of this)
                                      (float inner 0f0)
                                      (float outer 0f0)))
 
 (defmethod %.sun-angular-radius ((this light-builder) value)
-  (%gx:light-builder-sun-angular-radius (handle-of this) (float value 0f0)))
+  (%fm:light-builder-sun-angular-radius (handle-of this) (float value 0f0)))
 
 (defmethod %.sun-halo-size ((this light-builder) value)
-  (%gx:light-builder-sun-halo-size (handle-of this) (float value 0f0)))
+  (%fm:light-builder-sun-halo-size (handle-of this) (float value 0f0)))
 
 (defmethod %.sun-halo-falloff ((this light-builder) value)
-  (%gx:light-builder-sun-halo-falloff (handle-of this) (float value 0f0)))
+  (%fm:light-builder-sun-halo-falloff (handle-of this) (float value 0f0)))
 
 (defun make-light (engine type &rest options)
-  (%gx:with-light-builder ((%build :instance handle) (type))
+  (%fm:with-light-builder ((%build :instance handle) (type))
     (let ((builder (make-instance 'light-builder :handle handle))
-          (entity (%gx:create-entity)))
+          (entity (%fm:create-entity)))
       (loop for opt in options
             do (funcall opt builder))
       (%build (handle-of engine) entity)
       entity)))
 
 (defun destroy-light (engine light)
-  (%gx:destroy-engine-entity engine light))
+  (%fm:destroy-engine-entity engine light))
 
 
 ;;;
@@ -406,36 +426,40 @@
 (defclass texture-builder (builder) ())
 
 (defmethod %.width ((this texture-builder) value)
-  (%gx:texture-builder-width (handle-of this) value))
+  (%fm:texture-builder-width (handle-of this) value))
 
 (defmethod %.height ((this texture-builder) value)
-  (%gx:texture-builder-height (handle-of this) value))
+  (%fm:texture-builder-height (handle-of this) value))
 
 (defmethod %.depth ((this texture-builder) value)
-  (%gx:texture-builder-depth (handle-of this) value))
+  (%fm:texture-builder-depth (handle-of this) value))
 
 (defmethod %.levels ((this texture-builder) value)
-  (%gx:texture-builder-levels (handle-of this) value))
+  (%fm:texture-builder-levels (handle-of this) value))
 
 (defmethod %.sampler ((this texture-builder) value)
-  (%gx:texture-builder-sampler (handle-of this) (%gx:texture-sampler-type-enum value)))
+  (%fm:texture-builder-sampler (handle-of this) (%fm:texture-sampler-type-enum value)))
 
 (defmethod %.format ((this texture-builder) value)
-  (%gx:texture-builder-format (handle-of this) (%gx:texture-internal-format-enum value)))
+  (%fm:texture-builder-format (handle-of this) (%fm:texture-internal-format-enum value)))
 
 (defmethod %.usage ((this texture-builder) value)
-  (%gx:texture-builder-usage (handle-of this) (%gx:texture-usage-enum value)))
+  (%fm:texture-builder-usage (handle-of this) (%fm:texture-usage-enum value)))
 
 (defmethod %.swizzle ((this texture-builder) &key r g b a)
-  (%gx:texture-builder-swizzle (handle-of this)
-                               (%gx:texture-swizzle-enum (or r :channel-0))
-                               (%gx:texture-swizzle-enum (or g :channel-1))
-                               (%gx:texture-swizzle-enum (or b :channel-2))
-                               (%gx:texture-swizzle-enum (or a :channel-3))))
+  (%fm:texture-builder-swizzle (handle-of this)
+                               (%fm:texture-swizzle-enum (or r :channel-0))
+                               (%fm:texture-swizzle-enum (or g :channel-1))
+                               (%fm:texture-swizzle-enum (or b :channel-2))
+                               (%fm:texture-swizzle-enum (or a :channel-3))))
+
+
+(defmethod %.import ((this texture-builder) value)
+  (%fm:texture-builder-import (handle-of this) value))
 
 
 (defun make-texture (engine &rest options)
-  (%gx:with-texture-builder ((%build :instance handle))
+  (%fm:with-texture-builder ((%build :instance handle))
     (let ((builder (make-instance 'texture-builder :handle handle)))
       (loop for opt in options
             do (funcall opt builder))
@@ -443,83 +467,83 @@
 
 
 (defun destroy-texture (engine texture)
-  (%gx:destroy-texture (handle-of engine) texture))
+  (%fm:destroy-texture (handle-of engine) texture))
 
 
 (defun update-texture-image (engine texture level pixel-buffer)
-  (%gx:update-texture-image (handle-of engine) texture level pixel-buffer))
+  (%fm:update-texture-image (handle-of engine) texture level pixel-buffer))
 
 
 (defun update-cubemap-images (engine texture level pixel-buffer face-stride &rest rest-strides)
-  (%gx:with-face-offsets (offsets)
+  (%fm:with-face-offsets (offsets)
     (loop with current-offset = 0
           for sizes = (list* face-stride rest-strides) then (rest sizes)
           for current-size = (or (first sizes) current-size)
           for i from 0 below 6
-          do (setf (%gx:face-offset offsets i) current-offset)
+          do (setf (%fm:face-offset offsets i) current-offset)
              (incf current-offset current-size))
-    (%gx:update-cubemap-images (handle-of engine) texture level pixel-buffer offsets)))
+    (%fm:update-cubemap-images (handle-of engine) texture level pixel-buffer offsets)))
 
 
 (defun generate-texture-mipmaps (engine texture)
-  (%gx:generate-texture-mipmaps (handle-of engine) texture))
+  (%fm:generate-texture-mipmaps (handle-of engine) texture))
 
 
 (defun make-pixel-buffer (data-ptr data-size pixel-format pixel-type &optional release-callback)
-  (%gx:make-pixel-buffer data-ptr data-size
-                         (%gx:pixel-format-enum pixel-format)
-                         (%gx:pixel-type-enum pixel-type)
+  (%fm:make-pixel-buffer data-ptr data-size
+                         (%fm:pixel-format-enum pixel-format)
+                         (%fm:pixel-type-enum pixel-type)
                          release-callback))
 
 
 (defun make-compressed-pixel-buffer (data-ptr data-size compressed-size compressed-pixel-type
                                      &optional release-callback)
-  (%gx:make-compressed-pixel-buffer data-ptr data-size compressed-size
-                                    (%gx:pixel-compressed-type-enum compressed-pixel-type)
+  (%fm:make-compressed-pixel-buffer data-ptr data-size compressed-size
+                                    (%fm:pixel-compressed-type-enum compressed-pixel-type)
                                     release-callback))
 
 (defun destroy-pixel-buffer (pixel-buffer)
-  (%gx:destory-pixel-buffer pixel-buffer))
+  (%fm:destory-pixel-buffer pixel-buffer))
 
 ;;;
 ;;; MATERIAL INSTANCE
 ;;;
 (defun default-material-instance (material)
-  (%gx:default-material-instance material))
+  (%fm:default-material-instance material))
 
 
 (defun make-material-instance (material)
-  (%gx:make-material-instance material))
+  (%fm:make-material-instance material))
 
 
 (defun destroy-material-instance (engine instance)
-  (%gx:destroy-material-instance (handle-of engine) instance))
+  (%fm:destroy-material-instance (handle-of engine) instance))
 
 (defun (setf material-instance-parameter-float) (value material name)
-  (setf (%gx:material-instance-parameter-float material name) value))
+  (setf (%fm:material-instance-parameter-float material name) value))
 
 (defun (setf material-instance-parameter-vec2) (value material name)
-  (%gx:with-vec2f (vec (m:vec2 value 0) (m:vec2 value 1))
-    (setf (%gx:material-instance-parameter-float2 material name) vec)))
+  (%fm:with-vec2f (vec (m:vec2 value 0) (m:vec2 value 1))
+    (setf (%fm:material-instance-parameter-float2 material name) vec)))
 
 (defun (setf material-instance-parameter-vec3) (value material name)
-  (%gx:with-vec3f (vec (m:vec3 value 0) (m:vec3 value 1) (m:vec3 value 2))
-   (setf (%gx:material-instance-parameter-float3 material name) vec)))
+  (%fm:with-vec3f (vec (m:vec3 value 0) (m:vec3 value 1) (m:vec3 value 2))
+   (setf (%fm:material-instance-parameter-float3 material name) vec)))
 
 (defun (setf material-instance-parameter-vec4) (value material name)
-  (%gx:with-vec4f (vec (m:vec4 value 0) (m:vec4 value 1) (m:vec4 value 2) (m:vec4 value 3))
-    (setf (%gx:material-instance-parameter-float4 material name) vec)))
+  (%fm:with-vec4f (vec (m:vec4 value 0) (m:vec4 value 1) (m:vec4 value 2) (m:vec4 value 3))
+    (setf (%fm:material-instance-parameter-float4 material name) vec)))
 
 (defun (setf material-instance-parameter-mat3) (value material name)
-  (%gx:with-mat3f (mat value)
-    (setf (%gx:material-instance-parameter-mat3 material name) mat)))
+  (%fm:with-mat3f (mat value)
+    (setf (%fm:material-instance-parameter-mat3 material name) mat)))
 
 (defun (setf material-instance-parameter-mat4) (value material name)
-  (%gx:with-mat4f (mat value)
-    (setf (%gx:material-instance-parameter-mat4 material name) mat)))
+  (%fm:with-mat4f (mat value)
+    (setf (%fm:material-instance-parameter-mat4 material name) mat)))
 
 (defun (setf material-instance-parameter-sampler) (value material name texture)
-  (setf (%gx:material-instance-parameter-sampler material name texture) value))
+  (setf (%fm:material-instance-parameter-sampler material name texture) value))
 
 ;;;
 ;;; SAMPLER
@@ -531,16 +555,16 @@
                        (t-wrap :repeat)
                        (compare-mode :none)
                        (compare-func :le))
-  (%gx:make-sampler (%gx:min-filter-enum min)
-                    (%gx:mag-filter-enum mag)
-                    (%gx:wrap-mode-enum s-wrap)
-                    (%gx:wrap-mode-enum r-wrap)
-                    (%gx:wrap-mode-enum t-wrap)
-                    (%gx:compare-mode-enum compare-mode)
-                    (%gx:compare-func-enum compare-func)))
+  (%fm:make-sampler (%fm:min-filter-enum min)
+                    (%fm:mag-filter-enum mag)
+                    (%fm:wrap-mode-enum s-wrap)
+                    (%fm:wrap-mode-enum r-wrap)
+                    (%fm:wrap-mode-enum t-wrap)
+                    (%fm:compare-mode-enum compare-mode)
+                    (%fm:compare-func-enum compare-func)))
 
 (defun destroy-sampler (sampler)
-  (%gx:destroy-sampler sampler))
+  (%fm:destroy-sampler sampler))
 
 ;;;
 ;;; INDIRECT LIGHT
@@ -548,29 +572,29 @@
 (defclass indirect-light-builder (builder) ())
 
 (defmethod %.reflections ((this indirect-light-builder) texture)
-  (%gx:indirect-light-reflections (handle-of this) texture))
+  (%fm:indirect-light-reflections (handle-of this) texture))
 
 (defmethod %.radiance ((this indirect-light-builder) bands harmonics)
-  (%gx:with-vec3f (vec (m:vec3 harmonics 0) (m:vec3 harmonics 1) (m:vec3 harmonics 2))
-    (%gx:indirect-light-radiance (handle-of this) bands vec)))
+  (%fm:with-vec3f (vec (m:vec3 harmonics 0) (m:vec3 harmonics 1) (m:vec3 harmonics 2))
+    (%fm:indirect-light-radiance (handle-of this) bands vec)))
 
 (defmethod %.irradiance ((this indirect-light-builder) bands harmonics)
-  (%gx:with-vec3f (vec (m:vec3 harmonics 0) (m:vec3 harmonics 1) (m:vec3 harmonics 2))
-    (%gx:indirect-light-irradiance (handle-of this) bands vec)))
+  (%fm:with-vec3f (vec (m:vec3 harmonics 0) (m:vec3 harmonics 1) (m:vec3 harmonics 2))
+    (%fm:indirect-light-irradiance (handle-of this) bands vec)))
 
 (defmethod %.cubemap-irradiance ((this indirect-light-builder) cubemap)
-  (%gx:indirect-light-cubemap-irradiance (handle-of this) cubemap))
+  (%fm:indirect-light-cubemap-irradiance (handle-of this) cubemap))
 
 (defmethod %.intensity ((this indirect-light-builder) value)
-  (%gx:indirect-light-intensity (handle-of this) value))
+  (%fm:indirect-light-intensity (handle-of this) value))
 
 (defmethod %.rotation ((this indirect-light-builder) value)
-  (%gx:with-mat3f (mat value)
-    (%gx:indirect-light-rotation (handle-of this) mat)))
+  (%fm:with-mat3f (mat value)
+    (%fm:indirect-light-rotation (handle-of this) mat)))
 
 
 (defun make-indirect-light (engine &rest options)
-  (%gx:with-indirect-light-builder ((%build :instance handle))
+  (%fm:with-indirect-light-builder ((%build :instance handle))
     (let ((builder (make-instance 'indirect-light-builder :handle handle)))
       (loop for opt in options
             do (funcall opt builder))
@@ -578,4 +602,4 @@
 
 
 (defun destroy-indirect-light (engine light)
-  (%gx:destroy-indirect-light (handle-of engine) light))
+  (%fm:destroy-indirect-light (handle-of engine) light))

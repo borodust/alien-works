@@ -1,4 +1,4 @@
-(cl:in-package :%alien-works.support.graphics)
+(cl:in-package :%alien-works.support.filament)
 
 ;;;
 ;;; MATERIAL COMPILER

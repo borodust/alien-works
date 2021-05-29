@@ -13,3 +13,7 @@
 (defun %window-surface (wm-info)
   (cref:c-val ((wm-info %sdl:sys-w-minfo))
     (wm-info :info :android :window)))
+
+
+(defun %native-gl-context (sdl-gl-context)
+  sdl-gl-context)

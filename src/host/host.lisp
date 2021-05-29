@@ -44,29 +44,51 @@
 ;;;
 ;;; WINDOW
 ;;;
+(declaim (special *primary* *secondary*))
+
 (defun call-with-window (callback)
   (%sdl:init %sdl:+init-video+)
   (%init-host)
-  (let ((window (cffi:with-foreign-string (name "YO")
-                  (%sdl:create-window name
-                                      %sdl:+windowpos-undefined+
-                                      %sdl:+windowpos-undefined+
-                                      1280 960
-                                      (cffi:foreign-enum-value '%sdl:window-flags :opengl)))))
+  (%sdl:gl-set-attribute (cffi:foreign-enum-value '%sdl:g-lattr :share-with-current-context) 1)
+  (let* ((window (cffi:with-foreign-string (name "YO")
+                   (%sdl:create-window name
+                                       %sdl:+windowpos-undefined+
+                                       %sdl:+windowpos-undefined+
+                                       1280 960
+                                       (cffi:foreign-enum-value '%sdl:window-flags :opengl))))
+         (main-ctx (%sdl:gl-create-context window))
+         (primary-ctx (%sdl:gl-create-context window))
+         (secondary-ctx (%sdl:gl-create-context window)))
     (when (cffi:null-pointer-p window)
       (error "Failed to create a window"))
-    (unless (= (%sdl:gl-make-current window (cffi:null-pointer)) 0)
-      (error "Failed to detach GL context"))
+    (unless (= (%sdl:gl-make-current window main-ctx) 0)
+      (error "Failed to make main GL context current"))
     (unwind-protect
          (cref:c-with ((event %sdl:event))
-           (let ((*event* (event &)))
-             (funcall callback window)))
+           (let ((*event* (event &))
+                 (*primary* primary-ctx)
+                 (*secondary* secondary-ctx))
+             (funcall callback window (%native-gl-context *primary*))))
+      (%sdl:gl-delete-context secondary-ctx)
+      (%sdl:gl-delete-context primary-ctx)
+      (%sdl:gl-delete-context main-ctx)
       (%sdl:destroy-window window)
       (%sdl:quit))))
 
 
-(defmacro with-window ((window) &body body)
-  `(call-with-window (lambda (,window) ,@body)))
+(defmacro with-window ((window &key (context (gensym))) &body body)
+  `(call-with-window (lambda (,window ,context)
+                       (declare (ignorable ,context))
+                       ,@body)))
+
+
+(defun make-shared-context-thread (window action)
+  (let ((ctx *secondary*))
+    (bt:make-thread
+     (lambda ()
+       (%sdl:gl-make-current window ctx)
+       (funcall action))
+     :name "shared-context-thread")))
 
 
 (defun window-surface (window)

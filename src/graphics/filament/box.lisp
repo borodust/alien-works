@@ -1,4 +1,4 @@
-(cl:in-package :%alien-works.graphics)
+(cl:in-package :%alien-works.filament)
 
 
 (defun create-box (min-x min-y min-z max-x max-y max-z)
