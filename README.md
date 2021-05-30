@@ -1,20 +1,25 @@
 # alien-works
 
-WIP high-performance mobile-capable game foundation framework. This is not a
-game engine, but rather a stereobate for one.
+High-performance cross-platform game foundation framework. This isn't intended
+as a full-featured game engine, but rather a stylobate for one.
 
 ### Principles
 
 * Performance first
-* Non-consing
-* Non-modular/tightly-coupled
+* Non-consing in tight loops
+* Non-modular highly-coupled subsystems
 * Multiplatform: Windows, MacOS, Linux, Android, iOS
 * SBCL, CCL and ECL compatible
-* Implementation purity last (pure Lisp vs foreign solutions is the least concern)
+* Implementation purity last
+  * Pure Lisp vs foreign solutions is the least concern)
   * If any pure CL alternative exists with the same or better performance and
-similar feature set, it must replace foreign library
-  * If foreign alternative exists with better performance and similar feature set,
-it must replace pure CL variant
+    similar feature set, it must replace foreign library
+  * If foreign alternative exists with better performance and similar feature
+    set, it must replace pure CL variant
+* Explicit runtime and tooling systems
+  * Ship only things required
+* Package-level versioning
+  * Stable interface is guaranteed only in versioned packages
 
 
 ### Capabilities
@@ -31,7 +36,7 @@ it must replace pure CL variant
 ### Foundation
 
 * [GLM](https://github.com/g-truc/glm)
-* [SDL](https://libsdl.org/)
+* [SDL2](https://libsdl.org/)
 * [Filament](https://github.com/google/filament)
 * [Skia](https://skia.org/)
 * [PhysX](https://github.com/NVIDIAGameWorks/PhysX)
@@ -40,4 +45,4 @@ it must replace pure CL variant
 * [Assimp](https://github.com/assimp/assimp)
 * [sndfile](https://github.com/libsndfile/libsndfile)
 * [stb_image](https://github.com/nothings/stb/blob/master/stb_image.h)
-* [Nuklear](https://github.com/Immediate-Mode-UI/Nuklear)
+* [ImGui](https://github.com/ocornut/imgui)
