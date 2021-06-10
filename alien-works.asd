@@ -8,8 +8,8 @@
   :depends-on (:alexandria :uiop
                :trivial-main-thread :static-vectors
                :cffi :cffi-c-ref :claw-utils :defpackage-plus
-               :claw-sdl :claw-glm :claw-filament/runtime :claw-stb/image
-               :claw-physx :claw-imgui :claw-skia :trivial-gray-streams
+               :aw-sdl :aw-glm :aw-filament/runtime :aw-stb/image
+               :aw-physx :aw-imgui :aw-skia :trivial-gray-streams
                :cl-opengl :bordeaux-threads :atomics)
   :serial t
   :components ((:module "utils"
@@ -81,7 +81,7 @@
   :author "Pavel Korolev"
   :mailto "dev@borodust.org"
   :depends-on (:alien-works
-               :claw-filament/support :claw-assimp :claw-stb/image-write
+               :aw-filament/support :aw-assimp :aw-stb/image-write
                :defpackage-plus)
   :serial t
   :pathname "src/support/"
