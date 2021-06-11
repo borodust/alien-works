@@ -46,10 +46,17 @@
 ;;;
 (declaim (special *primary* *secondary*))
 
+(u:define-enumval-extractor gl-attr %sdl:g-lattr)
+(u:define-enumval-extractor gl-profiler %sdl:g-lprofile)
+
 (defun call-with-window (callback)
   (%sdl:init %sdl:+init-video+)
   (%init-host)
-  (%sdl:gl-set-attribute (cffi:foreign-enum-value '%sdl:g-lattr :share-with-current-context) 1)
+  (%sdl:gl-set-attribute (gl-attr :share-with-current-context) 1)
+  (%sdl:gl-set-attribute (gl-attr :context-major-version) 4)
+  (%sdl:gl-set-attribute (gl-attr :context-minor-version) 1)
+  (%sdl:gl-set-attribute (gl-attr :context-profile-mask)
+                         (gl-profiler :core))
   (let* ((window (cffi:with-foreign-string (name "YO")
                    (%sdl:create-window name
                                        %sdl:+windowpos-undefined+
