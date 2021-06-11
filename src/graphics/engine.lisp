@@ -3,7 +3,7 @@
 (defclass engine ()
   ((engine :reader handle-of)
    (scene :reader scene-of)
-   swap-chain renderer camera view))
+   swap-chain renderer camera camera-entity view))
 
 
 ;;;
@@ -31,11 +31,12 @@
 
 
 (defmethod initialize-instance :after ((this engine) &key surface width height shared-context)
-  (with-slots (engine swap-chain renderer scene camera view) this
+  (with-slots (engine swap-chain renderer scene camera camera-entity view) this
     (setf engine (%fm:create-engine shared-context)
           swap-chain (%fm:create-swap-chain engine surface)
           renderer (%fm:create-renderer engine)
-          camera (%fm:create-camera engine)
+          camera-entity (%fm:create-entity)
+          camera (%fm:create-camera engine camera-entity)
           view (%fm:create-view engine)
           scene (%fm:create-scene engine))
 
@@ -55,9 +56,9 @@
 
 
 (defun destroy-engine (engine)
-  (with-slots (engine swap-chain renderer scene camera view) engine
+  (with-slots (engine swap-chain renderer scene camera-entity view) engine
     (%fm:destroy-view engine view)
-    (%fm:destroy-camera engine camera)
+    (%fm:destroy-camera engine camera-entity)
     (%fm:destroy-scene engine scene)
     (%fm:destroy-renderer engine renderer)
     (%fm:destroy-swap-chain engine swap-chain)

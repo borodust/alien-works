@@ -21,9 +21,7 @@
   (%filament:filament+begin-frame
    '(:pointer %filament::filament+renderer) renderer
    '(:pointer %filament::filament+swap-chain) swap-chain
-   '%filament::uint64-t 0
-   '%filament::filament+backend+frame-finished-callback (cffi:null-pointer)
-   '(:pointer :void) (cffi:null-pointer)))
+   '%filament::uint64-t 0))
 
 
 (defun end-frame (renderer)

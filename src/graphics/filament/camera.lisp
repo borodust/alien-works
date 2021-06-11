@@ -1,15 +1,16 @@
 (cl:in-package :%alien-works.filament)
 
 
-(defun create-camera (engine)
+(defun create-camera (engine entity)
   (%filament:filament+create-camera
-   '(:pointer %filament::filament+engine) engine))
+   '(:pointer %filament::filament+engine) engine
+   '(:pointer %filament::utils+entity) entity))
 
 
 (defun destroy-camera (engine camera)
-  (%filament:filament+destroy
+  (%filament:filament+destroy-camera-component
    '(:pointer %filament::filament+engine) engine
-   '(:pointer %filament::filament+camera) camera))
+   '(:pointer %filament::utils+entity) camera))
 
 
 (u:define-enumval-extractor projection-enum %filament:filament+camera+projection)
