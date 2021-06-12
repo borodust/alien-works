@@ -47,22 +47,53 @@
 (declaim (special *primary* *secondary*))
 
 (u:define-enumval-extractor gl-attr %sdl:g-lattr)
-(u:define-enumval-extractor gl-profiler %sdl:g-lprofile)
+(u:define-enumval-extractor gl-profile %sdl:g-lprofile)
+(u:define-enumbit-combiner gl-context-flags %sdl:g-lcontext-flag)
+(u:define-enumbit-combiner window-flags %sdl:window-flags)
+
+
+(defun setup-opengl-version (major minor)
+  (%sdl:gl-set-attribute (gl-attr :context-major-version) major)
+  (%sdl:gl-set-attribute (gl-attr :context-minor-version) minor)
+  (let ((win (%sdl:create-window "SETUP"
+                                 %sdl:+windowpos-undefined+
+                                 %sdl:+windowpos-undefined+
+                                 1 1
+                                 (window-flags :opengl :hidden))))
+    (unless (cffi:null-pointer-p win)
+      (let ((ctx (%sdl:gl-create-context win)))
+        (unwind-protect
+             (unless (cffi:null-pointer-p ctx)
+               (prog1 t
+                 (%sdl:gl-delete-context ctx)))
+          (%sdl:destroy-window win))))))
+
+
+(defun setup-most-recent-opengl-context ()
+  (loop for (major minor) in '((4 6) (4 5) (4 3) (4 1))
+          thereis (setup-opengl-version major minor)
+        finally (error "Required OpenGL version is not available (4.1+)")))
+
 
 (defun call-with-window (callback)
-  (%sdl:init %sdl:+init-video+)
+  (unless (zerop (%sdl:init (logior %sdl:+init-timer+
+                                    %sdl:+init-video+
+                                    %sdl:+init-gamecontroller+
+                                    %sdl:+init-haptic+)))
+    (error "Failed to initialize SDL"))
   (%init-host)
   (%sdl:gl-set-attribute (gl-attr :share-with-current-context) 1)
-  (%sdl:gl-set-attribute (gl-attr :context-major-version) 4)
-  (%sdl:gl-set-attribute (gl-attr :context-minor-version) 1)
   (%sdl:gl-set-attribute (gl-attr :context-profile-mask)
-                         (gl-profiler :core))
-  (let* ((window (cffi:with-foreign-string (name "YO")
+                         (gl-profile :core))
+
+  (setup-most-recent-opengl-context)
+
+  (let* ((window (cffi:with-foreign-string (name "ALIEN-WORKS")
                    (%sdl:create-window name
                                        %sdl:+windowpos-undefined+
                                        %sdl:+windowpos-undefined+
                                        1280 960
-                                       (cffi:foreign-enum-value '%sdl:window-flags :opengl))))
+                                       (window-flags :opengl :allow-highdpi))))
          (main-ctx (%sdl:gl-create-context window))
          (primary-ctx (%sdl:gl-create-context window))
          (secondary-ctx (%sdl:gl-create-context window)))
