@@ -2,31 +2,31 @@
 
 
 (defun create-scene (engine)
-  (%filament::filament+create-scene
-   '(:pointer %filament::filament+engine) engine))
+  (%filament::create-scene
+   '(claw-utils:claw-pointer %filament::engine) engine))
 
 
 (defun destroy-scene (engine scene)
-  (%filament:filament+destroy
-   '(:pointer %filament::filament+engine) engine
-   '(:pointer %filament::filament+scene) scene))
+  (%filament:destroy
+   '(claw-utils:claw-pointer %filament::engine) engine
+   '(claw-utils:claw-pointer %filament::scene) scene))
 
 
 (defun (setf scene-skybox) (skybox scene)
-  (%filament::filament+set-skybox
-   '(:pointer %filament::filament+scene) scene
-   '(:pointer %filament::filament+skybox) skybox)
+  (%filament::set-skybox
+   '(claw-utils:claw-pointer %filament::scene) scene
+   '(claw-utils:claw-pointer %filament::skybox) skybox)
   skybox)
 
 
 (defun (setf scene-indirect-light) (indirect-light scene)
-  (%filament::filament+set-indirect-light
-   '(:pointer %filament::filament+scene) scene
-   '(:pointer %filament::filament+indirect-light) indirect-light)
+  (%filament::set-indirect-light
+   '(claw-utils:claw-pointer %filament::scene) scene
+   '(claw-utils:claw-pointer %filament::indirect-light) indirect-light)
   indirect-light)
 
 
 (defun add-scene-entity (scene entity)
-  (%filament::filament+add-entity
-   '(:pointer %filament::filament+scene) scene
-   '(:pointer %filament::utils+entity) entity))
+  (%filament::add-entity
+   '(claw-utils:claw-pointer %filament::scene) scene
+   '(claw-utils:claw-pointer %filament::utils+entity) entity))

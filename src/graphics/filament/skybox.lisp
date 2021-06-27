@@ -4,33 +4,33 @@
 ;;; SKYBOX
 ;;;
 (warp-intricate-builder-option skybox-builder :environment
-    %filament:filament+environment
-  '(:pointer %filament:filament+skybox+builder)
-  '(:pointer %filament:filament+texture))
+    %filament:environment
+  '(claw-utils:claw-pointer %filament:skybox+builder)
+  '(claw-utils:claw-pointer %filament:texture))
 
 (warp-intricate-builder-option skybox-builder :show-sun
-    %filament:filament+show-sun
-  '(:pointer %filament:filament+skybox+builder)
+    %filament:show-sun
+  '(claw-utils:claw-pointer %filament:skybox+builder)
   ':bool)
 
 (warp-intricate-builder-option skybox-builder :intensity
-    %filament:filament+intensity
-  '(:pointer %filament:filament+skybox+builder)
+    %filament:intensity
+  '(claw-utils:claw-pointer %filament:skybox+builder)
   ':float)
 
 (warp-intricate-builder-option skybox-builder :color
-    %filament:filament+color
-  '(:pointer %filament:filament+skybox+builder)
-  '(:pointer %filament:filament+math+float4))
+    %filament:color
+  '(claw-utils:claw-pointer %filament:skybox+builder)
+  '(claw-utils:claw-pointer %filament:math+float4))
 
 
 (defmacro with-skybox-builder ((name &rest steps) &body body)
   (flet ((ctor-expander ()
-           '(%filament:filament+skybox+builder))
+           '(%filament:skybox+builder))
          (build-expander (builder)
-           `(%filament:filament+build
-             '(:pointer %filament:filament+skybox+builder) ,builder
-             '(:pointer %filament:filament+engine) !::engine)))
+           `(%filament:build
+             '(claw-utils:claw-pointer %filament:skybox+builder) ,builder
+             '(claw-utils:claw-pointer %filament:engine) !::engine)))
     (explode-builder name
                      'skybox-builder
                      #'ctor-expander

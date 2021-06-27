@@ -2,24 +2,24 @@
 
 
 (defun create-camera (engine entity)
-  (%filament:filament+create-camera
-   '(:pointer %filament::filament+engine) engine
-   '(:pointer %filament::utils+entity) entity))
+  (%filament:create-camera
+   '(claw-utils:claw-pointer %filament::engine) engine
+   '(claw-utils:claw-pointer %filament::utils+entity) entity))
 
 
 (defun destroy-camera (engine camera)
-  (%filament:filament+destroy-camera-component
-   '(:pointer %filament::filament+engine) engine
-   '(:pointer %filament::utils+entity) camera))
+  (%filament:destroy-camera-component
+   '(claw-utils:claw-pointer %filament::engine) engine
+   '(claw-utils:claw-pointer %filament::utils+entity) camera))
 
 
-(u:define-enumval-extractor projection-enum %filament:filament+camera+projection)
+(u:define-enumval-extractor projection-enum %filament:camera+projection)
 
 
 (defun update-camera-projection (camera kind left right bottom top near far)
-  (%filament:filament+set-projection
-   '(:pointer %filament::filament+camera) camera
-   '%filament::filament+camera+projection kind
+  (%filament:set-projection
+   '(claw-utils:claw-pointer %filament::camera) camera
+   '%filament::camera+projection kind
    :double (float left 0d0)
    :double (float right 0d0)
    :double (float bottom 0d0)
@@ -29,18 +29,18 @@
 
 
 (defun update-camera-fov-projection (camera fov aspect near far direction)
-  (%filament::filament+set-projection
-   '(:pointer %filament::filament+camera) camera
+  (%filament::set-projection
+   '(claw-utils:claw-pointer %filament::camera) camera
    :double (float fov 0d0)
    :double (float aspect 0d0)
    :double (float near 0d0)
    :double (float far 0d0)
-   '%filament::filament+camera+fov direction))
+   '%filament::camera+fov direction))
 
 
 (defun update-camera-lens-projection (camera focal-length aspect near far)
-  (%filament::filament+set-lens-projection
-   '(:pointer %filament::filament+camera) camera
+  (%filament::set-lens-projection
+   '(claw-utils:claw-pointer %filament::camera) camera
    :double (float focal-length 0d0)
    :double (float aspect 0d0)
    :double (float near 0d0)
@@ -48,6 +48,6 @@
 
 
 (defun update-camera-model-matrix (camera transform)
-  (%filament:filament+set-model-matrix
-   '(:pointer %filament::filament+camera) camera
-   '(:pointer %filament::filament+math+mat4f) transform))
+  (%filament:set-model-matrix
+   '(claw-utils:claw-pointer %filament::camera) camera
+   '(claw-utils:claw-pointer %filament::math+mat4f) transform))

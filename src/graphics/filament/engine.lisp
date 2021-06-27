@@ -1,14 +1,14 @@
 (cl:in-package :%alien-works.filament)
 
 (defun create-engine (&optional shared-context)
-  (%filament:filament+engine+create
-   '%filament:filament+engine+backend (cffi:foreign-enum-value
-                                       '%filament:filament+engine+backend
+  (%filament:engine+create
+   '%filament:engine+backend (cffi:foreign-enum-value
+                                       '%filament:engine+backend
                                        :opengl)
-   '(:pointer %filament:filament+engine+platform) (cffi:null-pointer)
-   '(:pointer :void) (or shared-context (cffi:null-pointer))))
+   '(claw-utils:claw-pointer %filament:engine+platform) (cffi:null-pointer)
+   '(claw-utils:claw-pointer :void) (or shared-context (cffi:null-pointer))))
 
 
 (defun destroy-engine (engine)
-  (%filament:filament+engine+destroy
-   '(:pointer %filament::filament+engine) engine))
+  (%filament:engine+destroy
+   '(claw-utils:claw-pointer %filament::engine) engine))

@@ -74,14 +74,14 @@
                (:file "packages")))
 
 
-(asdf:defsystem :alien-works/support
+(asdf:defsystem :alien-works/tools
   :description "High-performance game foundation framework"
   :version "0.0.0"
   :license "MIT"
   :author "Pavel Korolev"
   :mailto "dev@borodust.org"
   :depends-on (:alien-works
-               :aw-filament/support :aw-assimp :aw-stb/image-write
+               :aw-filament/tools :aw-assimp :aw-stb/image-write
                :defpackage-plus)
   :serial t
   :pathname "src/support/"

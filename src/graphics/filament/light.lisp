@@ -4,85 +4,85 @@
 ;;;
 ;;; DIRECT
 ;;;
-(u:define-enumval-extractor light-type-enum %filament:filament+light-manager+type)
+(u:define-enumval-extractor light-type-enum %filament:light-manager+type)
 
 (warp-intricate-builder-option light-builder :cast-shadows
-    %filament:filament+cast-shadows
-  '(:pointer %filament:filament+light-manager+builder)
+    %filament:cast-shadows
+  '(claw-utils:claw-pointer %filament:light-manager+builder)
   ':bool)
 
 (warp-intricate-builder-option light-builder :shadow-options
-    %filament:filament+shadow-options
-  '(:pointer %filament:filament+light-manager+builder)
-  '(:pointer %filament:filament+light-manager+shadow-options))
+    %filament:shadow-options
+  '(claw-utils:claw-pointer %filament:light-manager+builder)
+  '(claw-utils:claw-pointer %filament:light-manager+shadow-options))
 
 (warp-intricate-builder-option light-builder :cast-light
-    %filament:filament+cast-light
-  '(:pointer %filament:filament+light-manager+builder)
+    %filament:cast-light
+  '(claw-utils:claw-pointer %filament:light-manager+builder)
   ':bool)
 
 (warp-intricate-builder-option light-builder :position
-    %filament:filament+position
-  '(:pointer %filament:filament+light-manager+builder)
-  '(:pointer %filament:filament+math+float3))
+    %filament:position
+  '(claw-utils:claw-pointer %filament:light-manager+builder)
+  '(claw-utils:claw-pointer %filament:math+float3))
 
 (warp-intricate-builder-option light-builder :direction
-    %filament:filament+direction
-  '(:pointer %filament:filament+light-manager+builder)
-  '(:pointer %filament:filament+math+float3))
+    %filament:direction
+  '(claw-utils:claw-pointer %filament:light-manager+builder)
+  '(claw-utils:claw-pointer %filament:math+float3))
 
 (warp-intricate-builder-option light-builder :color
-    %filament:filament+color
-  '(:pointer %filament:filament+light-manager+builder)
-  '(:pointer %filament:filament+linear-color))
+    %filament:color
+  '(claw-utils:claw-pointer %filament:light-manager+builder)
+  '(claw-utils:claw-pointer %filament:linear-color))
 
 (warp-intricate-builder-option light-builder :intensity
-    %filament:filament+intensity-candela
-  '(:pointer %filament:filament+light-manager+builder)
+    %filament:intensity-candela
+  '(claw-utils:claw-pointer %filament:light-manager+builder)
   ':float)
 
 (warp-intricate-builder-option light-builder :intensity-efficiency
-    %filament:filament+intensity
-  '(:pointer %filament:filament+light-manager+builder)
+    %filament:intensity
+  '(claw-utils:claw-pointer %filament:light-manager+builder)
   ':float
   ':float)
 
 (warp-intricate-builder-option light-builder :falloff
-    %filament:filament+falloff
-  '(:pointer %filament:filament+light-manager+builder)
+    %filament:falloff
+  '(claw-utils:claw-pointer %filament:light-manager+builder)
   ':float)
 
 (warp-intricate-builder-option light-builder :spot-light-cone
-    %filament:filament+spot-light-cone
-  '(:pointer %filament:filament+light-manager+builder)
+    %filament:spot-light-cone
+  '(claw-utils:claw-pointer %filament:light-manager+builder)
   ':float
   ':float)
 
 (warp-intricate-builder-option light-builder :sun-angular-radius
-    %filament:filament+sun-angular-radius
-  '(:pointer %filament:filament+light-manager+builder)
+    %filament:sun-angular-radius
+  '(claw-utils:claw-pointer %filament:light-manager+builder)
   ':float)
 
 (warp-intricate-builder-option light-builder :sun-halo-size
-    %filament:filament+sun-halo-size
-  '(:pointer %filament:filament+light-manager+builder)
+    %filament:sun-halo-size
+  '(claw-utils:claw-pointer %filament:light-manager+builder)
   ':float)
 
 (warp-intricate-builder-option light-builder :sun-halo-falloff
-    %filament:filament+sun-halo-falloff
-  '(:pointer %filament:filament+light-manager+builder)
+    %filament:sun-halo-falloff
+  '(claw-utils:claw-pointer %filament:light-manager+builder)
   ':float)
 
 
 (defmacro with-light-builder ((name (type) &body steps) &body body)
   (flet ((ctor-expander ()
-           `(%filament:filament+light-manager+builder '%filament:filament+light-manager+type
+           `(%filament:light-manager+builder '%filament:light-manager+type
                                                       (light-type-enum ,type)))
          (build-expander (builder)
-           `(%filament:filament+build
-             '(:pointer %filament:filament+light-manager+builder) ,builder
-             '(:pointer %filament:filament+engine) !::engine
-             '(:pointer %filament:utils+entity) !::entity)))
+           `(%filament:build
+             '(claw-utils:claw-pointer %filament:light-manager+builder) ,builder
+             '(claw-utils:claw-pointer %filament:engine) !::engine
+             '(claw-utils:claw-pointer %filament:utils+entity) !::entity)))
     (explode-builder name
                      'light-builder
                      #'ctor-expander
@@ -94,44 +94,44 @@
 ;;; INDIRECT
 ;;;
 (warp-intricate-builder-option indirect-light :reflections
-    %filament:filament+reflections
-  '(:pointer %filament:filament+indirect-light+builder)
-  '(:pointer %filament:filament+texture))
+    %filament:reflections
+  '(claw-utils:claw-pointer %filament:indirect-light+builder)
+  '(claw-utils:claw-pointer %filament:texture))
 
 (warp-intricate-builder-option indirect-light :radiance
-    %filament:filament+radiance
-  '(:pointer %filament:filament+indirect-light+builder)
+    %filament:radiance
+  '(claw-utils:claw-pointer %filament:indirect-light+builder)
   '%filament:uint8-t
-  '(:pointer %filament:filament+math+float3))
+  '(claw-utils:claw-pointer %filament:math+float3))
 
 (warp-intricate-builder-option indirect-light :irradiance
-    %filament:filament+irradiance
-  '(:pointer %filament:filament+indirect-light+builder)
+    %filament:irradiance
+  '(claw-utils:claw-pointer %filament:indirect-light+builder)
   '%filament:uint8-t
-  '(:pointer %filament:filament+math+float3))
+  '(claw-utils:claw-pointer %filament:math+float3))
 
 (warp-intricate-builder-option indirect-light :cubemap-irradiance
-    %filament:filament+irradiance
-  '(:pointer %filament:filament+indirect-light+builder)
-  '(:pointer %filament:filament+texture))
+    %filament:irradiance
+  '(claw-utils:claw-pointer %filament:indirect-light+builder)
+  '(claw-utils:claw-pointer %filament:texture))
 
 (warp-intricate-builder-option indirect-light :intensity
-    %filament:filament+intensity
-  '(:pointer %filament:filament+indirect-light+builder)
+    %filament:intensity
+  '(claw-utils:claw-pointer %filament:indirect-light+builder)
   ':float)
 
 (warp-intricate-builder-option indirect-light :rotation
-    %filament:filament+rotation
-  '(:pointer %filament:filament+indirect-light+builder)
-  '(:pointer %filament:filament+math+mat3f))
+    %filament:rotation
+  '(claw-utils:claw-pointer %filament:indirect-light+builder)
+  '(claw-utils:claw-pointer %filament:math+mat3f))
 
 (defmacro with-indirect-light-builder ((name &body steps) &body body)
   (flet ((ctor-expander ()
-           `(%filament:filament+indirect-light+builder))
+           `(%filament:indirect-light+builder))
          (build-expander (builder)
-           `(%filament:filament+build
-             '(:pointer %filament:filament+indirect-light+builder) ,builder
-             '(:pointer %filament:filament+engine) !::engine)))
+           `(%filament:build
+             '(claw-utils:claw-pointer %filament:indirect-light+builder) ,builder
+             '(claw-utils:claw-pointer %filament:engine) !::engine)))
     (explode-builder name
                      'indirect-light
                      #'ctor-expander
@@ -142,6 +142,6 @@
 
 
 (defun destroy-indirect-light (engine light)
-  (%filament:filament+destroy
-   '(:pointer %filament::filament+engine) engine
-   '(:pointer %filament::filament+indirect-light) light))
+  (%filament:destroy
+   '(claw-utils:claw-pointer %filament::engine) engine
+   '(claw-utils:claw-pointer %filament::indirect-light) light))
