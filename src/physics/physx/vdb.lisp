@@ -1,7 +1,7 @@
 (cl:in-package :alien-works.physics.physx)
 
 
-(u:define-enumval-extractor instrumentation-flag-enum '%physx:physx+px-pvd-instrumentation-flag+enum)
+(u:define-enumval-extractor instrumentation-flag-enum %physx:physx+px-pvd-instrumentation-flag+enum)
 
 
 (defun make-pvd (foundation)
