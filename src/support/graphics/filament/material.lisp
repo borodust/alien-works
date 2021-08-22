@@ -26,7 +26,10 @@
 
 
 (defun destroy-material (data)
-  (iffi:destroy-intricate-instance '%filament.util:claw+filament+material-data data))
+  ;; we can't use intricate destroy here because instance was allocated in
+  ;; foreign code using unaligend (default) allocation
+  (%filament.util:claw+filament+~material-data
+   '(:pointer %filament.util:claw+filament+material-data) data))
 
 
 (defun material-data (data)
