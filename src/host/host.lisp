@@ -76,6 +76,7 @@
 
 
 (defun call-with-window (callback)
+  (%sdl:set-main-ready)
   (unless (zerop (%sdl:init (logior %sdl:+init-timer+
                                     %sdl:+init-video+
                                     %sdl:+init-gamecontroller+
@@ -88,30 +89,30 @@
 
   (setup-most-recent-opengl-context)
 
-  (let* ((window (cffi:with-foreign-string (name "ALIEN-WORKS")
-                   (%sdl:create-window name
-                                       %sdl:+windowpos-undefined+
-                                       %sdl:+windowpos-undefined+
-                                       1280 960
-                                       (window-flags :opengl :allow-highdpi))))
-         (main-ctx (%sdl:gl-create-context window))
-         (primary-ctx (%sdl:gl-create-context window))
-         (secondary-ctx (%sdl:gl-create-context window)))
+  (let ((window (cffi:with-foreign-string (name "ALIEN-WORKS")
+                  (%sdl:create-window name
+                                      %sdl:+windowpos-undefined+
+                                      %sdl:+windowpos-undefined+
+                                      1280 960
+                                      (window-flags :opengl :allow-highdpi :shown)))))
     (when (cffi:null-pointer-p window)
       (error "Failed to create a window"))
-    (unless (= (%sdl:gl-make-current window main-ctx) 0)
-      (error "Failed to make main GL context current"))
-    (unwind-protect
-         (cref:c-with ((event %sdl:event))
-           (let ((*event* (event &))
-                 (*primary* primary-ctx)
-                 (*secondary* secondary-ctx))
-             (funcall callback window (%native-gl-context *primary*))))
-      (%sdl:gl-delete-context secondary-ctx)
-      (%sdl:gl-delete-context primary-ctx)
-      (%sdl:gl-delete-context main-ctx)
-      (%sdl:destroy-window window)
-      (%sdl:quit))))
+    (let ((main-ctx (%sdl:gl-create-context window))
+          (primary-ctx (%sdl:gl-create-context window))
+          (secondary-ctx (%sdl:gl-create-context window)))
+      (unless (= (%sdl:gl-make-current window main-ctx) 0)
+        (error "Failed to make main GL context current"))
+      (unwind-protect
+           (cref:c-with ((event %sdl:event))
+             (let ((*event* (event &))
+                   (*primary* primary-ctx)
+                   (*secondary* secondary-ctx))
+               (funcall callback window (%native-gl-context *primary*))))
+        (%sdl:gl-delete-context secondary-ctx)
+        (%sdl:gl-delete-context primary-ctx)
+        (%sdl:gl-delete-context main-ctx)
+        (%sdl:destroy-window window)
+        (%sdl:quit)))))
 
 
 (defmacro with-window ((window &key (context (gensym))) &body body)

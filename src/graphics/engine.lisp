@@ -39,7 +39,6 @@
           camera (%fm:create-camera engine camera-entity)
           view (%fm:create-view engine)
           scene (%fm:create-scene engine))
-
     ;; view setup
     (setf (%fm:view-camera view) camera
           (%fm:view-scene view) scene

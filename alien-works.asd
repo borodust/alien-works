@@ -30,6 +30,7 @@
                 :components ((:file "packages")
                              (:file "system/linux" :if-feature :linux)
                              (:file "system/android" :if-feature :android)
+                             (:file "system/windows" :if-feature :windows)
                              (:file "host")))
                (:module "physics"
                 :serial t
