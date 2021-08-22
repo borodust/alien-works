@@ -140,6 +140,15 @@
      ,@body))
 
 
+(defun make-simple-array (size type)
+  #+lispworks
+  (make-array size :element-type type :allocation :static)
+  #+(or sbcl ccl ecl)
+  (make-array size :element-type type)
+  #-(or sbcl ccl ecl lispworks)
+  (error "make-simple-array is not implemented for ~A" (lisp-implementation-type)))
+
+
 (defmacro with-simple-array-pointer ((pointer-var simple-array) &body body)
   (a:once-only (simple-array)
     #+sbcl
@@ -152,5 +161,8 @@
     #+ecl
     `(let ((,pointer-var (si:make-foreign-data-from-array ,simple-array)))
        ,@body)
-    #-(or sbcl ccl ecl)
+    #+lispworks
+    `(fli:with-dynamic-lisp-array-pointer (,pointer-var ,simple-array)
+       ,@body)
+    #-(or sbcl ccl ecl lispworks)
     (error "with-simple-array-pointer is not implemented for ~A" (lisp-implementation-type))))

@@ -124,7 +124,7 @@
 
 
 (defun read-float-array-property (material name type index expected-size)
-  (let ((result (make-array expected-size :element-type 'single-float)))
+  (let ((result (make-simple-array expected-size 'single-float)))
     (cref:c-with ((actual-size :unsigned-int))
       (with-simple-array-pointer (ptr result)
         (%ai:get-material-float-array material name type index ptr (actual-size &)))
@@ -134,7 +134,7 @@
 
 
 (defun read-integer-array-property (material name type index expected-size)
-  (let ((result (make-array expected-size :element-type '(signed-byte 32))))
+  (let ((result (make-simple-array expected-size '(signed-byte 32))))
     (cref:c-with ((actual-size :unsigned-int))
       (with-simple-array-pointer (ptr result)
         (%ai:get-material-integer-array material name type index ptr (actual-size &)))
