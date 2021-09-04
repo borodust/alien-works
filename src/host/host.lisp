@@ -183,7 +183,33 @@
     (if type type :uknown)))
 
 
+(defun provided-workdir ()
+  (let ((workdir (uiop:getenv "ALIEN_WORKS_WORKDIR")))
+    (unless (a:emptyp workdir)
+      (uiop:ensure-directory-pathname workdir))))
+
+
+(defun working-directory ()
+  (or (provided-workdir) (uiop:getcwd)))
+
+
+(defun add-known-foreign-library-directories ()
+  (loop with workdir = (provided-workdir)
+        with libpaths = (mapcar #'uiop:ensure-directory-pathname
+                                (remove-if #'a:emptyp
+                                           (uiop:split-string (uiop:getenv "ALIEN_WORKS_LIBRARY_PATH")
+                                                              :separator ":")))
+        for libdir in (nreverse
+                       (append libpaths
+                               (when workdir
+                                 (list workdir
+                                       (merge-pathnames "lib/" workdir)
+                                       (merge-pathnames "usr/lib/" workdir)))))
+        do (pushnew libdir cffi:*foreign-library-directories* :test #'equal)))
+
+
 (defun run ()
+  (add-known-foreign-library-directories)
   (loop with args = (uiop:command-line-arguments)
         for hook in *init-hooks*
         do (apply hook args)))

@@ -28,7 +28,7 @@
                (:module "host"
                 :serial t
                 :components ((:file "packages")
-                             (:file "system/linux" :if-feature :linux)
+                             (:file "system/linux" :if-feature (:and :linux (:not :android)))
                              (:file "system/android" :if-feature :android)
                              (:file "system/windows" :if-feature :windows)
                              (:file "host")))

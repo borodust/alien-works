@@ -42,9 +42,7 @@
     ;; view setup
     (setf (%fm:view-camera view) camera
           (%fm:view-scene view) scene
-          ;; FIXME: post processing must be enabled
-          ;; but it seems to bugs out on Intel GPU hardware
-          (%fm:view-post-processing-enabled-p view) nil)
+          (%fm:view-post-processing-enabled-p view) t)
     (let ((width (or width 1280))
           (height (or height width 960)))
       (%fm:update-view-viewport view 0 0 width height)

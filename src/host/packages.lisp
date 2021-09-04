@@ -32,4 +32,5 @@
            #:memcpy
            #:memset
            #:open-host-file
-           #:with-open-host-file))
+           #:with-open-host-file
+           #:working-directory))
