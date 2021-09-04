@@ -5,12 +5,29 @@
   :author "Pavel Korolev"
   :mailto "dev@borodust.org"
   :pathname "src/"
-  :depends-on (:alexandria :uiop
-               :trivial-main-thread :static-vectors
-               :cffi :cffi-c-ref :claw-utils :defpackage-plus
-               :aw-sdl :aw-glm :aw-filament/runtime :aw-stb/image
-               :aw-physx :aw-imgui :aw-skia :trivial-gray-streams
-               :cl-opengl :bordeaux-threads :atomics)
+  :depends-on (;; foreign api
+               #:alien-works-foundation
+               #:aw-sdl
+               #:aw-glm
+               #:aw-filament/runtime
+               #:aw-stb/image
+               #:aw-physx
+               #:aw-imgui
+               #:aw-skia
+               #:cl-opengl
+               ;; ffi
+               #:static-vectors
+               #:claw-utils
+               #:cffi
+               #:cffi-c-ref
+               ;; generic utility
+               #:uiop
+               #:alexandria
+               #:trivial-main-thread
+               #:defpackage-plus
+               #:trivial-gray-streams
+               #:bordeaux-threads
+               #:atomics)
   :serial t
   :components ((:module "utils"
                 :serial t
@@ -81,11 +98,14 @@
   :license "MIT"
   :author "Pavel Korolev"
   :mailto "dev@borodust.org"
-  :depends-on (:alien-works
-               :aw-filament/tools :aw-assimp :aw-stb/image-write
-               :defpackage-plus)
+  :depends-on (#:alien-works
+               #:alien-works-foundation/tools
+               #:aw-filament/tools
+               #:aw-assimp
+               #:aw-stb/image-write
+               #:defpackage-plus)
   :serial t
-  :pathname "src/support/"
+  :pathname "tools/"
   :components ((:module "graphics"
                 :serial t
                 :components ((:file "packages")
