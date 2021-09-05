@@ -356,7 +356,7 @@
 
 
 (defun destroy-renderable (engine renderable)
-  (%fm:destroy-engine-entity engine renderable))
+  (%fm:destroy-engine-entity (handle-of engine) renderable))
 
 ;;;
 ;;; LIGHT
@@ -416,7 +416,7 @@
       entity)))
 
 (defun destroy-light (engine light)
-  (%fm:destroy-engine-entity engine light))
+  (%fm:destroy-engine-entity (handle-of engine) light))
 
 
 ;;;
