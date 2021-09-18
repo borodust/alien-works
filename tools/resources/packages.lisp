@@ -1,4 +1,4 @@
-(cl:defpackage :alien-works.support.resources
+(cl:defpackage :alien-works.tools.resources
   (:local-nicknames (:cref :cffi-c-ref)
                     (:a :alexandria)
                     (:u :alien-works.utils)
@@ -34,4 +34,6 @@
            #:image-data
            #:image-width
            #:image-height
-           #:image-channels))
+           #:image-channels
+
+           #:images-to-cubemap-cross))

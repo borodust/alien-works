@@ -1,4 +1,4 @@
-(defpackage+-1:defpackage+ :alien-works.support
+(defpackage+-1:defpackage+ :alien-works.tools
   (:inherit
-   :alien-works.support.graphics
-   :alien-works.support.resources))
+   :alien-works.tools.graphics
+   :alien-works.tools.resources))
