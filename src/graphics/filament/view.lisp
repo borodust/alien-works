@@ -25,11 +25,42 @@
 
 
 (u:define-enumval-extractor view-anti-aliasing-enum %filament:view+anti-aliasing)
+(u:define-enumval-extractor view-dithering-enum %filament:view+dithering)
+
 
 (defun (setf view-anti-aliasing) (antialiasing view)
   (%filament::set-anti-aliasing
    '(claw-utils:claw-pointer %filament::view) view
    '%filament::view+anti-aliasing (view-anti-aliasing-enum antialiasing)))
+
+
+(defun (setf view-sample-count) (count view)
+  (%filament::set-sample-count
+   '(claw-utils:claw-pointer %filament::view) view
+   '%filament::uint8-t (floor count)))
+
+
+(defun (setf view-dithering) (dithering view)
+  (%filament::set-dithering
+   '(claw-utils:claw-pointer %filament::view) view
+   '%filament::view+dithering (view-dithering-enum dithering)))
+
+
+(defun update-view-bloom-options (view &key (enabled nil enabled-provided-p))
+  (iffi:with-intricate-instance (bloom-options %filament:bloom-options)
+    (iffi:with-intricate-slots %filament:bloom-options
+        ((bloom-enabled %filament:enabled)) bloom-options
+      (when enabled-provided-p
+        (setf bloom-enabled enabled))
+      (%filament::set-bloom-options
+       '(claw-utils:claw-pointer %filament::view) view
+       '(claw-utils:claw-pointer %filament::view+bloom-options) bloom-options))))
+
+
+(defun disable-view-color-grading (view)
+  (%filament::set-color-grading
+   '(claw-utils:claw-pointer %filament::view) view
+   '(claw-utils:claw-pointer %filament::color-grading) (cffi:null-pointer)))
 
 
 (defun (setf view-post-processing-enabled-p) (enabled-p view)

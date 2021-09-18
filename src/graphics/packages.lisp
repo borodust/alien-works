@@ -87,6 +87,10 @@
            #:view-camera
            #:view-scene
            #:view-anti-aliasing
+           #:view-dithering
+           #:view-sample-count
+           #:disable-view-color-grading
+           #:update-view-bloom-options
            #:view-post-processing-enabled-p
            #:update-view-viewport
 

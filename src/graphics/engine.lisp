@@ -43,6 +43,7 @@
     (setf (%fm:view-camera view) camera
           (%fm:view-scene view) scene
           (%fm:view-post-processing-enabled-p view) t)
+    (%fm:update-view-bloom-options view :enabled t)
     (let ((width (or width 1280))
           (height (or height width 960)))
       (%fm:update-view-viewport view 0 0 width height)
