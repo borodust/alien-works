@@ -81,10 +81,12 @@
           (%insert ny 1 2)
           (%insert pz 1 1)
           (%insert nz 3 1))
-        (save-image (make-instance 'image
-                                   :width target-width
-                                   :height target-height
-                                   :data target-data
-                                   :channels channels
-                                   :name (file-namestring target-path))
-                    target-path)))))
+        (not
+         (zerop
+          (save-image (make-instance 'image
+                                     :width target-width
+                                     :height target-height
+                                     :data target-data
+                                     :channels channels
+                                     :name (file-namestring target-path))
+                      target-path)))))))
