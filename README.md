@@ -42,6 +42,7 @@ as a full-featured game engine, but rather a stylobate for one.
 * [PhysX](https://github.com/NVIDIAGameWorks/PhysX)
 * [Chipmunk](https://github.com/slembcke/Chipmunk2D)
 * [OpenAL](https://github.com/kcat/openal-soft)
+* [Opus](https://github.com/xiph/opus)
 * [Assimp](https://github.com/assimp/assimp)
 * [sndfile](https://github.com/libsndfile/libsndfile)
 * [stb_image](https://github.com/nothings/stb/blob/master/stb_image.h)
