@@ -33,4 +33,5 @@
            #:memset
            #:open-host-file
            #:with-open-host-file
+           #:read-host-file-into-static-vector
            #:working-directory))

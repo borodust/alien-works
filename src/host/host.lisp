@@ -7,6 +7,9 @@
 (declaim (special *event*))
 
 
+(defun sdl-error ()
+  (cffi:foreign-string-to-lisp (%sdl:get-error)))
+
 ;;;
 ;;; DISPLAY
 ;;;
@@ -199,12 +202,12 @@
                                 (remove-if #'a:emptyp
                                            (uiop:split-string (uiop:getenv "ALIEN_WORKS_LIBRARY_PATH")
                                                               :separator ":")))
-        for libdir in (nreverse
-                       (append libpaths
-                               (when workdir
-                                 (list workdir
-                                       (merge-pathnames "lib/" workdir)
-                                       (merge-pathnames "usr/lib/" workdir)))))
+        for libdir in (nconc
+                       (when workdir
+                         (list (merge-pathnames "lib/" workdir)
+                               (merge-pathnames "usr/lib/" workdir)
+                               workdir))
+                       (nreverse libpaths))
         do (pushnew libdir cffi:*foreign-library-directories* :test #'equal)))
 
 
@@ -256,9 +259,9 @@
     ((or (stringp location) (pathnamep location))
      (%sdl:rw-from-file (uiop:native-namestring location)
                         (ecase direction
-                          (:input "r")
-                          (:output "w")
-                          (:append "a"))))
+                          (:input "rb")
+                          (:output "wb")
+                          (:append "ab"))))
     ((cffi:pointerp location)
      (ecase direction
        (:input (%sdl:rw-from-const-mem location (truncate (or size 0))))
@@ -385,3 +388,57 @@
      (unwind-protect
           (progn ,@body)
        (close ,var))))
+
+
+(defun read-host-file-into-static-vector (location &key ((:into provided-static-vector))
+                                                     offset ((:size provided-size))
+                                                     element-type)
+  (when (and element-type
+             provided-static-vector
+             (not (subtypep element-type (array-element-type provided-static-vector))))
+    (error ":INTO array and :ELEMENT-TYPE are not compatible"))
+  (let ((element-type (or (and provided-static-vector
+                               (array-element-type provided-static-vector))
+                          element-type
+                          '(unsigned-byte 8))))
+    (unless (and (listp element-type)
+                 (member (first element-type) '(unsigned-byte signed-byte))
+                 (member (second element-type) '(8 16 32 64)))
+      (error "Element type of static-vector must be either unsigned-byte or signed-byte of size 8, 16, 32 or 64"))
+    (when (and provided-static-vector
+               provided-size
+               (> provided-size (length provided-static-vector)))
+      (error "Provided size is smaller than length of provided static-vector"))
+    (let ((file (%sdl:rw-from-file (namestring location) "rb")))
+      (when (cffi:null-pointer-p file)
+        (error "Failed to open ~A: ~A" location (sdl-error)))
+      (unwind-protect
+           (let* ((file-size (%sdl:r-wseek file 0 %sdl:+rw-seek-end+))
+                  (offset (if (> file-size 0)
+                              (mod (or offset 0) file-size)
+                              0))
+                  (rest-file-size (- file-size offset))
+                  (calculated-size
+                    (min rest-file-size
+                         (or provided-size rest-file-size)
+                         (or (and provided-static-vector (length provided-static-vector))
+                             rest-file-size))))
+             (when (< file-size 0)
+               (error "Failed to lookup ~A size: ~A" location (sdl-error)))
+             (when (> (+ offset (or provided-size 0)) file-size)
+               (error "Sum of offset and provided size is greater than size of the ~A: got ~A, expected no more than ~A"
+                      location (+ offset calculated-size) file-size))
+             (%sdl:r-wseek file offset %sdl:+rw-seek-set+)
+             (let* ((out (if provided-static-vector
+                             provided-static-vector
+                             (sv:make-static-vector calculated-size
+                                                    :element-type element-type)))
+                    (objects-read (%sdl:r-wread file (sv:static-vector-pointer out)
+                                                calculated-size
+                                                1)))
+               (unless (= objects-read 1)
+                 (unless provided-static-vector
+                   (sv:free-static-vector out))
+                 (error "Failed to read ~A of size ~A: ~A" location file-size (sdl-error)))
+               (values out file-size)))
+        (%sdl:r-wclose file)))))

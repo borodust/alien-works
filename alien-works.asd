@@ -12,8 +12,11 @@
                #:aw-filament/runtime
                #:aw-stb/image
                #:aw-physx
+               #:aw-chipmunk
                #:aw-imgui
                #:aw-skia
+               #:aw-openal
+               #:aw-opus
                #:cl-opengl
                ;; ffi
                #:static-vectors
@@ -26,6 +29,7 @@
                #:trivial-main-thread
                #:defpackage-plus
                #:trivial-gray-streams
+               #:flexi-streams
                #:bordeaux-threads
                #:atomics)
   :serial t
@@ -49,19 +53,14 @@
                              (:file "system/android" :if-feature :android)
                              (:file "system/windows" :if-feature :windows)
                              (:file "host")))
-               (:module "physics"
+               (:module "audio"
                 :serial t
                 :components ((:file "packages")
-                             (:module "physx"
-                              :components ((:file "math")
-                                           (:file "foundation")
-                                           (:file "vdb")
-                                           (:file "physics")
-                                           (:file "dispatcher")
-                                           (:file "material")
-                                           (:file "scene")
-                                           (:file "actor")))
-                             (:file "physics")))
+                             (:module "openal"
+                              :components ((:file "openal")))
+                             (:module "opus"
+                              :components ((:file "opus")))
+                             (:file "audio")))
                (:module "graphics"
                 :serial t
                 :components ((:file "packages")
@@ -89,6 +88,19 @@
                               :components ((:file "skia")))
                              (:file "surface")
                              (:file "engine")))
+               (:module "physics"
+                :serial t
+                :components ((:file "packages")
+                             (:module "physx"
+                              :components ((:file "math")
+                                           (:file "foundation")
+                                           (:file "vdb")
+                                           (:file "physics")
+                                           (:file "dispatcher")
+                                           (:file "material")
+                                           (:file "scene")
+                                           (:file "actor")))
+                             (:file "physics")))
                (:file "packages")))
 
 
