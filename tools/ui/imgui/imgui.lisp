@@ -109,7 +109,9 @@
   (iffi:with-intricate-slots %imgui:im-gui-io
       ((key-map %imgui:key-map)
        (set-clipboard-fn %imgui:set-clipboard-text-fn)
-       (get-clipboard-fn %imgui:get-clipboard-text-fn))
+       (get-clipboard-fn %imgui:get-clipboard-text-fn)
+       (ini-filename %imgui:ini-filename)
+       (log-filename %imgui:log-filename))
       io
     (cref:c-val ((key-map :int))
       (setf (key-map (key-enum :tab)) (host:scancode :tab)
@@ -135,7 +137,9 @@
             (key-map (key-enum :y)) (host:scancode :y)
             (key-map (key-enum :z)) (host:scancode :z)))
     (setf set-clipboard-fn (cffi:callback set-clipboard-text)
-          get-clipboard-fn (cffi:callback get-clipboard-text))))
+          get-clipboard-fn (cffi:callback get-clipboard-text)
+          ini-filename (cffi:null-pointer)
+          log-filename (cffi:null-pointer))))
 
 
 (defun update-mouse-position (io x y)
