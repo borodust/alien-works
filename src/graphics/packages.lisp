@@ -194,6 +194,10 @@
   (:export))
 
 
+(cl:defpackage :%alien-works.graphics
+  (:use)
+  (:export #:handle-of))
+
 (cl:defpackage :alien-works.graphics
   (:local-nicknames (:a :alexandria)
                     (:%fm :%alien-works.filament)
@@ -201,9 +205,10 @@
                     (:sv :static-vectors)
                     (:cref :cffi-c-ref)
                     (:m :alien-works.math))
-  (:use :cl)
+  (:use :cl :%alien-works.graphics)
   (:export #:with-engine
            #:render-frame
+           #:in-frame
 
            #:add-scene-entity
 

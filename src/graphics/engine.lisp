@@ -71,6 +71,15 @@
       (%fm:end-frame renderer))))
 
 
+(defmacro in-frame ((engine) &body body)
+  `(with-slots (renderer view swap-chain) ,engine
+     (when (%fm:begin-frame renderer swap-chain)
+       (%fm:render-view renderer view)
+       (unwind-protect
+            (progn ,@body)
+         (%fm:end-frame renderer)))))
+
+
 (defmacro with-engine ((engine &key (surface (error ":surface missing")) shared-context width height)
                        &body body)
   `(let ((,engine (create-engine ,surface :width ,width :height ,height

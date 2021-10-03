@@ -13,7 +13,6 @@
                #:aw-stb/image
                #:aw-physx
                #:aw-chipmunk
-               #:aw-imgui
                #:aw-skia
                #:aw-openal
                #:aw-opus
@@ -92,6 +91,7 @@
                 :serial t
                 :components ((:file "packages")
                              (:module "physx"
+                              :serial t
                               :components ((:file "math")
                                            (:file "foundation")
                                            (:file "vdb")
@@ -135,4 +135,11 @@
                                            (:file "material")
                                            (:file "mesh")
                                            (:file "scene")))))
+               (:module "ui"
+                :serial t
+                :components ((:file "packages")
+                             (:module "imgui"
+                              :serial t
+                              :components ((:file "imgui")))
+                             (:file "ui")))
                (:file "packages")))

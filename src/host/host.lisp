@@ -10,6 +10,19 @@
 (defun sdl-error ()
   (cffi:foreign-string-to-lisp (%sdl:get-error)))
 
+(cffi:defcfun ("SDL_GetModState" sdl-get-mod-state) :unsigned-int)
+
+(u:define-enumval-extractor scancode %sdl:scancode)
+(u:define-enumbit-combiner key-modifier %sdl:keymod)
+
+
+(defun %host:get-clipboard-foreign-text ()
+  (%sdl:get-clipboard-text))
+
+
+(defun %host:set-clipboard-foreign-text (foreign-string)
+  (%sdl:set-clipboard-text foreign-string))
+
 ;;;
 ;;; DISPLAY
 ;;;
@@ -186,6 +199,78 @@
     (if type type :uknown)))
 
 
+(defstruct mouse-state
+  (x 0 :type fixnum)
+  (y 0 :type fixnum)
+  (buttons 0 :type fixnum))
+
+
+(defun mouse-state (&optional mouse-state)
+  (let ((mouse-state (if mouse-state mouse-state (make-mouse-state))))
+    (cref:c-with ((x :int)
+                  (y :int))
+      (setf (mouse-state-buttons mouse-state) (%sdl:get-mouse-state (x &) (y &))
+            (mouse-state-x mouse-state) x
+            (mouse-state-y mouse-state) y))
+    mouse-state))
+
+
+(defun mouse-state-left-button-pressed-p (state)
+  (/= (logand (mouse-state-buttons state) %sdl:+button-lmask+) 0))
+
+
+(defun mouse-state-right-button-pressed-p (state)
+  (/= (logand (mouse-state-buttons state) %sdl:+button-rmask+) 0))
+
+
+(defun mouse-state-middle-button-pressed-p (state)
+  (/= (logand (mouse-state-buttons state) %sdl:+button-mmask+) 0))
+
+
+(defun %host:event-input-foreign-text (event)
+  (cref:c-ref event %sdl:event :text :text &))
+
+
+(defun event-mouse-button (event)
+  (case (cref:c-ref event %sdl:event :button :button)
+    (#.%sdl:+button-left+ :left)
+    (#.%sdl:+button-right+ :right)
+    (#.%sdl:+button-middle+ :middle)
+    (otherwise nil)))
+
+
+(defun event-mouse-wheel (event)
+  (cref:c-val ((event %sdl:event))
+    (values (event :wheel :y) (event :wheel :x))))
+
+
+(defun event-key-scan-code (event)
+  (cref:c-ref event %sdl:event :key :keysym :scancode))
+
+
+(defstruct keyboard-modifier-state
+  (buttons 0 :type fixnum))
+
+
+(defun keyboard-modifier-state (&optional keyboard-modifier-key-state)
+  (let ((state (or keyboard-modifier-key-state (make-keyboard-modifier-state))))
+    (setf (keyboard-modifier-state-buttons state) (sdl-get-mod-state))
+    state))
+
+
+(defun keyboard-modifier-state-pressed-p (state &rest modifiers)
+  (/= 0 (logand (keyboard-modifier-state-buttons state)
+                (apply #'key-modifier modifiers))))
+
+
+(define-compiler-macro keyboard-modifier-state-some-pressed-p (state &rest modifiers)
+  `(/= 0 (logand (keyboard-modifier-state-buttons ,state)
+                 (key-modifier ,@modifiers))))
+
+
+;;;
+;;; RUNNING
+;;;
 (defun provided-workdir ()
   (let ((workdir (uiop:getenv "ALIEN_WORKS_WORKDIR")))
     (unless (a:emptyp workdir)
