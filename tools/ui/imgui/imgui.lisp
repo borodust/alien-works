@@ -8,29 +8,29 @@
 ;;; HELPER
 ;;;
 (defun make-imgui-helper (filament-engine filament-view font-path)
-  (iffi:with-intricate-instance (path %filament.ui:utils+path
+  (iffi:with-intricate-instance (path %filament:utils+path
                                       'claw-utils:claw-string (namestring font-path))
-    (iffi:make-intricate-instance '%filament.ui:im-gui-helper
-                                  '(:pointer %filament.ui:filament+engine) filament-engine
-                                  '(:pointer %filament.ui:filament+view) filament-view
-                                  '(:pointer %filament.ui:utils+path) path
-                                  '(:pointer %filament.ui:im-gui-context) (cffi:null-pointer))))
+    (iffi:make-intricate-instance '%filament:im-gui-helper
+                                  '(:pointer %filament:engine) filament-engine
+                                  '(:pointer %filament:view) filament-view
+                                  '(:pointer %filament:utils+path) path
+                                  '(:pointer %filament:im-gui-context) (cffi:null-pointer))))
 
 
 (defun destroy-imgui-helper (helper)
-  (iffi:destroy-intricate-instance '%filament.ui:im-gui-helper helper))
+  (iffi:destroy-intricate-instance '%filament:im-gui-helper helper))
 
 
 (defun render-imgui (helper callback time-delta)
-  (%filament.ui:render
-   '(claw-utils:claw-pointer %filament.ui:im-gui-helper) helper
+  (%filament:render
+   '(claw-utils:claw-pointer %filament:im-gui-helper) helper
    ':float (float time-delta 0f0)
-   '(claw-utils:claw-pointer %filament.ui:im-gui-helper+callback) callback))
+   '(claw-utils:claw-pointer %filament:im-gui-helper+callback) callback))
 
 
 (defun update-display-size (imgui-helper width height scale-x scale-y)
-  (%filament.ui:set-display-size
-   '(claw-utils:claw-pointer %filament.ui::im-gui-helper) imgui-helper
+  (%filament:set-display-size
+   '(claw-utils:claw-pointer %filament::im-gui-helper) imgui-helper
    :int (floor width)
    :int (floor height)
    :float (float scale-x 0f0)
@@ -39,7 +39,7 @@
 
 (defmacro define-ui-callback (name () &body body)
   (a:with-gensyms (engine view)
-    `(iffi:deficallback ,name (,engine ,view) %filament.ui:im-gui-helper+callback
+    `(iffi:deficallback ,name (,engine ,view) %filament:im-gui-helper+callback
        (declare (ignore ,engine ,view))
        ,@body
        (values))))

@@ -3,7 +3,6 @@
   (:local-nicknames (:a :alexandria)
                     (:u :alien-works.utils)
                     (:host :alien-works.host)
-                    (:%fm.ui :%filament.ui)
                     (:%imgui :%filament.imgui)
                     (:cref :cffi-c-ref)
                     (:%host :%alien-works.host))
