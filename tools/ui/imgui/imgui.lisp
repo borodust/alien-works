@@ -194,26 +194,30 @@
 ;;;
 (defun show-demo-window ()
   (cref:c-with ((closed :bool))
-    (setf closed nil)
+    (setf closed t)
     (%imgui:show-demo-window '(claw-utils:claw-pointer :bool) (closed &))
-    closed))
+    (not closed)))
 
 
 (defmacro with-panel ((title &key on-close) &body body)
-  (a:with-gensyms (keep-open close-not-clicked)
+  (a:with-gensyms (keep-open close-not-clicked result)
     `(cref:c-with ((,close-not-clicked :bool))
        (setf ,close-not-clicked t)
        (let ((,keep-open (%imgui:begin
                           'claw-utils:claw-string ,title
                           '(claw-utils:claw-pointer :bool) (,close-not-clicked &)
-                          '%imgui::im-gui-window-flags 0)))
+                          '%imgui::im-gui-window-flags 0))
+             ,result)
          (unwind-protect
               (when ,keep-open
-                (prog1 (progn ,@body)
-                  ,(when on-close
-                     `(unless ,close-not-clicked
-                        (funcall ,on-close)))))
-           (%imgui:end))))))
+                (,@(if on-close
+                       `(setf ,result)
+                       'progn)
+                 ,@body))
+           (%imgui:end)
+           ,(when on-close
+              `(unless ,close-not-clicked
+                 (funcall ,on-close ,result))))))))
 
 
 (defun button (caption)

@@ -1,9 +1,27 @@
 (cl:defpackage :alien-works.audio.openal
   (:local-nicknames (:u :alien-works.utils)
-                    (:cref :cffi-c-ref))
+                    (:cref :cffi-c-ref)
+                    (:%math :%alien-works.math)
+                    (:math :alien-works.math)
+                    (:sv :static-vectors))
   (:use :cl)
   (:export #:with-context
-           #:play-pcm-s16-stereo))
+           #:play-pcm-s16-stereo
+
+           #:listener-gain
+           #:listener-position
+           #:listener-velocity
+           #:listener-orientation
+
+           #:make-audio-buffer
+           #:audio-buffer-data
+           #:destroy-audio-buffer
+
+           #:make-audio-source
+           #:destroy-audio-source
+           #:audio-source-state
+           #:audio-source-buffer
+           #:play-audio-source))
 
 
 (cl:defpackage :alien-works.audio.opus

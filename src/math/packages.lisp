@@ -1,7 +1,14 @@
+(cl:defpackage :%alien-works.math
+  (:use)
+  (:export #:vec3-element-ptr
+           #:vec3-ptr))
+
+
 (cl:defpackage :alien-works.math
   (:local-nicknames (:a :alexandria)
                     (:! :alien-works.utils.empty)
-                    (:u :alien-works.utils))
+                    (:u :alien-works.utils)
+                    (:%math :%alien-works.math))
   (:use :cl)
   (:export #:vec2
            #:make-vec2
