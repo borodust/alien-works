@@ -68,15 +68,21 @@
 ;;; IMGUI
 ;;;
 (defmacro with-vec2 ((vec &optional x y) &body body)
-  (let ((vec-name (if (listp vec) (first vec) vec)))
+  (let ((vec-name (if (listp vec) (first vec) vec))
+        (x-name (if (listp x) (first x) x))
+        (y-name (if (listp y) (first y) y)))
     `(,@(if (listp vec)
             `(let ((,vec-name ,(second vec))) (declare (ignorable ,vec-name)))
             `(iffi:with-intricate-instance (,vec %imgui::im-vec2)))
       (iffi:with-intricate-slots %imgui:im-vec2 (,@(when x
-                                                              `((,x %imgui:x)))
-                                                          ,@(when y
-                                                              `((,y %imgui:y))))
+                                                     `((,x-name %imgui:x)))
+                                                 ,@(when y
+                                                     `((,y-name %imgui:y))))
                                  ,vec-name
+        ,@(when (listp x)
+            `((setf ,x-name ,(second x))))
+        ,@(when (listp y)
+            `((setf ,y-name ,(second y))))
         ,@body))))
 
 
@@ -201,23 +207,25 @@
 
 (defmacro with-panel ((title &key on-close) &body body)
   (a:with-gensyms (keep-open close-not-clicked result)
-    `(cref:c-with ((,close-not-clicked :bool))
-       (setf ,close-not-clicked t)
-       (let ((,keep-open (%imgui:begin
-                          'claw-utils:claw-string ,title
-                          '(claw-utils:claw-pointer :bool) (,close-not-clicked &)
-                          '%imgui::im-gui-window-flags 0))
-             ,result)
-         (unwind-protect
-              (when ,keep-open
-                (,@(if on-close
-                       `(setf ,result)
-                       'progn)
-                 ,@body))
-           (%imgui:end)
-           ,(when on-close
-              `(unless ,close-not-clicked
-                 (funcall ,on-close ,result))))))))
+    (a:once-only (title)
+      `(cref:c-with ((,close-not-clicked :bool))
+         (setf ,close-not-clicked t)
+         (let ((,keep-open (%imgui:begin
+                            'claw-utils:claw-string ,title
+                            '(claw-utils:claw-pointer :bool) (,close-not-clicked &)
+                            '%imgui::im-gui-window-flags 0))
+               ,@(when on-close
+                   `(,result)))
+           (unwind-protect
+                (when ,keep-open
+                  (,@(if on-close
+                         `(setf ,result)
+                         '(progn))
+                   ,@body))
+             (%imgui:end)
+             ,(when on-close
+                `(unless ,close-not-clicked
+                   (funcall ,on-close ,result)))))))))
 
 
 (defun button (caption)
@@ -243,3 +251,36 @@
                                (apply #'format nil caption args)
                                caption)
    'claw-utils:claw-string (cffi:null-pointer)))
+
+
+(defun collapsing-header (title &key)
+  (%imgui:collapsing-header
+   'claw-utils:claw-string title
+   '(claw-utils:claw-pointer :bool) (cffi:null-pointer)
+   '%filament.imgui::im-gui-tree-node-flags 0))
+
+
+(defun tree-node (title &key)
+  (%imgui:tree-node-ex
+   'claw-utils:claw-string title
+   '%filament.imgui::im-gui-tree-node-flags 0))
+
+
+(defun tree-pop ()
+  (%imgui:tree-pop))
+
+
+(defmacro with-tree-node ((title &rest keys &key) &body body)
+  `(when (tree-node ,title ,@keys)
+     (unwind-protect
+          (progn ,@body)
+       (tree-pop))))
+
+
+(defun selectable (caption &key selected)
+  (with-vec2 (vec (x 0f0) (y 0f0))
+    (%imgui:selectable
+     'claw-utils:claw-string caption
+     ':bool selected
+     '%filament.imgui::im-gui-selectable-flags 0
+     '(claw-utils:claw-pointer %filament.imgui::im-vec2) vec)))

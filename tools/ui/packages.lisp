@@ -26,7 +26,12 @@
 
            #:button
            #:checkbox
-           #:label))
+           #:label
+           #:collapsing-header
+           #:tree-node
+           #:tree-pop
+           #:with-tree-node
+           #:selectable))
 
 
 (cl:defpackage :alien-works.tools.ui
@@ -41,7 +46,12 @@
                 #:with-panel
                 #:button
                 #:checkbox
-                #:label)
+                #:label
+                #:collapsing-header
+                #:tree-node
+                #:tree-pop
+                #:with-tree-node
+                #:selectable)
   (:export #:make-ui
            #:destroy-ui
            #:update-ui-input
@@ -52,4 +62,9 @@
            #:with-panel
            #:button
            #:checkbox
-           #:label))
+           #:label
+           #:collapsing-header
+           #:tree-node
+           #:tree-pop
+           #:with-tree-node
+           #:selectable))

@@ -46,12 +46,17 @@
            #:mouse-state-right-button-pressed-p
            #:mouse-state-middle-button-pressed-p
 
-
            #:make-keyboard-modifier-state
            #:keyboard-modifier-state
            #:keyboard-modifier-state-some-pressed-p
 
            #:scancode
+
+           #:do-game-controller-ids
+           #:game-controller-name-by-id
+
+           #:do-gamepad-ids
+           #:gamepad-name-by-id
 
            #:run
            #:definit

@@ -267,6 +267,89 @@
   `(/= 0 (logand (keyboard-modifier-state-buttons ,state)
                  (key-modifier ,@modifiers))))
 
+;;;
+;;; GAME CONTROLLERS
+;;;
+(defmacro do-game-controller-ids ((game-controller-id) &body body)
+  `(loop for ,game-controller-id from 0 below (%sdl:num-joysticks)
+         do (progn ,@body)))
+
+
+(defun game-controller-name-by-id (game-controller-id)
+  (%sdl:joystick-name-for-index game-controller-id))
+
+
+(defun game-controller-name (game-controller)
+  (%sdl:joystick-name game-controller))
+
+
+(defun game-controller-id (game-controller)
+  (%sdl:joystick-instance-id game-controller))
+
+
+(defun grab-game-controller (game-controller-id)
+  (%sdl:joystick-open game-controller-id))
+
+
+(defun release-game-controller (game-controller)
+  (%sdl:joystick-close game-controller))
+
+
+(defun game-controller-attached-p (game-controller)
+  (%sdl:joystick-get-attached game-controller))
+
+
+(defun game-controller-axes-count (game-controller)
+  (%sdl:joystick-num-axes game-controller))
+
+
+(defun game-controller-button-count (game-controller)
+  (%sdl:joystick-num-axes game-controller))
+
+
+(defun game-controller-ball-count (game-controller)
+  (%sdl:joystick-num-balls game-controller))
+
+
+(defun game-controller-hat-count (game-controller)
+  (%sdl:joystick-num-hats game-controller))
+
+
+(defun game-controller-power-level (game-controller)
+  (%sdl:joystick-current-power-level game-controller))
+
+
+(defun game-controller-gamepad-p (game-controller-id)
+  (%sdl:is-game-controller game-controller-id))
+
+
+;;;
+;;; GAMEPADS
+;;;
+(defun load-gamepad-mappings-from-host-file (host-file)
+  (%sdl:game-controller-add-mappings-from-rw host-file 0))
+
+
+(defmacro do-gamepad-ids ((gamepad-id) &body body)
+  `(do-game-controller-ids (,gamepad-id)
+     (when (game-controller-gamepad-p ,gamepad-id)
+       ,@body)))
+
+
+(defun gamepad-name-by-id (gamepad-id)
+  (%sdl:game-controller-name-for-index gamepad-id))
+
+
+(defun grab-gamepad (gamepad-id)
+  (%sdl:game-controller-open gamepad-id))
+
+
+(defun gamepad-attached-p (gamepad)
+  (%sdl:game-controller-get-attached gamepad))
+
+
+(defun release-gamepad (gamepad)
+  (%sdl:game-controller-close gamepad))
 
 ;;;
 ;;; RUNNING
