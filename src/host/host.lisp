@@ -2,7 +2,9 @@
 
 
 (defvar *init-hooks* nil)
+
 (a:define-constant +buffer-size+ 4096)
+(a:define-constant +max-controller-guid-length+ 128)
 
 (declaim (special *event*))
 
@@ -275,6 +277,10 @@
          do (progn ,@body)))
 
 
+(defun game-controller-gamepad-p (game-controller-id)
+  (%sdl:is-game-controller game-controller-id))
+
+
 (defun game-controller-name-by-id (game-controller-id)
   (%sdl:joystick-name-for-index game-controller-id))
 
@@ -295,6 +301,13 @@
   (%sdl:joystick-close game-controller))
 
 
+(defun game-controller-guid (game-controller)
+  (cref:c-with ((str :char :count (1+ +max-controller-guid-length+)))
+    (setf (str +max-controller-guid-length+) 0)
+    (%sdl:joystick-get-guid-string game-controller (str &) +max-controller-guid-length+)
+    (cffi:foreign-string-to-lisp str)))
+
+
 (defun game-controller-attached-p (game-controller)
   (%sdl:joystick-get-attached game-controller))
 
@@ -303,31 +316,63 @@
   (%sdl:joystick-num-axes game-controller))
 
 
+(defun game-controller-axis-short-value (game-controller axis-id)
+  (%sdl:joystick-get-axis game-controller axis-id))
+
+
+(defun game-controller-axis-float-value (game-controller axis-id)
+  (let ((value (game-controller-axis-short-value game-controller axis-id)))
+    (if (< value 0)
+        (/ value 32768f0)
+        (/ value 32767f0))))
+
+
 (defun game-controller-button-count (game-controller)
   (%sdl:joystick-num-axes game-controller))
+
+
+(defun game-controller-button-pressed-p (game-controller button-id)
+  (/= 0 (%sdl:joystick-get-button game-controller button-id)))
 
 
 (defun game-controller-ball-count (game-controller)
   (%sdl:joystick-num-balls game-controller))
 
 
+(defun game-controller-ball-value (game-controller ball-id result-vec2)
+  (%sdl:joystick-get-ball game-controller ball-id
+                          (%math:vec2-element-ptr result-vec2 0)
+                          (%math:vec2-element-ptr result-vec2 1))
+  result-vec2)
+
+
 (defun game-controller-hat-count (game-controller)
   (%sdl:joystick-num-hats game-controller))
+
+
+(defun game-controller-hat-value (game-controller hat-id)
+  (case (%sdl:joystick-get-hat game-controller hat-id)
+    (#.%sdl:+hat-centered+ :centered)
+    (#.%sdl:+hat-up+ :up)
+    (#.%sdl:+hat-right+ :right)
+    (#.%sdl:+hat-down+ :down)
+    (#.%sdl:+hat-left+ :left)
+    (#.%sdl:+hat-rightup+ :right-up)
+    (#.%sdl:+hat-rightdown+ :right-down)
+    (#.%sdl:+hat-leftup+ :left-up)
+    (#.%sdl:+hat-leftdown+ :left-down)
+    (otherwise :unknown)))
 
 
 (defun game-controller-power-level (game-controller)
   (%sdl:joystick-current-power-level game-controller))
 
 
-(defun game-controller-gamepad-p (game-controller-id)
-  (%sdl:is-game-controller game-controller-id))
-
-
 ;;;
 ;;; GAMEPADS
 ;;;
 (defun load-gamepad-mappings-from-host-file (host-file)
-  (%sdl:game-controller-add-mappings-from-rw host-file 0))
+  (%sdl:game-controller-add-mappings-from-rw (%handle-of host-file) 0))
 
 
 (defmacro do-gamepad-ids ((gamepad-id) &body body)
@@ -344,12 +389,45 @@
   (%sdl:game-controller-open gamepad-id))
 
 
+(defun release-gamepad (gamepad)
+  (%sdl:game-controller-close gamepad))
+
+
+(defun gamepad-power-level (gamepad)
+  (game-controller-power-level (gamepad-controller gamepad)))
+
+
+(defun gamepad-name (gamepad)
+  (%sdl:game-controller-name gamepad))
+
+
+(defun gamepad-controller (gamepad)
+  (%sdl:game-controller-get-joystick gamepad))
+
+
 (defun gamepad-attached-p (gamepad)
   (%sdl:game-controller-get-attached gamepad))
 
 
-(defun release-gamepad (gamepad)
-  (%sdl:game-controller-close gamepad))
+(defun gamepad-button-pressed-p (gamepad button)
+  ":a :b :x :y :back :guide :start :leftstick :rightstick :leftshoulder :rightshoulder
+:dpad-up :dpad-down :dpad-left :dpad-right :misc1 :paddle1 :paddle2 :paddle3 :paddle4 :touchpad"
+  (/= 0 (%sdl:game-controller-get-button gamepad button)))
+
+
+(defun gamepad-axis-short-value (gamepad axis)
+  ":leftx :lefty :rightx :righty :triggerleft :triggerright
+Returns -32768 to 32767 for sticks and 0 to 32767 for triggers"
+  (%sdl:game-controller-get-axis gamepad axis))
+
+
+(defun gamepad-axis-float-value (gamepad axis)
+  "-1f0 to 1f0 for sticks and 0f0 to 1f0 for triggers"
+  (let ((value (gamepad-axis-short-value gamepad axis)))
+    (if (< value 0)
+        (/ value 32768f0)
+        (/ value 32767f0))))
+
 
 ;;;
 ;;; RUNNING

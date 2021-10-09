@@ -1,6 +1,9 @@
 (cl:defpackage :%alien-works.math
   (:use)
-  (:export #:vec3-element-ptr
+  (:export #:vec2-element-ptr
+           #:vec2-ptr
+
+           #:vec3-element-ptr
            #:vec3-ptr))
 
 

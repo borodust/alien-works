@@ -12,7 +12,8 @@
                     (:gray :trivial-gray-streams)
                     (:sv :static-vectors)
                     (:u :alien-works.utils)
-                    (:%host :%alien-works.host))
+                    (:%host :%alien-works.host)
+                    (:%math :%alien-works.math))
   (:use :cl :%alien-works.host)
   (:export #:display-name
            #:display-x
@@ -53,10 +54,30 @@
            #:scancode
 
            #:do-game-controller-ids
+           #:grab-game-controller
+           #:release-game-controller
            #:game-controller-name-by-id
+           #:game-controller-power-level
+           #:game-controller-button-count
+           #:game-controller-button-pressed-p
+           #:game-controller-axes-count
+           #:game-controller-axis-short-value
+           #:game-controller-axis-float-value
+           #:game-controller-ball-count
+           #:game-controller-ball-value
+           #:game-controller-hat-count
+           #:game-controller-hat-value
 
+           #:load-gamepad-mappings-from-host-file
            #:do-gamepad-ids
            #:gamepad-name-by-id
+           #:grab-gamepad
+           #:release-gamepad
+           #:gamepad-name
+           #:gamepad-power-level
+           #:gamepad-button-pressed-p
+           #:gamepad-axis-short-value
+           #:gamepad-axis-float-value
 
            #:run
            #:definit

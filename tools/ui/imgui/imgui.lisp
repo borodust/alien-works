@@ -69,8 +69,8 @@
 ;;;
 (defmacro with-vec2 ((vec &optional x y) &body body)
   (let ((vec-name (if (listp vec) (first vec) vec))
-        (x-name (if (listp x) (first x) x))
-        (y-name (if (listp y) (first y) y)))
+        (x-name (if (and x (listp x)) (first x) x))
+        (y-name (if (and y (listp y)) (first y) y)))
     `(,@(if (listp vec)
             `(let ((,vec-name ,(second vec))) (declare (ignorable ,vec-name)))
             `(iffi:with-intricate-instance (,vec %imgui::im-vec2)))
@@ -79,9 +79,9 @@
                                                  ,@(when y
                                                      `((,y-name %imgui:y))))
                                  ,vec-name
-        ,@(when (listp x)
+        ,@(when (and x (listp x))
             `((setf ,x-name ,(second x))))
-        ,@(when (listp y)
+        ,@(when (and y (listp y))
             `((setf ,y-name ,(second y))))
         ,@body))))
 
@@ -284,3 +284,15 @@
      ':bool selected
      '%filament.imgui::im-gui-selectable-flags 0
      '(claw-utils:claw-pointer %filament.imgui::im-vec2) vec)))
+
+
+(defun progress-bar (progress-value &key overlay)
+  (with-vec2 (vec (x -1f0) (y 0f0))
+    (%imgui:progress-bar
+     :float progress-value
+     '(claw-utils:claw-pointer %filament.imgui::im-vec2) vec
+     'claw-utils:claw-string overlay)))
+
+
+(defun same-line (&key offset spacing)
+  (%imgui:same-line :float (or offset 0f0) :float (or spacing -1f0)))

@@ -31,7 +31,9 @@
            #:tree-node
            #:tree-pop
            #:with-tree-node
-           #:selectable))
+           #:selectable
+           #:progress-bar
+           #:same-line))
 
 
 (cl:defpackage :alien-works.tools.ui
@@ -51,7 +53,9 @@
                 #:tree-node
                 #:tree-pop
                 #:with-tree-node
-                #:selectable)
+                #:selectable
+                #:progress-bar
+                #:same-line)
   (:export #:make-ui
            #:destroy-ui
            #:update-ui-input
@@ -67,4 +71,6 @@
            #:tree-node
            #:tree-pop
            #:with-tree-node
-           #:selectable))
+           #:selectable
+           #:progress-bar
+           #:same-line))
