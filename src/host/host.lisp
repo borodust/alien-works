@@ -26,6 +26,218 @@
   (%sdl:set-clipboard-text foreign-string))
 
 ;;;
+;;;
+;;;
+(defun memcpy (destination source size)
+  (%sdl:memcpy destination source size))
+
+
+(defun memset (destination value size)
+  (%sdl:memset destination value size))
+
+
+;;;
+;;; STREAMS
+;;;
+(defclass host-stream ()
+  ((buffer :initform (sv:make-static-vector +buffer-size+ :element-type '(unsigned-byte 8))
+           :reader %buffer-of)
+   (handle :initarg :handle
+           :reader %handle-of)
+   (location :initarg :location)
+   (size :initarg :size)))
+
+
+(defun open-host-stream-from-location (location direction &optional size)
+  (cond
+    ((or (stringp location) (pathnamep location))
+     (%sdl:rw-from-file (uiop:native-namestring location)
+                        (ecase direction
+                          (:input "rb")
+                          (:output "wb")
+                          (:append "ab"))))
+    ((cffi:pointerp location)
+     (ecase direction
+       (:input (%sdl:rw-from-const-mem location (truncate (or size 0))))
+       ((:output :append) (%sdl:rw-from-mem location (truncate (or size 0))))))))
+
+
+(defun reopen-host-stream-for-append (stream)
+  (with-slots (handle location size) stream
+    (%sdl:r-wclose handle)
+    (setf handle (open-host-stream-from-location location :append size))))
+
+
+(defmethod initialize-instance :after ((this host-stream) &key direction location size)
+  (with-slots (handle) this
+    (setf handle (open-host-stream-from-location location direction size))
+    (when (cffi:null-pointer-p handle)
+      (signal (make-condition 'file-error :pathname location)))))
+
+
+(defmethod cl:close ((this host-stream) &key abort &allow-other-keys)
+  (declare (ignore abort))
+  (with-slots (handle buffer) this
+    (when handle
+      (%sdl:r-wclose handle)
+      (sv:free-static-vector buffer)
+      (setf handle nil
+            buffer nil))))
+
+
+(defclass host-input-stream (host-stream gray:fundamental-binary-input-stream) ())
+
+
+(defmethod gray:stream-clear-input ((this host-input-stream))
+  (declare (ignore this)))
+
+
+(defmethod gray:stream-read-sequence ((this host-input-stream) sequence start end &key)
+  (let ((total-size (- end start)))
+    (when (< total-size 0)
+      (error "End must be equal or greater than start"))
+    (loop with bytes-left = total-size
+          with bytes-read = 0
+          for destination-idx = (+ start bytes-read)
+          while (> bytes-left 0)
+          do (let* ((step (min bytes-left +buffer-size+))
+                    (read (%sdl:r-wread (%handle-of this)
+                                        (sv:static-vector-pointer (%buffer-of this))
+                                        1 step)))
+               (incf bytes-read read)
+               (if (< read step)
+                   (setf bytes-left 0)
+                   (decf bytes-left read))
+               (unless (zerop read)
+                 (replace sequence (%buffer-of this)
+                          :start1 destination-idx :end1 (+ destination-idx read)
+                          :start2 0 :end2 read)))
+          finally (return bytes-read))))
+
+
+(defmethod gray:stream-file-position ((this host-input-stream))
+  (%sdl:r-wseek (%handle-of this) 0 %sdl:+rw-seek-cur+))
+
+
+(defmethod (setf gray:stream-file-position) (value (this host-input-stream))
+  (%sdl:r-wseek (%handle-of this) (truncate value) %sdl:+rw-seek-cur+))
+
+
+(defmethod gray:stream-read-byte ((this host-input-stream))
+  (let ((bytes-read (%sdl:r-wread (%handle-of this) (sv:static-vector-pointer (%buffer-of this)) 1 1)))
+    (if (zerop bytes-read)
+        :EOF
+        (aref (%buffer-of this) 0))))
+
+
+(defclass host-output-stream (host-stream gray:fundamental-binary-output-stream) ())
+
+
+(defmethod gray:stream-write-byte ((this host-output-stream) byte)
+  (setf (aref (%buffer-of this) 0) byte)
+  (%sdl:r-wwrite (%handle-of this) (sv:static-vector-pointer (%buffer-of this)) 1 1)
+  byte)
+
+
+(defmethod gray:stream-write-sequence ((this host-output-stream) sequence start end &key)
+  (let ((total-size (- end start)))
+    (when (< total-size 0)
+      (error "End must be equal or greater than start"))
+    (loop with bytes-left = total-size
+          with bytes-written = 0
+          for source-idx = (+ start bytes-written)
+          while (> bytes-left 0)
+          do (let ((step (min bytes-left +buffer-size+)))
+               (replace (%buffer-of this) sequence
+                        :start1 0 :end1 step
+                        :start2 source-idx :end2 (+ source-idx step))
+               (%sdl:r-wwrite (%handle-of this)
+                              (sv:static-vector-pointer (%buffer-of this))
+                              1 step)
+               (incf bytes-written step)
+               (decf bytes-left step)))
+    sequence))
+
+
+(defmethod gray:stream-force-output ((this host-output-stream))
+  (reopen-host-stream-for-append this))
+
+
+(defmethod gray:stream-finish-output ((this host-output-stream))
+  (reopen-host-stream-for-append this))
+
+
+(defmethod gray:stream-clear-output ((this host-output-stream))
+  (declare (ignore this)))
+
+
+(defun open-host-file (location &key (direction :input) size)
+  (ecase direction
+    (:input (make-instance 'host-input-stream :location location :size size :direction :input))
+    (:output (make-instance 'host-output-stream :location location :size size :direction :output))))
+
+
+(defmacro with-open-host-file ((var location &rest keys) &body body)
+  `(let ((,var (open-host-file ,location ,@keys)))
+     (unwind-protect
+          (progn ,@body)
+       (close ,var))))
+
+
+(defun read-host-file-into-static-vector (location &key ((:into provided-static-vector))
+                                                     offset ((:size provided-size))
+                                                     element-type)
+  (when (and element-type
+             provided-static-vector
+             (not (subtypep element-type (array-element-type provided-static-vector))))
+    (error ":INTO array and :ELEMENT-TYPE are not compatible"))
+  (let ((element-type (or (and provided-static-vector
+                               (array-element-type provided-static-vector))
+                          element-type
+                          '(unsigned-byte 8))))
+    (unless (and (listp element-type)
+                 (member (first element-type) '(unsigned-byte signed-byte))
+                 (member (second element-type) '(8 16 32 64)))
+      (error "Element type of static-vector must be either unsigned-byte or signed-byte of size 8, 16, 32 or 64"))
+    (when (and provided-static-vector
+               provided-size
+               (> provided-size (length provided-static-vector)))
+      (error "Provided size is smaller than length of provided static-vector"))
+    (let ((file (%sdl:rw-from-file (namestring location) "rb")))
+      (when (cffi:null-pointer-p file)
+        (error "Failed to open ~A: ~A" location (sdl-error)))
+      (unwind-protect
+           (let* ((file-size (%sdl:r-wseek file 0 %sdl:+rw-seek-end+))
+                  (offset (if (> file-size 0)
+                              (mod (or offset 0) file-size)
+                              0))
+                  (rest-file-size (- file-size offset))
+                  (calculated-size
+                    (min rest-file-size
+                         (or provided-size rest-file-size)
+                         (or (and provided-static-vector (length provided-static-vector))
+                             rest-file-size))))
+             (when (< file-size 0)
+               (error "Failed to lookup ~A size: ~A" location (sdl-error)))
+             (when (> (+ offset (or provided-size 0)) file-size)
+               (error "Sum of offset and provided size is greater than size of the ~A: got ~A, expected no more than ~A"
+                      location (+ offset calculated-size) file-size))
+             (%sdl:r-wseek file offset %sdl:+rw-seek-set+)
+             (let* ((out (if provided-static-vector
+                             provided-static-vector
+                             (sv:make-static-vector calculated-size
+                                                    :element-type element-type)))
+                    (objects-read (%sdl:r-wread file (sv:static-vector-pointer out)
+                                                calculated-size
+                                                1)))
+               (unless (= objects-read 1)
+                 (unless provided-static-vector
+                   (sv:free-static-vector out))
+                 (error "Failed to read ~A of size ~A: ~A" location file-size (sdl-error)))
+               (values out file-size)))
+        (%sdl:r-wclose file)))))
+
+;;;
 ;;; DISPLAY
 ;;;
 (defstruct (display
@@ -269,6 +481,7 @@
   `(/= 0 (logand (keyboard-modifier-state-buttons ,state)
                  (key-modifier ,@modifiers))))
 
+
 ;;;
 ;;; GAME CONTROLLERS
 ;;;
@@ -368,6 +581,9 @@
   (%sdl:joystick-current-power-level game-controller))
 
 
+(defun game-controller-haptic-p (game-controller)
+  (/= (%sdl:joystick-is-haptic game-controller) 0))
+
 ;;;
 ;;; GAMEPADS
 ;;;
@@ -429,6 +645,57 @@ Returns -32768 to 32767 for sticks and 0 to 32767 for triggers"
         (/ value 32767f0))))
 
 
+(defun gamepad-haptic-p (gamepad)
+  (game-controller-haptic-p (gamepad-controller gamepad)))
+
+
+;;;
+;;; HAPTIC
+;;;
+(defmacro do-haptic-device-ids ((device-id) &body body)
+  `(loop for ,device-id from 0 below (%sdl:num-haptics)
+         do (progn ,@body)))
+
+
+(defun grab-haptic-device (device-id)
+  (%sdl:haptic-open device-id))
+
+
+(defun grab-game-controller-haptic-device (game-controller)
+  (%sdl:haptic-open-from-joystick game-controller))
+
+
+(defun grab-gamepad-haptic-device (gamepad)
+  (grab-game-controller-haptic-device (gamepad-controller gamepad)))
+
+
+(defun release-haptic-device (haptic-device)
+  (%sdl:haptic-close haptic-device))
+
+
+(defun make-constant-haptic-effect-configuration (&key)
+  (cref:c-let ((effect %sdl:haptic-effect :alloc t))
+    (memset (effect &) 0 (cffi:foreign-type-size '%sdl:haptic-effect))
+    (setf (effect :type) %sdl:+haptic-constant+)
+    effect))
+
+
+(defun destroy-haptic-effect-configuration (haptic-effect-configuration)
+  (cffi:foreign-free haptic-effect-configuration))
+
+
+(defun haptic-effect-supported-p (haptic-device effect)
+  (%sdl:haptic-effect-supported haptic-device effect))
+
+
+(defun add-rumble (haptic-device)
+  (zerop (%sdl:haptic-rumble-init haptic-device)))
+
+
+(defun play-rumble (haptic-device strength length-ms)
+  (%sdl:haptic-rumble-play haptic-device (float strength 0f0) (max 0 (floor length-ms)))
+  (values))
+
 ;;;
 ;;; RUNNING
 ;;;
@@ -474,217 +741,3 @@ Returns -32768 to 32767 for sticks and 0 to 32767 for triggers"
                                    `((&rest ,args-param)
                                      (declare (ignore ,args-param)))))
          ,@body))))
-
-
-
-;;;
-;;;
-;;;
-(defun memcpy (destination source size)
-  (%sdl:memcpy destination source size))
-
-
-(defun memset (destination value size)
-  (%sdl:memset destination value size))
-
-
-;;;
-;;; STREAMS
-;;;
-(defclass host-stream ()
-  ((buffer :initform (sv:make-static-vector +buffer-size+ :element-type '(unsigned-byte 8))
-           :reader %buffer-of)
-   (handle :initarg :handle
-           :reader %handle-of)
-   (location :initarg :location)
-   (size :initarg :size)))
-
-
-(defun open-host-stream-from-location (location direction &optional size)
-  (cond
-    ((or (stringp location) (pathnamep location))
-     (%sdl:rw-from-file (uiop:native-namestring location)
-                        (ecase direction
-                          (:input "rb")
-                          (:output "wb")
-                          (:append "ab"))))
-    ((cffi:pointerp location)
-     (ecase direction
-       (:input (%sdl:rw-from-const-mem location (truncate (or size 0))))
-       ((:output :append) (%sdl:rw-from-mem location (truncate (or size 0))))))))
-
-
-(defun reopen-host-stream-for-append (stream)
-  (with-slots (handle location size) stream
-    (%sdl:r-wclose handle)
-    (setf handle (open-host-stream-from-location location :append size))))
-
-
-(defmethod initialize-instance :after ((this host-stream) &key direction location size)
-  (with-slots (handle) this
-    (setf handle (open-host-stream-from-location location direction size))
-    (when (cffi:null-pointer-p handle)
-      (signal (make-condition 'file-error :pathname location)))))
-
-
-(defmethod cl:close ((this host-stream) &key abort &allow-other-keys)
-  (declare (ignore abort))
-  (with-slots (handle buffer) this
-    (when handle
-      (%sdl:r-wclose handle)
-      (sv:free-static-vector buffer)
-      (setf handle nil
-            buffer nil))))
-
-
-(defclass host-input-stream (host-stream gray:fundamental-binary-input-stream) ())
-
-
-(defmethod gray:stream-clear-input ((this host-input-stream))
-  (declare (ignore this)))
-
-
-(defmethod gray:stream-read-sequence ((this host-input-stream) sequence start end &key)
-  (let ((total-size (- end start)))
-    (when (< total-size 0)
-      (error "End must be equal or greater than start"))
-    (loop with bytes-left = total-size
-          with bytes-read = 0
-          for destination-idx = (+ start bytes-read)
-          while (> bytes-left 0)
-          do (let* ((step (min bytes-left +buffer-size+))
-                    (read (%sdl:r-wread (%handle-of this)
-                                        (sv:static-vector-pointer (%buffer-of this))
-                                        1 step)))
-               (incf bytes-read read)
-               (if (< read step)
-                   (setf bytes-left 0)
-                   (decf bytes-left read))
-               (unless (zerop read)
-                 (replace sequence (%buffer-of this)
-                          :start1 destination-idx :end1 (+ destination-idx read)
-                          :start2 0 :end2 read)))
-          finally (return bytes-read))))
-
-
-(defmethod gray:stream-file-position ((this host-input-stream))
-  (%sdl:r-wseek (%handle-of this) 0 %sdl:+rw-seek-cur+))
-
-
-(defmethod (setf gray:stream-file-position) (value (this host-input-stream))
-  (%sdl:r-wseek (%handle-of this) (truncate value) %sdl:+rw-seek-cur+))
-
-
-(defmethod gray:stream-read-byte ((this host-input-stream))
-  (let ((bytes-read (%sdl:r-wread (%handle-of this) (sv:static-vector-pointer (%buffer-of this)) 1 1)))
-    (if (zerop bytes-read)
-        :EOF
-        (aref (%buffer-of this) 0))))
-
-
-(defclass host-output-stream (host-stream gray:fundamental-binary-output-stream) ())
-
-
-(defmethod gray:stream-write-byte ((this host-output-stream) byte)
-  (setf (aref (%buffer-of this) 0) byte)
-  (%sdl:r-wwrite (%handle-of this) (sv:static-vector-pointer (%buffer-of this)) 1 1)
-  byte)
-
-
-(defmethod gray:stream-write-sequence ((this host-output-stream) sequence start end &key)
-  (let ((total-size (- end start)))
-    (when (< total-size 0)
-      (error "End must be equal or greater than start"))
-    (loop with bytes-left = total-size
-          with bytes-written = 0
-          for source-idx = (+ start bytes-written)
-          while (> bytes-left 0)
-          do (let ((step (min bytes-left +buffer-size+)))
-               (replace (%buffer-of this) sequence
-                        :start1 0 :end1 step
-                        :start2 source-idx :end2 (+ source-idx step))
-               (%sdl:r-wwrite (%handle-of this)
-                              (sv:static-vector-pointer (%buffer-of this))
-                              1 step)
-               (incf bytes-written step)
-               (decf bytes-left step)))
-    sequence))
-
-
-(defmethod gray:stream-force-output ((this host-output-stream))
-  (reopen-host-stream-for-append this))
-
-
-(defmethod gray:stream-finish-output ((this host-output-stream))
-  (reopen-host-stream-for-append this))
-
-
-(defmethod gray:stream-clear-output ((this host-output-stream))
-  (declare (ignore this)))
-
-
-(defun open-host-file (location &key (direction :input) size)
-  (ecase direction
-    (:input (make-instance 'host-input-stream :location location :size size :direction :input))
-    (:output (make-instance 'host-output-stream :location location :size size :direction :output))))
-
-
-(defmacro with-open-host-file ((var location &rest keys) &body body)
-  `(let ((,var (open-host-file ,location ,@keys)))
-     (unwind-protect
-          (progn ,@body)
-       (close ,var))))
-
-
-(defun read-host-file-into-static-vector (location &key ((:into provided-static-vector))
-                                                     offset ((:size provided-size))
-                                                     element-type)
-  (when (and element-type
-             provided-static-vector
-             (not (subtypep element-type (array-element-type provided-static-vector))))
-    (error ":INTO array and :ELEMENT-TYPE are not compatible"))
-  (let ((element-type (or (and provided-static-vector
-                               (array-element-type provided-static-vector))
-                          element-type
-                          '(unsigned-byte 8))))
-    (unless (and (listp element-type)
-                 (member (first element-type) '(unsigned-byte signed-byte))
-                 (member (second element-type) '(8 16 32 64)))
-      (error "Element type of static-vector must be either unsigned-byte or signed-byte of size 8, 16, 32 or 64"))
-    (when (and provided-static-vector
-               provided-size
-               (> provided-size (length provided-static-vector)))
-      (error "Provided size is smaller than length of provided static-vector"))
-    (let ((file (%sdl:rw-from-file (namestring location) "rb")))
-      (when (cffi:null-pointer-p file)
-        (error "Failed to open ~A: ~A" location (sdl-error)))
-      (unwind-protect
-           (let* ((file-size (%sdl:r-wseek file 0 %sdl:+rw-seek-end+))
-                  (offset (if (> file-size 0)
-                              (mod (or offset 0) file-size)
-                              0))
-                  (rest-file-size (- file-size offset))
-                  (calculated-size
-                    (min rest-file-size
-                         (or provided-size rest-file-size)
-                         (or (and provided-static-vector (length provided-static-vector))
-                             rest-file-size))))
-             (when (< file-size 0)
-               (error "Failed to lookup ~A size: ~A" location (sdl-error)))
-             (when (> (+ offset (or provided-size 0)) file-size)
-               (error "Sum of offset and provided size is greater than size of the ~A: got ~A, expected no more than ~A"
-                      location (+ offset calculated-size) file-size))
-             (%sdl:r-wseek file offset %sdl:+rw-seek-set+)
-             (let* ((out (if provided-static-vector
-                             provided-static-vector
-                             (sv:make-static-vector calculated-size
-                                                    :element-type element-type)))
-                    (objects-read (%sdl:r-wread file (sv:static-vector-pointer out)
-                                                calculated-size
-                                                1)))
-               (unless (= objects-read 1)
-                 (unless provided-static-vector
-                   (sv:free-static-vector out))
-                 (error "Failed to read ~A of size ~A: ~A" location file-size (sdl-error)))
-               (values out file-size)))
-        (%sdl:r-wclose file)))))

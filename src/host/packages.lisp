@@ -57,7 +57,9 @@
            #:grab-game-controller
            #:release-game-controller
            #:game-controller-name-by-id
+           #:game-controller-name
            #:game-controller-power-level
+           #:game-controller-haptic-p
            #:game-controller-button-count
            #:game-controller-button-pressed-p
            #:game-controller-axes-count
@@ -75,9 +77,18 @@
            #:release-gamepad
            #:gamepad-name
            #:gamepad-power-level
+           #:gamepad-haptic-p
            #:gamepad-button-pressed-p
            #:gamepad-axis-short-value
            #:gamepad-axis-float-value
+
+           #:do-haptic-device-ids
+           #:grab-haptic-device
+           #:grab-game-controller-haptic-device
+           #:grab-gamepad-haptic-device
+           #:release-haptic-device
+           #:add-rumble
+           #:play-rumble
 
            #:run
            #:definit
