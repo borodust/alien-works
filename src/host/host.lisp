@@ -14,8 +14,9 @@
 
 (cffi:defcfun ("SDL_GetModState" sdl-get-mod-state) :unsigned-int)
 
-(u:define-enumval-extractor scancode %sdl:scancode)
+(u:define-enumval-extractor %scancode %sdl:scancode)
 (u:define-enumbit-combiner key-modifier %sdl:keymod)
+(u:define-enumval-extractor controller-button %sdl:game-controller-button)
 
 
 (defun %host:get-clipboard-foreign-text ()
@@ -410,7 +411,54 @@
 (defun event-type (event)
   (let* ((id (cref:c-ref event %sdl:event :type))
          (type (cffi:foreign-enum-keyword '%sdl:event-type id :errorp nil)))
-    (if type type :uknown)))
+    (case type
+      (:keydown :keyboard-button-down)
+      (:keyup :keyboard-button-up)
+
+      (:mousebuttondown :mouse-button-down)
+      (:mousebuttonup :mouse-button-up)
+      (:mousewheel :mouse-wheel)
+      (:mousemotion :mouse-motion)
+
+      (:joyaxismotion :game-controller-axis-motion)
+      (:joyballmotion :game-controller-ball-motion)
+      (:joyhatmotion :game-controller-hat-motion)
+      (:joybuttonup :game-controller-button-up)
+      (:joybuttondown :game-controller-button-down)
+      (:joydeviceadded :game-controller-device-added)
+      (:joydeviceremoved :game-controller-device-removed)
+
+      (:audiodeviceadded :audio-device-added)
+      (:audiodeviceremoved :audio-device-removed)
+
+      (:controlleraxismotion :gamepad-axis-motion)
+      (:controllerbuttondown :gamepad-button-down)
+      (:controllerbuttonup :gamepad-button-up)
+      (:controllerdeviceadded :gamepad-device-added)
+      (:controllerdeviceremoved :gamepad-device-removed)
+      (:controllerdeviceremapped :gamepad-device-remapped)
+
+      (:dollargesture :$-gesture)
+      (:dollarrecord :$-gesture-record)
+
+      (:dropfile :drop-file)
+      (:droptext :drop-text)
+      (:dropbegin :drop-begin)
+      (:dropcomplete :drop-complete)
+
+      (:fingermotion :finger-motion)
+      (:fingerdown :finger-down)
+      (:fingerup :finger-up)
+
+      (:syswmevent :sys-wm)
+
+      (:textediting :text-edit)
+      (:textinput :text-input)
+      (:windowevent :window)
+
+      ((:multigesture :quit) type)
+
+      (otherwise :unknown))))
 
 
 (defstruct mouse-state
@@ -458,8 +506,59 @@
     (values (event :wheel :y) (event :wheel :x))))
 
 
+(u:define-case-converter (keymod host)
+  (:lalt :left-alt)
+  (:ralt :right-alt)
+  (:lshift :left-shift)
+  (:rshift :right-shift)
+  (:lctrl :left-ctrl)
+  (:rctrl :right-ctrl)
+  (:lgui :left-super)
+  (:rgui :right-super)
+  (:gui :super)
+  (:capslock :caps-lock))
+
+
+(defun scancode (value)
+  (%scancode (host->keymod value)))
+
+
 (defun event-key-scan-code (event)
-  (cref:c-ref event %sdl:event :key :keysym :scancode))
+  (keymod->host (cref:c-ref event %sdl:event :key :keysym :scancode)))
+
+
+(defun event-game-controller-id (event)
+  (cref:c-ref event %sdl:event :jbutton :which))
+
+
+(defun event-game-controller-button (event)
+  (cref:c-ref event %sdl:event :jbutton :button))
+
+
+(defun event-gamepad-id (event)
+  (cref:c-ref event %sdl:event :cbutton :which))
+
+
+(u:define-case-converter (controller-button host)
+  (:leftstick :left-stick)
+  (:rightstick :right-stick)
+  (:leftshoulder :left-shoulder)
+  (:rightshoulder :right-shoulder))
+
+
+(u:define-case-converter (controller-axis host)
+  (:left-x :leftx)
+  (:left-y :lefty)
+  (:right-x :rightx)
+  (:right-y :righty)
+  (:trigger-left :triggerleft)
+  (:trigger-right :triggerright))
+
+
+(defun event-gamepad-button (event)
+  (controller-button->host
+   (controller-button
+    (cref:c-ref event %sdl:event :cbutton :button))))
 
 
 (defstruct keyboard-modifier-state
@@ -479,7 +578,8 @@
 
 (define-compiler-macro keyboard-modifier-state-some-pressed-p (state &rest modifiers)
   `(/= 0 (logand (keyboard-modifier-state-buttons ,state)
-                 (key-modifier ,@modifiers))))
+                 (key-modifier ,@(loop for mod in  modifiers
+                                       collect `(host->keymod ,mod))))))
 
 
 ;;;
@@ -563,18 +663,20 @@
   (%sdl:joystick-num-hats game-controller))
 
 
+(u:define-case-converter (hat host :otherwise :unknown)
+  (#.%sdl:+hat-centered+ :centered)
+  (#.%sdl:+hat-up+ :up)
+  (#.%sdl:+hat-right+ :right)
+  (#.%sdl:+hat-down+ :down)
+  (#.%sdl:+hat-left+ :left)
+  (#.%sdl:+hat-rightup+ :right-up)
+  (#.%sdl:+hat-rightdown+ :right-down)
+  (#.%sdl:+hat-leftup+ :left-up)
+  (#.%sdl:+hat-leftdown+ :left-down))
+
+
 (defun game-controller-hat-value (game-controller hat-id)
-  (case (%sdl:joystick-get-hat game-controller hat-id)
-    (#.%sdl:+hat-centered+ :centered)
-    (#.%sdl:+hat-up+ :up)
-    (#.%sdl:+hat-right+ :right)
-    (#.%sdl:+hat-down+ :down)
-    (#.%sdl:+hat-left+ :left)
-    (#.%sdl:+hat-rightup+ :right-up)
-    (#.%sdl:+hat-rightdown+ :right-down)
-    (#.%sdl:+hat-leftup+ :left-up)
-    (#.%sdl:+hat-leftdown+ :left-down)
-    (otherwise :unknown)))
+  (hat->host (%sdl:joystick-get-hat game-controller hat-id)))
 
 
 (defun game-controller-power-level (game-controller)
@@ -626,15 +728,16 @@
 
 
 (defun gamepad-button-pressed-p (gamepad button)
-  ":a :b :x :y :back :guide :start :leftstick :rightstick :leftshoulder :rightshoulder
+  ":a :b :x :y :back :guide :start :leftstick :right-stick :left-shoulder :right-shoulder
 :dpad-up :dpad-down :dpad-left :dpad-right :misc1 :paddle1 :paddle2 :paddle3 :paddle4 :touchpad"
-  (/= 0 (%sdl:game-controller-get-button gamepad button)))
+  (/= 0 (%sdl:game-controller-get-button gamepad
+                                         (host->controller-button button))))
 
 
 (defun gamepad-axis-short-value (gamepad axis)
-  ":leftx :lefty :rightx :righty :triggerleft :triggerright
+  ":left-x :left-y :right-x :right-y :trigger-left :trigger-right
 Returns -32768 to 32767 for sticks and 0 to 32767 for triggers"
-  (%sdl:game-controller-get-axis gamepad axis))
+  (%sdl:game-controller-get-axis gamepad (controller-axis->host axis)))
 
 
 (defun gamepad-axis-float-value (gamepad axis)

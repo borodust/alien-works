@@ -38,6 +38,10 @@
            #:event-key-scan-code
            #:event-mouse-button
            #:event-mouse-wheel
+           #:event-game-controller-id
+           #:event-game-controller-button
+           #:event-gamepad-id
+           #:event-gamepad-button
 
            #:make-mouse-state
            #:mouse-state

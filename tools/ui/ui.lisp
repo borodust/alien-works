@@ -56,33 +56,29 @@
     (host:keyboard-modifier-state keyboard-modifier-state)
     (%ui:with-io (io)
       (case (host:event-type event)
-        (:textinput
+        (:text-input
          (%ui:add-input-characters io (%alien-works.host:event-input-foreign-text event)))
-        ((:keyup :keydown)
+        ((:keyboard-button-up :keyboard-button-down)
          (%ui:update-keyboard-buttons io (host:scancode (host:event-key-scan-code event))
-                                      (eq (host:event-type event) :keydown)
+                                      (eq (host:event-type event) :keyboard-button-down)
                                       (host:keyboard-modifier-state-some-pressed-p
-                                       keyboard-modifier-state
-                                       :lshift :rshift)
+                                       keyboard-modifier-state :shift)
                                       (host:keyboard-modifier-state-some-pressed-p
-                                       keyboard-modifier-state
-                                       :lalt :ralt)
+                                       keyboard-modifier-state :alt)
                                       (host:keyboard-modifier-state-some-pressed-p
-                                       keyboard-modifier-state
-                                       :lctrl :rctrl)
+                                       keyboard-modifier-state :ctrl)
                                       (host:keyboard-modifier-state-some-pressed-p
-                                       keyboard-modifier-state
-                                       :lgui :rgui)))
-        ((:mousebuttondown :mousebuttonup)
+                                       keyboard-modifier-state :super)))
+        ((:mouse-button-down :mouse-button-up)
          (let ((button (host:event-mouse-button event))
-               (pressed (eq (host:event-type event) :mousebuttondown)))
+               (pressed (eq (host:event-type event) :mouse-button-down)))
            (macrolet ((pressed-p (btn)
                         `(and pressed (eq button ,btn))))
              (%ui:update-mouse-buttons io
                                        (pressed-p :left)
                                        (pressed-p :right)
                                        (pressed-p :middle)))))
-        (:mousewheel
+        (:mouse-wheel
          (multiple-value-bind (y-offset x-offset) (host:event-mouse-wheel event)
            (%ui:update-mouse-wheel io y-offset x-offset)))))))
 

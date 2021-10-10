@@ -7,6 +7,7 @@
            #:define-enumval-extractor
            #:enumbit
            #:define-enumbit-combiner
+           #:define-case-converter
 
            #:expand-multibinding
            #:definline))
@@ -88,3 +89,39 @@
      (declaim (inline ,name))
      (defun ,name ,lambda-list
        ,@body)))
+
+
+(defmacro define-case-converter ((this-type that-type &key otherwise)
+                                 &body pairs)
+  (a:with-gensyms (value whole)
+    (let ((this->that (a:symbolicate this-type '-> that-type))
+          (that->this (a:symbolicate that-type '-> this-type))
+          (otherwise (when otherwise
+                       (destructuring-bind (this-otherwise
+                                            &optional (that-otherwise nil that-provided-p))
+                           (a:ensure-list otherwise)
+                         (list this-otherwise (if that-provided-p that-otherwise this-otherwise))))))
+      `(progn
+         (eval-when (:compile-toplevel :load-toplevel :execute)
+           (defun ,this->that  (,value)
+             (case ,value
+               ,@(loop for (this that) in pairs
+                       collect `(,this ,that))
+               ,(if otherwise
+                    `(otherwise ,(first otherwise))
+                    `(otherwise ,value))))
+           (defun ,that->this (,value)
+             (case ,value
+               ,@(loop for (this that) in pairs
+                       collect `(,that ,this))
+               ,(if otherwise
+                    `(otherwise ,(second otherwise))
+                    `(otherwise ,value)))))
+         (define-compiler-macro ,this->that (&whole ,whole ,value)
+           (if (or (keywordp ,value) (integerp ,value))
+               (,this->that ,value)
+               ,whole))
+         (define-compiler-macro ,that->this (&whole ,whole ,value)
+           (if (or (keywordp ,value) (integerp ,value))
+               (,that->this ,value)
+               ,whole))))))
