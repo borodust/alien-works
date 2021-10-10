@@ -3,23 +3,52 @@
 
 (defun decode-audio (octet-stream-in)
   (flexi-streams:with-output-to-sequence (out :element-type '(signed-byte 16))
-    (%aw.opus:decode-audio octet-stream-in out 48000 2)))
+    (%aw.opus:decode-audio octet-stream-in out 48000 1)))
 
 
-(defun encode-audio (s16-stereo-pcm-stream-in octet-stream-out)
+(defun encode-audio (s16-mono-pcm-stream-in octet-stream-out)
   (let ((frame-duration 20) ;; msec
         (sample-rate 48000)
-        (channels 2))
-    (%aw.opus:encode-audio s16-stereo-pcm-stream-in octet-stream-out
+        (channels 1))
+    (%aw.opus:encode-audio s16-mono-pcm-stream-in octet-stream-out
                            (* (/ sample-rate 1000) frame-duration channels)
                            sample-rate
                            channels)))
 
 
-(defun play-audio (s16-stereo-pcm)
-  (%aw.al:play-pcm-s16-stereo s16-stereo-pcm))
+(defun play-audio (s16-mono-pcm)
+  (%aw.al:play-pcm-s16-mono s16-mono-pcm))
 
 
 (defmacro with-audio (() &body body)
   `(%aw.al:with-context ()
      ,@body))
+
+
+(defun make-audio-source (s16-mono-pcm)
+  (let ((buffer (%aw.al:make-audio-buffer))
+        (source (%aw.al:make-audio-source)))
+    (setf (%aw.al:audio-buffer-data buffer) s16-mono-pcm
+          (%aw.al:audio-source-buffer source) buffer)
+    source))
+
+
+(defun destroy-audio-source (source)
+  (%aw.al:destroy-audio-buffer (%aw.al:audio-source-buffer source))
+  (%aw.al:destroy-audio-source source))
+
+
+(defun play-audio-source (source)
+  (%aw.al:play-audio-source source))
+
+
+(defun pause-audio-source (source)
+  (%aw.al:pause-audio-source source))
+
+
+(defun stop-audio-source (source)
+  (%aw.al:stop-audio-source source))
+
+
+(defun audio-source-state (source)
+  (%aw.al:audio-source-state source))

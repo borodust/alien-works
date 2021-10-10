@@ -6,12 +6,14 @@
                     (:sv :static-vectors))
   (:use :cl)
   (:export #:with-context
-           #:play-pcm-s16-stereo
+           #:do-output-audio-devices
 
-           #:listener-gain
-           #:listener-position
-           #:listener-velocity
-           #:listener-orientation
+           #:play-pcm-s16-mono
+
+           #:audio-listener-gain
+           #:audio-listener-position
+           #:audio-listener-velocity
+           #:audio-listener-orientation
 
            #:make-audio-buffer
            #:audio-buffer-data
@@ -21,7 +23,19 @@
            #:destroy-audio-source
            #:audio-source-state
            #:audio-source-buffer
-           #:play-audio-source))
+           #:play-audio-source
+           #:pause-audio-source
+           #:stop-audio-source
+           #:audio-source-pitch
+           #:audio-source-gain
+           #:audio-source-distance
+           #:audio-source-max-distance
+           #:audio-source-reference-distance
+           #:audio-source-rolloff
+           #:audio-source-position
+           #:audio-source-velocity
+           #:audio-source-direction
+           #:audio-source-offset))
 
 
 (cl:defpackage :alien-works.audio.opus
@@ -39,7 +53,46 @@
   (:local-nicknames (:%aw.al :alien-works.audio.openal)
                     (:%aw.opus :alien-works.audio.opus))
   (:use :cl)
+  (:import-from :alien-works.audio.openal
+                #:do-output-audio-devices
+                #:audio-listener-gain
+                #:audio-listener-position
+                #:audio-listener-velocity
+                #:audio-listener-orientation
+                #:audio-source-pitch
+                #:audio-source-gain
+                #:audio-source-distance
+                #:audio-source-max-distance
+                #:audio-source-reference-distance
+                #:audio-source-rolloff
+                #:audio-source-position
+                #:audio-source-velocity
+                #:audio-source-direction
+                #:audio-source-offset)
   (:export #:with-audio
            #:play-audio
            #:decode-audio
-           #:encode-audio))
+           #:encode-audio
+
+           #:make-audio-source
+           #:destroy-audio-source
+           #:play-audio-source
+           #:pause-audio-source
+           #:stop-audio-source
+           #:audio-source-state
+           #:audio-source-pitch
+           #:audio-source-gain
+           #:audio-source-distance
+           #:audio-source-max-distance
+           #:audio-source-reference-distance
+           #:audio-source-rolloff
+           #:audio-source-position
+           #:audio-source-velocity
+           #:audio-source-direction
+           #:audio-source-offset
+
+           #:do-output-audio-devices
+           #:audio-listener-gain
+           #:audio-listener-position
+           #:audio-listener-velocity
+           #:audio-listener-orientation))

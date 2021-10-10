@@ -240,7 +240,7 @@
 
 (defun encode (source destination &key
                                     (sample-rate 48000)
-                                    (channels 2))
+                                    (channels 1))
   (with-open-file (in source :element-type '(signed-byte 16) :direction :input)
     (with-open-file (out destination :element-type '(unsigned-byte 8) :direction :output)
       (let ((frame-duration 20)) ;; msec
@@ -251,7 +251,7 @@
 
 (defun decode (location &key
                           (sample-rate 48000)
-                          (channels 2))
+                          (channels 1))
   (with-open-file (in location :element-type '(unsigned-byte 8) :direction :input)
     (flexi-streams:with-output-to-sequence (out :element-type '(signed-byte 16))
       (decode-audio in out sample-rate channels))))

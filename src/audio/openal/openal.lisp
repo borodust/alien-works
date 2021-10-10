@@ -14,10 +14,36 @@
              (error "Failed to create OpenAL context"))
            ;; Assign OpenAL context to the application
            (%alc:make-context-current ,ctx)
+           (%al:distance-model %al:+inverse-distance-clamped+)
            (unwind-protect
                 (progn ,@body)
              (%alc:destroy-context ,ctx)
              (%alc:close-device ,dev)))))))
+
+
+(defun extension-supported-p (name &optional device)
+  (/= 0 (%alc:is-extension-present device name)))
+
+
+;;;
+;;; AUDIO DEVICE
+;;;
+(defun all-output-audio-devices ()
+  (if (extension-supported-p "ALC_enumeration_EXT")
+      (cref:c-let ((str :char :from (%alc:get-string nil %alc:+all-devices-specifier+)))
+        (loop with start = 0
+              for i from 0
+              for char = (str i)
+              until (and (= char 0) (= start i))
+              when (= char 0)
+                collect (prog1 (cffi:foreign-string-to-lisp (str start &) :count (- i start))
+                          (setf start (1+ i)))))
+      (list (%alc:get-string nil %alc:+device-specifier+))))
+
+
+(defmacro do-output-audio-devices ((device-name) &body body)
+  `(loop for ,device-name in (all-output-audio-devices)
+         do (progn ,@body)))
 
 ;;;
 ;;; LISTENER
@@ -60,9 +86,9 @@
           (math:vec3 at-result-vec3 1) (orientation 1)
           (math:vec3 at-result-vec3 2) (orientation 2)
 
-          (math:vec3 up-result-vec3 0) (orientation 0)
-          (math:vec3 up-result-vec3 1) (orientation 1)
-          (math:vec3 up-result-vec3 2) (orientation 2)))
+          (math:vec3 up-result-vec3 0) (orientation 3)
+          (math:vec3 up-result-vec3 1) (orientation 4)
+          (math:vec3 up-result-vec3 2) (orientation 5)))
   (values at-result-vec3 up-result-vec3))
 
 
@@ -72,9 +98,9 @@
           (orientation 1) (math:vec3 at-result-vec3 1)
           (orientation 2) (math:vec3 at-result-vec3 2)
 
-          (orientation 0)  (math:vec3 up-result-vec3 0)
-          (orientation 1)  (math:vec3 up-result-vec3 1)
-          (orientation 2) (math:vec3 up-result-vec3 2))
+          (orientation 3)  (math:vec3 up-result-vec3 0)
+          (orientation 4)  (math:vec3 up-result-vec3 1)
+          (orientation 5) (math:vec3 up-result-vec3 2))
     (%al:listenerfv %al:+orientation+ (orientation &)))
   (values at-result-vec3 up-result-vec3))
 
@@ -89,12 +115,12 @@
     buf))
 
 
-(defun (setf audio-buffer-data) (s16-stereo-48k-pcm-data buffer)
-  (sv:with-static-vector (foreign-data (length s16-stereo-48k-pcm-data)
+(defun (setf audio-buffer-data) (s16-mono-48k-pcm-data buffer)
+  (sv:with-static-vector (foreign-data (length s16-mono-48k-pcm-data)
                                        :element-type '(signed-byte 16)
-                                       :initial-contents s16-stereo-48k-pcm-data)
+                                       :initial-contents s16-mono-48k-pcm-data)
     ;; Load sample data into the buffer
-    (%al:buffer-data buffer %al:+format-stereo16+
+    (%al:buffer-data buffer %al:+format-mono16+
                      (static-vectors:static-vector-pointer foreign-data)
                      (* (length foreign-data) 2)
                      48000)))
@@ -149,6 +175,113 @@
   (%al:source-play source))
 
 
+(defun pause-audio-source (source)
+  (%al:source-pause source))
+
+
+(defun stop-audio-source (source)
+  (%al:source-stop source))
+
+
+(defun audio-source-pitch (source)
+  (cref:c-with ((val %al:float))
+    (%al:get-sourcef source %al:+pitch+ (val &))
+    val))
+
+
+(defun (setf audio-source-pitch) (value source)
+  (%al:sourcef source %al:+pitch+ (float (max 0 value) 0f0))
+  value)
+
+
+(defun audio-source-gain (source)
+  (cref:c-with ((val %al:float))
+    (%al:get-sourcef source %al:+gain+ (val &))
+    val))
+
+
+(defun (setf audio-source-gain) (value source)
+  (%al:sourcef source %al:+gain+ (float (max 0 value) 0f0))
+  value)
+
+
+(defun audio-source-reference-distance (source)
+  (cref:c-with ((val %al:float))
+    (%al:get-sourcef source %al:+reference-distance+ (val &))
+    val))
+
+
+(defun (setf audio-source-reference-distance) (value source)
+  (%al:sourcef source %al:+reference-distance+ (float (max 0 value) 0f0))
+  value)
+
+
+(defun audio-source-max-distance (source)
+  (cref:c-with ((val %al:float))
+    (%al:get-sourcef source %al:+max-distance+ (val &))
+    val))
+
+
+(defun (setf audio-source-max-distance) (value source)
+  (%al:sourcef source %al:+max-distance+ (float (max 0 value) 0f0))
+  value)
+
+
+(defun audio-source-rolloff (source)
+  (cref:c-with ((value %al:float))
+    (%al:get-sourcef source %al:+rolloff-factor+ (value &))
+    value))
+
+
+(defun (setf audio-source-rolloff) (value source)
+  (%al:sourcef source %al:+rolloff-factor+ (float (max 0 value) 0f0))
+  value)
+
+
+(defun audio-source-position (source result-vec3)
+  (%al:get-sourcefv source %al:+position+ (%math:vec3-ptr result-vec3))
+  result-vec3)
+
+
+(defun (setf audio-source-position) (vec3 source)
+  (%al:sourcefv source %al:+position+ (%math:vec3-ptr vec3))
+  vec3)
+
+
+(defun audio-source-velocity (source result-vec3)
+  (%al:get-sourcefv source %al:+velocity+ (%math:vec3-ptr result-vec3))
+  result-vec3)
+
+
+(defun (setf audio-source-velocity) (vec3 source)
+  (%al:sourcefv source %al:+velocity+ (%math:vec3-ptr vec3))
+  vec3)
+
+
+(defun audio-source-direction (source result-vec3)
+  (%al:get-sourcefv source %al:+direction+ (%math:vec3-ptr result-vec3))
+  result-vec3)
+
+
+(defun (setf audio-source-direction) (vec3 source)
+  (%al:sourcefv source %al:+direction+ (%math:vec3-ptr vec3))
+  vec3)
+
+
+(defun audio-source-offset (source &optional (type :seconds))
+  (if (eq type :seconds)
+      (cref:c-with ((value %al:float))
+        (%al:get-sourcef source %al:+sec-offset+ (value &))
+        value)
+      (cref:c-with ((value %al:uint))
+        (%al:get-sourcei source
+                         (ecase type
+                           (:samples %al:+sample-offset+)
+                           (:bytes %al:+byte-offset+))
+                         (value &))
+        value)))
+
+
 ;;;
 ;;; MISC
 ;;;
@@ -158,7 +291,7 @@
         do (sleep 0.1)))
 
 
-(defun play-pcm-s16-stereo (pcm-data)
+(defun play-pcm-s16-mono (pcm-data)
   (let ((buffer (make-audio-buffer))
         (source (make-audio-source)))
     (unwind-protect

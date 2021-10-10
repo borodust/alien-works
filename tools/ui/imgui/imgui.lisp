@@ -30,7 +30,7 @@
 
 (defun update-display-size (imgui-helper width height scale-x scale-y)
   (%filament:set-display-size
-   '(claw-utils:claw-pointer %filament::im-gui-helper) imgui-helper
+   '(claw-utils:claw-pointer %filament:im-gui-helper) imgui-helper
    :int (floor width)
    :int (floor height)
    :float (float scale-x 0f0)
@@ -73,7 +73,7 @@
         (y-name (if (and y (listp y)) (first y) y)))
     `(,@(if (listp vec)
             `(let ((,vec-name ,(second vec))) (declare (ignorable ,vec-name)))
-            `(iffi:with-intricate-instance (,vec %imgui::im-vec2)))
+            `(iffi:with-intricate-instance (,vec %imgui:im-vec2)))
       (iffi:with-intricate-slots %imgui:im-vec2 (,@(when x
                                                      `((,x-name %imgui:x)))
                                                  ,@(when y
@@ -191,8 +191,32 @@
 
 (defun add-input-characters (io text)
   (%imgui:add-input-characters-utf8
-   '(claw-utils:claw-pointer %imgui::im-gui-io) io
+   '(claw-utils:claw-pointer %imgui:im-gui-io) io
    'claw-utils:claw-string text))
+
+
+
+(defun mouse-dragging-p (button &optional lock-threshold)
+  (%imgui:is-mouse-dragging
+   '%filament.imgui:im-gui-mouse-button (ecase button
+                                           (:left 0)
+                                           (:right 1)
+                                           (:middle 2))
+   :float (float (or lock-threshold -1f0) 0f0)))
+
+
+(defun mouse-drag-delta (button result-vec2 &optional lock-threshold)
+  (with-vec2 (vec x y)
+    (%imgui:get-mouse-drag-delta
+     '(claw-utils:claw-pointer %filament.imgui:im-vec2) vec
+     '%filament.imgui:im-gui-mouse-button (ecase button
+                                             (:left 0)
+                                             (:right 1)
+                                             (:middle 2))
+     :float (float (or lock-threshold -1f0) 0f0))
+    (setf (math:vec2 result-vec2 0) x
+          (math:vec2 result-vec2 1) y)
+    result-vec2))
 
 
 ;;;
@@ -205,15 +229,15 @@
     (not closed)))
 
 
-(defmacro with-panel ((title &key on-close) &body body)
+(defmacro with-panel ((text &key on-close) &body body)
   (a:with-gensyms (keep-open close-not-clicked result)
-    (a:once-only (title)
+    (a:once-only (text)
       `(cref:c-with ((,close-not-clicked :bool))
          (setf ,close-not-clicked t)
          (let ((,keep-open (%imgui:begin
-                            'claw-utils:claw-string ,title
+                            'claw-utils:claw-string ,text
                             '(claw-utils:claw-pointer :bool) (,close-not-clicked &)
-                            '%imgui::im-gui-window-flags 0))
+                            '%imgui:im-gui-window-flags 0))
                ,@(when on-close
                    `(,result)))
            (unwind-protect
@@ -228,71 +252,109 @@
                    (funcall ,on-close ,result)))))))))
 
 
-(defun button (caption)
+(defun button (text)
   (with-vec2 (vec x y)
     (setf x (float 0 0f0)
           y (float 0 0f0))
     (%imgui:button
-     'claw-utils:claw-string caption
-     '(claw-utils:claw-pointer %imgui::im-vec2) vec)))
+     'claw-utils:claw-string text
+     '(claw-utils:claw-pointer %imgui:im-vec2) vec)))
 
 
-(defun checkbox (caption &optional checked)
+(defun checkbox (text &optional checked)
   (cref:c-with ((fchecked :bool))
     (setf fchecked (and checked t))
     (%imgui:checkbox
-     'claw-utils:claw-string caption
+     'claw-utils:claw-string text
      '(claw-utils:claw-pointer :bool) (fchecked &))))
 
 
-(defun label (caption &rest args)
+(defun text (text &rest args)
   (%imgui:text-unformatted
    'claw-utils:claw-string (if args
-                               (apply #'format nil caption args)
-                               caption)
+                               (apply #'format nil text args)
+                               text)
    'claw-utils:claw-string (cffi:null-pointer)))
 
 
-(defun collapsing-header (title &key)
+(defun collapsing-header (text &key)
   (%imgui:collapsing-header
-   'claw-utils:claw-string title
+   'claw-utils:claw-string text
    '(claw-utils:claw-pointer :bool) (cffi:null-pointer)
-   '%filament.imgui::im-gui-tree-node-flags 0))
+   '%filament.imgui:im-gui-tree-node-flags 0))
 
 
-(defun tree-node (title &key)
+(defun tree-node (text &key)
   (%imgui:tree-node-ex
-   'claw-utils:claw-string title
-   '%filament.imgui::im-gui-tree-node-flags 0))
+   'claw-utils:claw-string text
+   '%filament.imgui:im-gui-tree-node-flags 0))
 
 
 (defun tree-pop ()
   (%imgui:tree-pop))
 
 
-(defmacro with-tree-node ((title &rest keys &key) &body body)
-  `(when (tree-node ,title ,@keys)
+(defmacro with-tree-node ((text &rest keys &key) &body body)
+  `(when (tree-node ,text ,@keys)
      (unwind-protect
           (progn ,@body)
        (tree-pop))))
 
 
-(defun selectable (caption &key selected)
+(defun selectable (text &key selected)
   (with-vec2 (vec (x 0f0) (y 0f0))
     (%imgui:selectable
-     'claw-utils:claw-string caption
+     'claw-utils:claw-string text
      ':bool selected
-     '%filament.imgui::im-gui-selectable-flags 0
-     '(claw-utils:claw-pointer %filament.imgui::im-vec2) vec)))
+     '%filament.imgui:im-gui-selectable-flags 0
+     '(claw-utils:claw-pointer %filament.imgui:im-vec2) vec)))
 
 
 (defun progress-bar (progress-value &key overlay)
   (with-vec2 (vec (x -1f0) (y 0f0))
     (%imgui:progress-bar
      :float progress-value
-     '(claw-utils:claw-pointer %filament.imgui::im-vec2) vec
+     '(claw-utils:claw-pointer %filament.imgui:im-vec2) vec
      'claw-utils:claw-string overlay)))
 
 
 (defun same-line (&key offset spacing)
   (%imgui:same-line :float (or offset 0f0) :float (or spacing -1f0)))
+
+
+(defun float-slider (label value &key min max format power)
+  (cref:c-with ((fvalue :float))
+    (setf fvalue (float value 0f0))
+    (let ((changed-p (%imgui:slider-float
+                      'claw-utils:claw-string (or label "")
+                      '(claw-utils:claw-pointer :float) (fvalue &)
+                      :float (float (or min 0f0) 0f0)
+                      :float (float (or max 1f0) 0f0)
+                      'claw-utils:claw-string (or format "%.3f")
+                      :float (float (or power 1f0) 0f0))))
+      (values fvalue changed-p))))
+
+
+(defun indent (&optional width)
+  (%imgui:indent :float (float (or width 0f0) 0f0)))
+
+
+(defun unindent (&optional width)
+  (%imgui:unindent :float (float (or width 0f0) 0f0)))
+
+
+(defun item-active-p ()
+  (%imgui:is-item-active))
+
+
+(defun float-input (text value &key step step-fast format)
+  (cref:c-with ((fvalue :float))
+    (setf fvalue (float value 0f0))
+    (let ((changed-p (%imgui:input-float
+                      'claw-utils:claw-string text
+                      '(claw-utils:claw-pointer :float) (fvalue &)
+                      :float (float (or step 1f0) 0f0)
+                      :float (float (or step-fast 100f0) 0f0)
+                      'claw-utils:claw-string (or format "%.3f")
+                      '%filament.imgui:im-gui-input-text-flags 0)))
+      (values fvalue changed-p))))

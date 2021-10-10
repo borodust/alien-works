@@ -2,6 +2,7 @@
   (:use :cl)
   (:local-nicknames (:a :alexandria)
                     (:u :alien-works.utils)
+                    (:math :alien-works.math)
                     (:host :alien-works.host)
                     (:%imgui :%filament.imgui)
                     (:cref :cffi-c-ref)
@@ -21,19 +22,26 @@
            #:update-mouse-buttons
            #:update-mouse-wheel
            #:add-input-characters
+           #:mouse-dragging-p
+           #:mouse-drag-delta
 
            #:with-panel
 
            #:button
            #:checkbox
-           #:label
+           #:text
            #:collapsing-header
            #:tree-node
            #:tree-pop
            #:with-tree-node
            #:selectable
            #:progress-bar
-           #:same-line))
+           #:same-line
+           #:float-slider
+           #:indent
+           #:unindent
+           #:item-active-p
+           #:float-input))
 
 
 (cl:defpackage :alien-works.tools.ui
@@ -45,17 +53,25 @@
                     (:%ui :%alien-works.tools.imgui))
   (:use :cl)
   (:import-from :%alien-works.tools.imgui
+                #:mouse-dragging-p
+                #:mouse-drag-delta
+
                 #:with-panel
                 #:button
                 #:checkbox
-                #:label
+                #:text
                 #:collapsing-header
                 #:tree-node
                 #:tree-pop
                 #:with-tree-node
                 #:selectable
                 #:progress-bar
-                #:same-line)
+                #:same-line
+                #:float-slider
+                #:indent
+                #:unindent
+                #:item-active-p
+                #:float-input)
   (:export #:make-ui
            #:destroy-ui
            #:update-ui-input
@@ -63,14 +79,22 @@
            #:render-ui
            #:ui
 
+           #:mouse-dragging-p
+           #:mouse-drag-delta
+
            #:with-panel
            #:button
            #:checkbox
-           #:label
+           #:text
            #:collapsing-header
            #:tree-node
            #:tree-pop
            #:with-tree-node
            #:selectable
            #:progress-bar
-           #:same-line))
+           #:same-line
+           #:float-slider
+           #:indent
+           #:unindent
+           #:item-active-p
+           #:float-input))
