@@ -809,11 +809,14 @@ Returns -32768 to 32767 for sticks and 0 to 32767 for triggers"
 
 
 (defun working-directory ()
-  (or (provided-workdir) (uiop:getcwd)))
+  (or (provided-workdir)
+      (a:when-let ((exec-path (first (uiop:raw-command-line-arguments))))
+        exec-path)
+      (uiop:getcwd)))
 
 
 (defun add-known-foreign-library-directories ()
-  (loop with workdir = (provided-workdir)
+  (loop with workdir = (working-directory)
         with libpaths = (mapcar #'uiop:ensure-directory-pathname
                                 (remove-if #'a:emptyp
                                            (uiop:split-string (uiop:getenv "ALIEN_WORKS_LIBRARY_PATH")
@@ -835,7 +838,7 @@ Returns -32768 to 32767 for sticks and 0 to 32767 for triggers"
 
 
 (defmacro definit (name (&rest lambda-list) &body body)
-  (let ((initializer (a:symbolicate 'alien-works-init$ name)))
+  (let ((initializer (a:symbolicate name '$alien-works-init)))
     `(progn
        (pushnew ',initializer *init-hooks*)
        (defun ,initializer ,@(if lambda-list
