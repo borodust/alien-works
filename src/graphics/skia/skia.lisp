@@ -1,6 +1,9 @@
 (cl:in-package :%alien-works.skia)
 
 
+(declaim (special *canvas*
+                  *paint*))
+
 (u:define-enumval-extractor color-type-enum %skia:sk-color-type)
 (u:define-enumval-extractor surface-origin-enum %skia:gr-surface-origin)
 
@@ -32,56 +35,141 @@
    '(:pointer %skia::sk-sp<const+gr-gl-interface>) gl-interface-sp))
 
 
-(defun draw-skia (canvas)
-  (%skia:clear '(:pointer %skia::sk-canvas) canvas
-               '%skia::sk-color %skia:+sk-color-transparent+)
-  (let ((time (/ (get-internal-real-time) internal-time-units-per-second)))
-    (iffi:with-intricate-instances ((paint %skia:sk-paint))
-      (%skia:set-color '(:pointer %skia::sk-paint) paint
-                       '%skia::sk-color %skia:+sk-color-yellow+)
-      (iffi:with-intricate-alloc (rect %skia:sk-rect)
-        (%skia:sk-rect+make-xywh
-         '(:pointer %skia::sk-rect) rect
-         '%skia::sk-scalar (float (floor (+ 300 (* 100 (cos (* 10 time))))) 0f0)
-         '%skia::sk-scalar (float (floor (+ 300 (* 100 (sin (* 10 time))))) 0f0)
-         '%skia::sk-scalar 500f0
-         '%skia::sk-scalar 500f0)
-        (%skia:draw-rect
-         '(:pointer %skia::sk-canvas) canvas
-         '(:pointer %skia::sk-rect) rect
-         '(:pointer %skia::sk-paint) paint))
-      (%skia:set-color '(:pointer %skia::sk-paint) paint
-                       '%skia::sk-color %skia:+sk-color-cyan+)
-      (%skia:draw-circle
-       '(:pointer %skia::sk-canvas) canvas
-       '%skia::sk-scalar (float (floor (+ 400 (* 150 (sin (* 5 time))))) 0f0)
-       '%skia::sk-scalar (float (floor (+ 600 (* 150 (cos (* 1 time))))) 0f0)
-       '%skia::sk-scalar 150f0
-       '(:pointer %skia::sk-paint) paint)))
-  (%skia:flush '(:pointer %skia::sk-canvas) canvas))
+;;;
+;;; SKIA
+;;;
+(defstruct (skia-context
+            (:constructor %make-context)
+            (:conc-name %context-))
+  interface
+  handle
+  framebuffer)
 
 
-(defun call-with-skia-canvas (framebuffer-id width height action)
+(defun context-interface (skia)
+  (%skia:get :const '(:pointer %skia::sk-sp<const+gr-gl-interface>) (%context-interface skia)))
+
+
+(defun context-handle (skia)
+  (%skia:get :const '(:pointer %skia::sk-sp<gr-direct-context>) (%context-handle skia)))
+
+
+(defun make-context (framebuffer-id)
   (let* ((interface-sp (make-native-gl-interface))
          (context-sp (make-gl-context interface-sp))
-         (interface (%skia:get :const '(:pointer %skia::sk-sp<const+gr-gl-interface>) interface-sp))
-         (context (%skia:get :const '(:pointer %skia::sk-sp<gr-direct-context>) context-sp)))
-    (iffi:with-intricate-instances ((framebuffer %skia:gr-gl-framebuffer-info)
-                                    (surface-props %skia:sk-surface-props))
-      (iffi:with-intricate-slots %skia:gr-gl-framebuffer-info
-          ((fbo-id %skia:f-fboid)
-           (format %skia:f-format))
-          framebuffer
-        (setf fbo-id framebuffer-id
-              format #x8058)) ;; #define GR_GL_RGBA8 0x8058
-      (iffi:with-intricate-instance
-          (render-target %skia:gr-backend-render-target
+         (framebuffer (iffi:make-intricate-instance '%skia:gr-gl-framebuffer-info)))
+    (iffi:with-intricate-slots %skia:gr-gl-framebuffer-info
+        ((fbo-id %skia:f-fboid)
+         (format %skia:f-format))
+        framebuffer
+      (setf fbo-id framebuffer-id
+            format #x8058)) ;; #define GR_GL_RGBA8 0x8058
+
+    (%make-context :interface interface-sp
+                   :handle context-sp
+                   :framebuffer framebuffer)))
+
+
+(defun destroy-context (skia)
+  ;; FIXME: do things
+  )
+
+
+
+;;;
+;;; CANVAS
+;;;
+(defstruct (skia-canvas
+            (:constructor %make-canvas)
+            (:conc-name %canvas-))
+  render-target
+  surface
+  handle)
+
+
+(defun make-canvas (skia width height)
+  (let* ((render-target (iffi:make-intricate-instance
+                         '%skia:gr-backend-render-target
                          :int width
                          :int height
                          :int 0
                          :int 8
-                         '(:pointer %skia::gr-gl-framebuffer-info) framebuffer)
-        (let* ((surface-sp (make-surface-from-backend-render-target context render-target surface-props))
-               (surface (%skia:get :const '(:pointer %skia::sk-sp<sk-surface>) surface-sp))
-               (canvas (%skia:get-canvas '(:pointer %skia::sk-surface) surface)))
-          (funcall action canvas))))))
+                         '(:pointer %skia::gr-gl-framebuffer-info) (%context-framebuffer skia)))
+         (surface-sp (iffi:with-intricate-instances ((surface-props %skia:sk-surface-props))
+                       (make-surface-from-backend-render-target (context-handle skia)
+                                                                render-target
+                                                                surface-props)))
+         (surface (%skia:get :const '(:pointer %skia::sk-sp<sk-surface>) surface-sp))
+         (canvas (%skia:get-canvas '(:pointer %skia::sk-surface) surface)))
+    (%make-canvas :surface surface-sp
+                  :handle canvas
+                  :render-target render-target)))
+
+
+(defun destroy-canvas (canvas)
+  ;; FIXME: do it
+  )
+
+
+;;;
+;;; DRAWING
+;;;
+(defun make-paint ()
+  (iffi:make-intricate-instance '%skia:sk-paint))
+
+
+(defun destroy-paint (paint)
+  (iffi:destroy-intricate-instance '%skia:sk-paint paint))
+
+
+(defun clear-canvas (&optional (canvas *canvas*))
+  (%skia:clear '(:pointer %skia::sk-canvas) (%canvas-handle canvas)
+               '%skia::sk-color %skia:+sk-color-transparent+))
+
+
+(defun discard-canvas (&optional (canvas *canvas*))
+  (%skia:discard '(:pointer %skia::sk-canvas) (%canvas-handle canvas)))
+
+
+(defun flush-canvas (&optional (canvas *canvas*))
+  (%skia:flush '(:pointer %skia:sk-canvas) (%canvas-handle canvas)))
+
+
+(defun paint-color (r g b a)
+  (iffi:with-intricate-instance (color %skia:sk-color4f)
+    (iffi:with-intricate-slots %skia:sk-color4f ((cr %skia:f-r)
+                                                 (cg %skia:f-g)
+                                                 (cb %skia:f-b)
+                                                 (ca %skia:f-a))
+                               color
+      (setf cr (float r 0f0)
+            cg (float g 0f0)
+            cb (float b 0f0)
+            ca (float a 0f0))
+      (%skia:set-color
+       '(claw-utils:claw-pointer %skia:sk-paint) *paint*
+       '(claw-utils:claw-pointer %skia:sk-color4f) color
+       '(claw-utils:claw-pointer %skia:sk-color-space) (cffi:null-pointer)))))
+
+
+(defun rectangle (x y width height)
+  (iffi:with-intricate-alloc (rect %skia:sk-rect)
+    (%skia:sk-rect+make-xywh
+     '(:pointer %skia::sk-rect) rect
+     '%skia::sk-scalar (float x 0f0)
+     '%skia::sk-scalar (float y 0f0)
+     '%skia::sk-scalar (float width 0f0)
+     '%skia::sk-scalar (float height 0f0))
+    (%skia:draw-rect
+     '(:pointer %skia::sk-canvas) (%canvas-handle *canvas*)
+     '(:pointer %skia::sk-rect) rect
+     '(:pointer %skia::sk-paint) *paint*)))
+
+
+(defun circle (x y radius)
+  (%skia:draw-circle
+   '(:pointer %skia::sk-canvas) (%canvas-handle *canvas*)
+   '%skia::sk-scalar (float x 0f0)
+   '%skia::sk-scalar (float y 0f0)
+   '%skia::sk-scalar (float radius 0f0)
+   '(:pointer %skia::sk-paint) *paint*))

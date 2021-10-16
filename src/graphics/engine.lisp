@@ -3,6 +3,7 @@
 (defclass engine ()
   ((engine :reader handle-of)
    (scene :reader scene-of)
+   (canvas-context :reader canvas-context-of)
    swap-chain renderer camera camera-entity view))
 
 
@@ -30,15 +31,17 @@
     (setf (%fm:scene-indirect-light scene) indirect-light)))
 
 
-(defmethod initialize-instance :after ((this engine) &key surface width height shared-context)
-  (with-slots (engine swap-chain renderer scene camera camera-entity view) this
-    (setf engine (%fm:create-engine shared-context)
-          swap-chain (%fm:create-swap-chain engine surface)
+(defmethod initialize-instance :after ((this engine) &key window width height)
+  (with-slots (engine swap-chain renderer scene camera camera-entity view canvas-context)
+      this
+    (setf engine (%fm:create-engine (%host:window-graphics-context))
+          swap-chain (%fm:create-swap-chain engine (%host:window-surface window))
           renderer (%fm:create-renderer engine)
           camera-entity (%fm:create-entity)
           camera (%fm:create-camera engine camera-entity)
           view (%fm:create-view engine)
-          scene (%fm:create-scene engine))
+          scene (%fm:create-scene engine)
+          canvas-context (make-canvas-context window))
     ;; view setup
     (setf (%fm:view-camera view) camera
           (%fm:view-scene view) scene
@@ -50,12 +53,13 @@
       (%fm:update-camera-lens-projection camera 28f0 (/ width height) 0.01 100))))
 
 
-(defun create-engine (surface &key width height shared-context)
-  (make-instance 'engine :surface surface :width width :height height :shared-context shared-context))
+(defun create-engine (window &key width height)
+  (make-instance 'engine :window window :width width :height height))
 
 
 (defun destroy-engine (engine)
-  (with-slots (engine swap-chain renderer scene camera-entity view) engine
+  (with-slots (engine swap-chain renderer scene camera-entity view canvas-context) engine
+    (destroy-canvas-context canvas-context)
     (%fm:destroy-view engine view)
     (%fm:destroy-camera engine camera-entity)
     (%fm:destroy-scene engine scene)
@@ -71,7 +75,7 @@
       (%fm:end-frame renderer))))
 
 
-(defmacro in-frame ((engine) &body body)
+(defmacro with-frame ((engine) &body body)
   `(with-slots (renderer view swap-chain) ,engine
      (when (%fm:begin-frame renderer swap-chain)
        (%fm:render-view renderer view)
@@ -80,30 +84,12 @@
          (%fm:end-frame renderer)))))
 
 
-(defmacro with-engine ((engine &key (surface (error ":surface missing")) shared-context width height)
+(defmacro with-engine ((engine &key (window (error ":window missing")) width height)
                        &body body)
-  `(let ((,engine (create-engine ,surface :width ,width :height ,height
-                                          :shared-context ,shared-context)))
+  `(let ((,engine (create-engine ,window :width ,width :height ,height)))
      (unwind-protect
           (progn ,@body)
        (destroy-engine ,engine))))
-
-
-(defun init-shared-context-thread (surface stop-fu)
-  (format t "GL Version: ~A" (gl:get-string :version))
-  (bind-buffered-surface surface)
-  (let* ((framebuffer (buffered-surface-framebuffer surface)))
-    (%alien-works.skia::call-with-skia-canvas
-     (buffered-surface-framebuffer-id framebuffer)
-     (buffered-surface-width surface)
-     (buffered-surface-height surface)
-     (lambda (canvas)
-       (loop until (funcall stop-fu)
-             do (render-buffered-surface
-                 surface
-                 (lambda ()
-                   (%alien-works.skia::draw-skia canvas)))
-                (sleep 0.014))))))
 
 
 (defun transform-camera (engine transform)

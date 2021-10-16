@@ -189,9 +189,24 @@
   (:local-nicknames (:a :alexandria)
                     (:! :alien-works.utils.empty)
                     (:u :alien-works.utils)
-                    (:m :alien-works.math))
+                    (:m :alien-works.math)
+                    (:%host :%alien-works.host))
   (:use :cl)
-  (:export))
+  (:export #:make-context
+           #:destroy-context
+
+           #:*canvas*
+           #:*paint*
+           #:make-canvas
+           #:destroy-canvas
+           #:clear-canvas
+           #:flush-canvas
+
+           #:make-paint
+           #:destroy-paint
+           #:paint-color
+           #:rectangle
+           #:circle))
 
 
 (cl:defpackage :%alien-works.graphics
@@ -201,14 +216,16 @@
 (cl:defpackage :alien-works.graphics
   (:local-nicknames (:a :alexandria)
                     (:%fm :%alien-works.filament)
+                    (:%aw.skia :%alien-works.skia)
                     (:u :alien-works.utils)
                     (:sv :static-vectors)
                     (:cref :cffi-c-ref)
-                    (:m :alien-works.math))
+                    (:m :alien-works.math)
+                    (:%host :%alien-works.host))
   (:use :cl :%alien-works.graphics)
   (:export #:with-engine
            #:render-frame
-           #:in-frame
+           #:with-frame
 
            #:add-scene-entity
 
@@ -316,4 +333,15 @@
            #:.irradiance
            #:.cubemap-irradiance
            #:.intensity
-           #:.rotation))
+           #:.rotation
+
+           #:make-canvas
+           #:destroy-canvas
+           #:canvas-texture
+           #:with-canvas
+           #:clear-canvas
+
+           #:with-paint
+           #:paint-color
+           #:rectangle
+           #:circle))

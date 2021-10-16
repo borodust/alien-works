@@ -30,7 +30,8 @@
                #:trivial-gray-streams
                #:flexi-streams
                #:bordeaux-threads
-               #:atomics)
+               #:atomics
+               #:cl-muth)
   :serial t
   :components ((:module "utils"
                 :serial t
@@ -63,6 +64,7 @@
                (:module "graphics"
                 :serial t
                 :components ((:file "packages")
+                             (:file "surface")
                              (:module "filament"
                               :serial t
                               :components ((:file "utils")
@@ -85,7 +87,7 @@
                              (:module "skia"
                               :serial t
                               :components ((:file "skia")))
-                             (:file "surface")
+                             (:file "canvas")
                              (:file "engine")))
                (:module "physics"
                 :serial t

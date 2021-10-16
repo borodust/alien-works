@@ -1,5 +1,52 @@
 (cl:in-package :alien-works.graphics)
 
+
+(atomics:defstruct (triple-buffered-value
+                    (:constructor %make-triple-buffered-value))
+  (updating-p nil :type boolean)
+  (prepared-p nil :type boolean)
+  (front nil :type t)
+  (prepared nil :type t)
+  (back nil :type t))
+
+
+(defun make-triple-buffered-value (front prepared back)
+  (%make-triple-buffered-value :front front :prepared prepared :back back))
+
+
+(defun lock-triple-buffered-value (vessel)
+  (loop until (atomics:cas (triple-buffered-value-updating-p vessel) nil t)))
+
+
+(defun unlock-triple-buffered-value (vessel)
+  (setf (triple-buffered-value-updating-p vessel) nil))
+
+
+(defmacro with-locked-triple-buffered-value ((vessel) &body body)
+  (a:once-only (vessel)
+    `(progn
+       (lock-triple-buffered-value ,vessel)
+       (unwind-protect
+            (progn ,@body)
+         (unlock-triple-buffered-value ,vessel)))))
+
+
+(defun swap-triple-buffered-value (vessel)
+  (with-locked-triple-buffered-value (vessel)
+    (when (triple-buffered-value-prepared-p vessel)
+      (rotatef (triple-buffered-value-front vessel)
+               (triple-buffered-value-prepared vessel))
+      (setf (triple-buffered-value-prepared-p vessel) nil))
+    (triple-buffered-value-front vessel)))
+
+
+(defun prepare-triple-buffered-value (vessel)
+  (with-locked-triple-buffered-value (vessel)
+    (rotatef (triple-buffered-value-back vessel)
+             (triple-buffered-value-prepared vessel))
+    (setf (triple-buffered-value-prepared-p vessel) t)))
+
+
 ;;;
 ;;;
 ;;;
@@ -43,7 +90,7 @@
 ;;;
 ;;;
 (defstruct (buffered-surface-texture
-            (:constructor %buffered-surface-texture))
+            (:constructor %make-buffered-surface-texture))
   (id -1 :type fixnum :read-only t)
   (filatex nil :read-only t))
 
@@ -57,7 +104,7 @@
     (gl:tex-parameter :texture-2d :texture-min-filter :nearest)
     (gl:tex-parameter :texture-2d :texture-base-level 0)
     (gl:tex-parameter :texture-2d :texture-max-level 0)
-    (%buffered-surface-texture
+    (%make-buffered-surface-texture
      :id tex-id
      :filatex (make-texture engine
                             (.import tex-id)
@@ -77,7 +124,6 @@
                     (:constructor %make-buffered-surface))
   (width 1 :type fixnum :read-only t)
   (height 1 :type fixnum :read-only t)
-  (framebuffer nil :type (or buffered-surface-framebuffer null))
   (prepared-p nil :type boolean)
   (front -1 :type (or buffered-surface-texture null))
   (prepared -1 :type (or buffered-surface-texture null))
@@ -94,21 +140,6 @@
      :front (%make-texture)
      :prepared (%make-texture)
      :back (%make-texture))))
-
-
-(defun bind-buffered-surface (buffered-surface)
-  (when (buffered-surface-framebuffer buffered-surface)
-    (error "Buffered surface already bound somewhere"))
-  (let* ((width (buffered-surface-width buffered-surface))
-         (height (buffered-surface-height buffered-surface))
-         (framebuffer (make-buffered-surface-framebuffer width height)))
-    (setf (buffered-surface-framebuffer buffered-surface) framebuffer)))
-
-
-(defun release-buffered-surface (buffered-surface)
-  (when (buffered-surface-framebuffer buffered-surface)
-    (destroy-buffered-surface-framebuffer (buffered-surface-framebuffer buffered-surface))
-    (setf (buffered-surface-framebuffer buffered-surface) nil)))
 
 
 (defun destroy-buffered-surface (engine instance)
@@ -146,16 +177,7 @@
       (setf (buffered-surface-prepared-p buffered-surface) nil))))
 
 
-(defun render-buffered-surface (buffered-surface render-task)
-  (let ((framebuffer (buffered-surface-framebuffer buffered-surface)))
-    (prepare-framebuffer
-     framebuffer
-     (buffered-surface-texture-id (buffered-surface-back buffered-surface))
-     (buffered-surface-width buffered-surface)
-     (buffered-surface-height buffered-surface))
-    (funcall render-task)
-    (flush-framebuffer framebuffer)
-    (gl:finish))
+(defun swap-buffered-surface (buffered-surface)
   (with-locked-buffered-surface (buffered-surface)
     (rotatef (buffered-surface-back buffered-surface)
              (buffered-surface-prepared buffered-surface))

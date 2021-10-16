@@ -229,27 +229,35 @@
     (not closed)))
 
 
-(defmacro with-panel ((text &key on-close) &body body)
-  (a:with-gensyms (keep-open close-not-clicked result)
+(defmacro with-panel ((text &key on-close width height) &body body)
+  (a:with-gensyms (keep-open close-not-clicked result size x y)
     (a:once-only (text)
       `(cref:c-with ((,close-not-clicked :bool))
          (setf ,close-not-clicked t)
-         (let ((,keep-open (%imgui:begin
-                            'claw-utils:claw-string ,text
-                            '(claw-utils:claw-pointer :bool) (,close-not-clicked &)
-                            '%imgui:im-gui-window-flags 0))
-               ,@(when on-close
-                   `(,result)))
-           (unwind-protect
-                (when ,keep-open
-                  (,@(if on-close
-                         `(setf ,result)
-                         '(progn))
-                   ,@body))
-             (%imgui:end)
-             ,(when on-close
-                `(unless ,close-not-clicked
-                   (funcall ,on-close ,result)))))))))
+         (,@(if (or width height)
+                `(with-vec2 (,size ,x ,y)
+                   (setf ,x (float ,(or width 0f0) 0f0)
+                         ,y (float ,(or height 0f0) 0f0))
+                   (%imgui:set-next-window-size
+                    '(claw-utils:claw-pointer %filament.imgui:im-vec2) ,size
+                    '%filament.imgui:im-gui-cond 0))
+                `(progn))
+          (let ((,keep-open (%imgui:begin
+                             'claw-utils:claw-string ,text
+                             '(claw-utils:claw-pointer :bool) (,close-not-clicked &)
+                             '%imgui:im-gui-window-flags 0))
+                ,@(when on-close
+                    `(,result)))
+            (unwind-protect
+                 (when ,keep-open
+                   (,@(if on-close
+                          `(setf ,result)
+                          '(progn))
+                    ,@body))
+              (%imgui:end)
+              ,(when on-close
+                 `(unless ,close-not-clicked
+                    (funcall ,on-close ,result))))))))))
 
 
 (defun button (text)

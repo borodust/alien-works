@@ -3,7 +3,11 @@
   (:export #:get-clipboard-foreign-text
            #:set-clipboard-foreign-text
 
-           #:event-input-foreign-text))
+           #:event-input-foreign-text
+
+           #:make-shared-context-thread
+           #:window-graphics-context
+           #:window-surface))
 
 
 (cl:defpackage :alien-works.host
@@ -25,13 +29,10 @@
 
            #:with-window
            #:window-display
-           #:window-surface
            #:window-width
            #:window-height
            #:framebuffer-width
            #:framebuffer-height
-
-           #:make-shared-context-thread
 
            #:handle-events
            #:event-type

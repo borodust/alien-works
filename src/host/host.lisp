@@ -6,7 +6,8 @@
 (a:define-constant +buffer-size+ 4096)
 (a:define-constant +max-controller-guid-length+ 128)
 
-(declaim (special *event*))
+(declaim (special *event*
+                  *native-graphics-context*))
 
 
 (defun sdl-error ()
@@ -306,6 +307,10 @@
         finally (error "Required OpenGL version is not available (4.1+)")))
 
 
+(defun %host:window-graphics-context ()
+  *native-graphics-context*)
+
+
 (defun call-with-window (callback)
   (%sdl:set-main-ready)
   (unless (zerop (%sdl:init (logior %sdl:+init-timer+
@@ -335,10 +340,11 @@
         (error "Failed to make main GL context current"))
       (unwind-protect
            (cref:c-with ((event %sdl:event))
-             (let ((*event* (event &))
-                   (*primary* primary-ctx)
-                   (*secondary* secondary-ctx))
-               (funcall callback window (%native-gl-context *primary*))))
+             (let* ((*event* (event &))
+                    (*primary* primary-ctx)
+                    (*secondary* secondary-ctx)
+                    (*native-graphics-context* (%native-gl-context *primary*)))
+               (funcall callback window)))
         (%sdl:gl-delete-context secondary-ctx)
         (%sdl:gl-delete-context primary-ctx)
         (%sdl:gl-delete-context main-ctx)
@@ -346,22 +352,22 @@
         (%sdl:quit)))))
 
 
-(defmacro with-window ((window &key (context (gensym))) &body body)
-  `(call-with-window (lambda (,window ,context)
-                       (declare (ignorable ,context))
+(defmacro with-window ((window &key) &body body)
+  `(call-with-window (lambda (,window)
                        ,@body)))
 
 
-(defun make-shared-context-thread (window action)
+(defun %host:make-shared-context-thread (window action)
   (let ((ctx *secondary*))
     (bt:make-thread
      (lambda ()
-       (%sdl:gl-make-current window ctx)
-       (funcall action))
+       (let ((*native-graphics-context* (%native-gl-context ctx)))
+         (%sdl:gl-make-current window ctx)
+         (funcall action)))
      :name "shared-context-thread")))
 
 
-(defun window-surface (window)
+(defun %host:window-surface (window)
   (cref:c-with ((wm-info %sdl:sys-w-minfo))
     (setf (wm-info :version :major) %sdl:+major-version+
           (wm-info :version :minor) %sdl:+minor-version+
@@ -578,7 +584,7 @@
 
 (define-compiler-macro keyboard-modifier-state-some-pressed-p (state &rest modifiers)
   `(/= 0 (logand (keyboard-modifier-state-buttons ,state)
-                 (key-modifier ,@(loop for mod in  modifiers
+                 (key-modifier ,@(loop for mod in modifiers
                                        collect `(host->keymod ,mod))))))
 
 
