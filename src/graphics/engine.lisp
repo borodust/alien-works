@@ -98,6 +98,16 @@
       (%fm:update-camera-model-matrix camera mat))))
 
 
+(defun camera-lens-projection (engine focal-length aspect near far)
+  (with-slots (camera) engine
+    (%fm:update-camera-lens-projection camera focal-length aspect near far)))
+
+
+(defun camera-ortho-projection (engine left right bottom top &key (near 0f0) (far 1f0))
+  (with-slots (camera) engine
+    (%fm:update-camera-projection camera :ortho left right bottom top near far)))
+
+
 (defun add-scene-entity (engine entity)
   (%fm:add-scene-entity (scene-of engine) entity))
 

@@ -15,8 +15,8 @@
 
 (defun %pop-paint ()
   (%aw.skia:destroy-paint (vector-pop *paint-stack*))
-  (setf *paint* (when (> (length *paint-stack*) 0)
-                  (aref *paint-stack* (1- (length *paint-stack*))))))
+  (setf %aw.skia:*paint* (when (> (length *paint-stack*) 0)
+                           (aref *paint-stack* (1- (length *paint-stack*))))))
 
 
 ;;;
@@ -264,7 +264,7 @@
         (unwind-protect
              (drain-draw-commands front-command-queue)
           (%pop-paint))
-        (%aw.skia:flush-canvas))
+        (%aw.skia:flush-context (canvas-context-handle (%canvas-context canvas))))
 
       (flush-framebuffer framebuffer)
       (prepare-triple-buffered-value (%canvas-triple-texture canvas)))))

@@ -6,6 +6,7 @@
 
 (u:define-enumval-extractor color-type-enum %skia:sk-color-type)
 (u:define-enumval-extractor surface-origin-enum %skia:gr-surface-origin)
+(u:define-enumval-extractor clip-op-enum %skia:sk-clip-op)
 
 
 (defun make-surface-from-backend-render-target (context render-target surface-props)
@@ -70,6 +71,11 @@
                    :framebuffer framebuffer)))
 
 
+(defun flush-context (skia)
+  (%skia:flush
+   '(claw-utils:claw-pointer %skia:gr-direct-context) (context-handle skia)))
+
+
 (defun destroy-context (skia)
   ;; FIXME: do things
   )
@@ -104,6 +110,21 @@
     (%make-canvas :surface surface-sp
                   :handle canvas
                   :render-target render-target)))
+
+
+(defun update-canvas-clip (canvas x y width height &key (mode :intersect))
+  (iffi:with-intricate-instance (irect %skia:sk-i-rect)
+    (%skia:set-xywh
+     '(claw-utils:claw-pointer %skia::sk-i-rect) irect
+     '%skia::int32-t (floor x)
+     '%skia::int32-t (floor y)
+     '%skia::int32-t (floor width)
+     '%skia::int32-t (floor height))
+    (%skia:clip-i-rect
+     '(claw-utils:claw-pointer %skia::sk-canvas) (%canvas-handle canvas)
+     '(claw-utils:claw-pointer %skia::sk-i-rect) irect
+     '%skia::sk-clip-op mode))
+  canvas)
 
 
 (defun destroy-canvas (canvas)

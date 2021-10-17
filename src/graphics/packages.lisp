@@ -194,6 +194,7 @@
   (:use :cl)
   (:export #:make-context
            #:destroy-context
+           #:flush-context
 
            #:*canvas*
            #:*paint*
@@ -201,6 +202,7 @@
            #:destroy-canvas
            #:clear-canvas
            #:flush-canvas
+           #:update-canvas-clip
 
            #:make-paint
            #:destroy-paint
@@ -230,6 +232,8 @@
            #:add-scene-entity
 
            #:transform-camera
+           #:camera-lens-projection
+           #:camera-ortho-projection
 
            #:skybox
            #:indirect-light
