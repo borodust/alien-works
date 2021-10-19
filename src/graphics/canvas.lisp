@@ -3,6 +3,8 @@
 (declaim (special *canvas*))
 
 (defvar *paint-stack* (make-array 1 :fill-pointer 0 :adjustable t))
+(defvar *font-stack* (make-array 1 :fill-pointer 0 :adjustable t))
+(defparameter *pi-degree* (float (/ 180 pi) 0f0))
 
 ;;;
 ;;; PAINT
@@ -17,6 +19,23 @@
   (%aw.skia:destroy-paint (vector-pop *paint-stack*))
   (setf %aw.skia:*paint* (when (> (length *paint-stack*) 0)
                            (aref *paint-stack* (1- (length *paint-stack*))))))
+
+
+;;;
+;;; FONT
+;;;
+(defun %push-font (&optional typeface)
+  (let ((font (if typeface
+                  (%aw.skia:make-font typeface)
+                  (%aw.skia:make-default-font))))
+    (vector-push-extend font *font-stack*)
+    (setf %aw.skia:*font* font)))
+
+
+(defun %pop-font ()
+  (%aw.skia:destroy-font (vector-pop *font-stack*))
+  (setf %aw.skia:*font* (when (> (length *font-stack*) 0)
+                          (aref *font-stack* (1- (length *font-stack*))))))
 
 
 ;;;
@@ -259,11 +278,13 @@
                         (%canvas-height canvas))
 
       (let ((%aw.skia:*canvas* (%canvas-handle canvas))
-            (%aw.skia:*paint* nil))
+            (%aw.skia:*paint* nil)
+            (%aw.skia:*font* nil))
         (%push-paint)
         (unwind-protect
              (drain-draw-commands front-command-queue)
-          (%pop-paint))
+          (%pop-paint)
+          (%aw.skia:reset-transform))
         (%aw.skia:flush-context (canvas-context-handle (%canvas-context canvas))))
 
       (flush-framebuffer framebuffer)
@@ -385,6 +406,20 @@
 ;;;
 ;;; DRAWING
 ;;;
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defun %expand-relay (function args)
+    `(push-canvas-command *canvas* #',function ,@args)))
+
+
+(defmacro define-command (name-and-opts (&rest lambda-list) &body body)
+  (destructuring-bind (name &optional function)
+      (a:ensure-list name-and-opts)
+    `(defun ,name (,@lambda-list)
+       (macrolet ((relay (&rest args)
+                    (%expand-relay ',(or function (a:format-symbol :%aw.skia "~A" name)) args)))
+         ,@body))))
+
+
 (defun push-paint ()
   (push-canvas-command *canvas* #'%push-paint))
 
@@ -405,13 +440,81 @@
   (push-canvas-command *canvas* #'%aw.skia:paint-color r g b a))
 
 
-(defun rectangle (x y width height)
-  (push-canvas-command *canvas* #'%aw.skia:rectangle x y width height))
+(defun push-font (typeface)
+  (push-canvas-command *canvas* #'%push-font typeface))
 
 
-(defun circle (x y radius)
-  (push-canvas-command *canvas* #'%aw.skia:circle x y radius))
+(defun pop-font ()
+  (push-canvas-command *canvas* #'%pop-font))
 
 
-(defun clear-canvas ()
-  (push-canvas-command *canvas* #'%aw.skia:clear-canvas))
+(defmacro with-font ((typeface) &body body)
+  `(progn
+     (push-font ,typeface)
+     (unwind-protect
+          (progn ,@body)
+       (pop-font))))
+
+
+(define-command font-size (size)
+  (relay size))
+
+
+(define-command font-baseline-snap (snapped)
+  (relay snapped))
+
+
+(define-command font-edging (mode)
+  (relay mode))
+
+
+(define-command font-subpixel (subpixeled)
+  (relay subpixeled))
+
+
+(define-command rectangle (x y width height)
+  (relay x y width height))
+
+
+(define-command circle (x y radius)
+  (relay x y radius))
+
+
+(define-command text (x y text)
+  (relay text x y))
+
+
+(define-command (clear-canvas %aw.skia:clear-canvas) ()
+  (relay))
+
+
+(define-command (save-transform %aw.skia:save-transform) ()
+  (relay))
+
+
+(define-command (restore-transform %aw.skia:restore-transform) ()
+  (relay))
+
+
+(defmacro with-saved-transform (() &body body)
+  `(progn
+     (save-transform)
+     (unwind-protect
+          (progn ,@body)
+       (restore-transform))))
+
+
+(define-command (translate %aw.skia:translate) (x y)
+  (relay x y))
+
+
+(define-command (rotate %aw.skia:rotate) (angle)
+  (relay (* angle *pi-degree*)))
+
+
+(define-command (rotate-around %aw.skia:rotate-around) (x y angle)
+  (relay x y (* angle *pi-degree*)))
+
+
+(define-command (scale %aw.skia:scale) (x y)
+  (relay x y))

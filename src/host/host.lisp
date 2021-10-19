@@ -431,8 +431,8 @@
       (:joyhatmotion :game-controller-hat-motion)
       (:joybuttonup :game-controller-button-up)
       (:joybuttondown :game-controller-button-down)
-      (:joydeviceadded :game-controller-device-added)
-      (:joydeviceremoved :game-controller-device-removed)
+      (:joydeviceadded :game-controller-added)
+      (:joydeviceremoved :game-controller-removed)
 
       (:audiodeviceadded :audio-device-added)
       (:audiodeviceremoved :audio-device-removed)
@@ -440,9 +440,9 @@
       (:controlleraxismotion :gamepad-axis-motion)
       (:controllerbuttondown :gamepad-button-down)
       (:controllerbuttonup :gamepad-button-up)
-      (:controllerdeviceadded :gamepad-device-added)
-      (:controllerdeviceremoved :gamepad-device-removed)
-      (:controllerdeviceremapped :gamepad-device-remapped)
+      (:controllerdeviceadded :gamepad-added)
+      (:controllerdeviceremoved :gamepad-removed)
+      (:controllerdeviceremapped :gamepad-remapped)
 
       (:dollargesture :$-gesture)
       (:dollarrecord :$-gesture-record)

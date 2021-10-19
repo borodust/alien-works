@@ -187,6 +187,7 @@
 
 (cl:defpackage :%alien-works.skia
   (:local-nicknames (:a :alexandria)
+                    (:cref :cffi-c-ref)
                     (:! :alien-works.utils.empty)
                     (:u :alien-works.utils)
                     (:m :alien-works.math)
@@ -197,18 +198,40 @@
            #:flush-context
 
            #:*canvas*
-           #:*paint*
            #:make-canvas
            #:destroy-canvas
            #:clear-canvas
            #:flush-canvas
            #:update-canvas-clip
 
+           #:*paint*
            #:make-paint
            #:destroy-paint
            #:paint-color
+
+           #:*font*
+           #:make-font
+           #:make-default-font
+           #:destroy-font
+           #:font-size
+           #:font-baseline-snap
+           #:font-edging
+           #:font-subpixel
+
+           #:make-typeface
+           #:destroy-typeface
+
            #:rectangle
-           #:circle))
+           #:circle
+           #:text
+
+           #:save-transform
+           #:restore-transform
+           #:reset-transform
+           #:translate
+           #:rotate
+           #:rotate-around
+           #:scale))
 
 
 (cl:defpackage :%alien-works.graphics
@@ -225,6 +248,10 @@
                     (:m :alien-works.math)
                     (:%host :%alien-works.host))
   (:use :cl :%alien-works.graphics)
+  (:import-from :%alien-works.skia
+
+                #:make-typeface
+                #:destroy-typeface)
   (:export #:with-engine
            #:render-frame
            #:with-frame
@@ -339,6 +366,9 @@
            #:.intensity
            #:.rotation
 
+           #:make-typeface
+           #:destroy-typeface
+
            #:make-canvas
            #:destroy-canvas
            #:canvas-texture
@@ -347,5 +377,19 @@
 
            #:with-paint
            #:paint-color
+
+           #:with-font
+           #:font-size
+           #:font-baseline-snap
+           #:font-edging
+           #:font-subpixel
+
            #:rectangle
-           #:circle))
+           #:circle
+           #:text
+
+           #:with-saved-transform
+           #:translate
+           #:rotate
+           #:rotate-around
+           #:scale))
