@@ -39,7 +39,8 @@
                                                                      :sort-by-p-type
                                                                      :join-identical-vertices
                                                                      :triangulate
-                                                                     :improve-cache-locality)))))
+                                                                     :improve-cache-locality
+                                                                     :gen-bounding-boxes)))))
       (unless *scene*
         (error "Failed to parse asset file '~A'" path))
       (unwind-protect

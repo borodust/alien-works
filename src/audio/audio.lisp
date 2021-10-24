@@ -25,16 +25,31 @@
      ,@body))
 
 
-(defun make-audio-source (s16-mono-pcm)
+(defun make-audio-buffer (s16-mono-pcm)
+  (let ((buffer (%aw.al:make-audio-buffer)))
+    (setf (%aw.al:audio-buffer-data buffer) s16-mono-pcm)
+    buffer))
+
+
+(defun destroy-audio-buffer (buffer)
+  (%aw.al:destroy-audio-buffer buffer))
+
+
+(defun make-audio-source (buffer)
+  (let ((source (%aw.al:make-audio-source)))
+    (setf (%aw.al:audio-source-buffer source) buffer)
+    source))
+
+
+(defun make-audio-source-from-pcm (s16-mono-pcm)
   (let ((buffer (%aw.al:make-audio-buffer))
         (source (%aw.al:make-audio-source)))
     (setf (%aw.al:audio-buffer-data buffer) s16-mono-pcm
           (%aw.al:audio-source-buffer source) buffer)
-    source))
+    (values source buffer)))
 
 
 (defun destroy-audio-source (source)
-  (%aw.al:destroy-audio-buffer (%aw.al:audio-source-buffer source))
   (%aw.al:destroy-audio-source source))
 
 

@@ -21,9 +21,11 @@
            #:with-vec2
            #:with-vec2*
            #:vec2-add
+           #:vec2-subt
            #:vec2-mult
            #:vec2-scalar-mult
            #:vec2-dot
+           #:vec2-length
            #:vec2-normalize
            #:vec2-equal
            #:vec2-copy

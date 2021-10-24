@@ -140,6 +140,26 @@
     (cffi:foreign-free data)))
 
 
+(defstruct aabb
+  min
+  max)
+
+
+(defun parse-aabb ()
+  (with-mesh (mesh)
+    (unless (cffi:null-pointer-p (mesh :aabb &))
+      (with-vector3d* ((aabb-min (mesh :aabb :min &))
+                       (aabb-max (mesh :aabb :max &)))
+        (make-aabb :min (m:make-vec3 (aabb-min :x) (aabb-min :y) (aabb-min :z))
+                   :max (m:make-vec3 (aabb-max :x) (aabb-max :y) (aabb-max :z)))))))
+
+
+
+(defun destroy-aabb (aabb)
+  (m:destroy-vec3 (aabb-min aabb))
+  (m:destroy-vec3 (aabb-max aabb)))
+
+
 (defclass mesh ()
   ((vertex-buffer :initarg :vertex-buffer
                   :initform (error ":vertex-buffer missing")
@@ -156,10 +176,11 @@
 
 
 (defun destroy-mesh (mesh)
-  (with-slots (vertex-buffer index-buffers) mesh
+  (with-slots (vertex-buffer index-buffers aabb) mesh
     (destroy-buffer vertex-buffer)
     (loop for buf in index-buffers
-          do (destroy-buffer buf))))
+          do (destroy-buffer buf))
+    (destroy-aabb aabb)))
 
 
 (defun position-writer (buffer idx)
@@ -265,7 +286,8 @@
     (make-instance 'mesh
                    :vertex-buffer (parse-vertices)
                    :index-buffers (parse-faces)
-                   :material (gethash (mesh :material-index) *materials*))))
+                   :material (gethash (mesh :material-index) *materials*)
+                   :aabb (parse-aabb))))
 
 
 (defun parse-meshes ()

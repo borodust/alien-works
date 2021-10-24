@@ -90,3 +90,8 @@
     (vec2-subt result this that)
     (and (>= epsilon (abs (vec2 result 0)))
          (>= epsilon (abs (vec2 result 1))))))
+
+
+(u:definline vec2-length (vec2)
+  (%glm:glm+length
+   '(:pointer %glm:glm+vec2) vec2))

@@ -35,7 +35,8 @@
            #:audio-source-position
            #:audio-source-velocity
            #:audio-source-direction
-           #:audio-source-offset))
+           #:audio-source-offset
+           #:audio-source-looping-p))
 
 
 (cl:defpackage :alien-works.audio.opus
@@ -68,13 +69,18 @@
                 #:audio-source-position
                 #:audio-source-velocity
                 #:audio-source-direction
-                #:audio-source-offset)
+                #:audio-source-offset
+                #:audio-source-looping-p)
   (:export #:with-audio
            #:play-audio
            #:decode-audio
            #:encode-audio
 
+           #:make-audio-buffer
+           #:destroy-audio-buffer
+
            #:make-audio-source
+           #:make-audio-source-from-pcm
            #:destroy-audio-source
            #:play-audio-source
            #:pause-audio-source
@@ -90,6 +96,7 @@
            #:audio-source-velocity
            #:audio-source-direction
            #:audio-source-offset
+           #:audio-source-looping-p
 
            #:do-output-audio-devices
            #:audio-listener-gain

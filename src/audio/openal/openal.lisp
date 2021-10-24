@@ -146,7 +146,7 @@
 (defun destroy-audio-source (source)
   (cref:c-with ((src %al:uint))
     (setf src source)
-    (%al:gen-sources 1 (src &)))
+    (%al:delete-sources 1 (src &)))
   (values))
 
 
@@ -191,6 +191,17 @@
 
 (defun (setf audio-source-pitch) (value source)
   (%al:sourcef source %al:+pitch+ (float (max 0 value) 0f0))
+  value)
+
+
+(defun audio-source-looping-p (source)
+  (cref:c-with ((val %al:int))
+    (%al:get-sourcei source %al:+looping+ (val &))
+    (/= val %al:+false+)))
+
+
+(defun (setf audio-source-looping-p) (value source)
+  (%al:sourcei source %al:+looping+ (if value %al:+true+ %al:+false+))
   value)
 
 

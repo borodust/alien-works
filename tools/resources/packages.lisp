@@ -17,6 +17,10 @@
            #:mesh-index-buffers
            #:mesh-material-index
            #:mesh-material
+           #:mesh-aabb
+
+           #:aabb-min
+           #:aabb-max
 
            #:buffer-data
            #:buffer-size
