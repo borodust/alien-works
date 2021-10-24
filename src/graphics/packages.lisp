@@ -2,7 +2,8 @@
   (:local-nicknames (:a :alexandria)
                     (:! :alien-works.utils.empty)
                     (:u :alien-works.utils)
-                    (:m :alien-works.math))
+                    (:m :alien-works.math)
+                    (:cref :cffi-c-ref))
   (:use :cl)
   (:export #:create-engine
            #:destroy-engine
@@ -99,6 +100,7 @@
            #:scene-skybox
            #:scene-indirect-light
            #:add-scene-entity
+           #:remove-scene-entity
 
            #:with-skybox-builder
            #:create-color-skybox
@@ -111,6 +113,8 @@
            #:transform-manager
            #:with-transform-instance
            #:transform
+           #:attach-transform
+           #:detach-transform
 
            #:with-mat4f
            #:with-mat3f
@@ -257,6 +261,7 @@
            #:with-frame
 
            #:add-scene-entity
+           #:remove-scene-entity
 
            #:transform-camera
            #:camera-lens-projection

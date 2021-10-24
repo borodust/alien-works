@@ -39,6 +39,7 @@
                (:module "math"
                 :serial t
                 :components ((:file "packages")
+                             (:file "common")
                              (:file "vec2")
                              (:file "vec3")
                              (:file "vec4")

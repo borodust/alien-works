@@ -13,10 +13,20 @@
                     (:u :alien-works.utils)
                     (:%math :%alien-works.math))
   (:use :cl)
-  (:export #:vec2
+  (:export #:+epsilon+
+
+           #:vec2
            #:make-vec2
            #:destroy-vec2
            #:with-vec2
+           #:with-vec2*
+           #:vec2-add
+           #:vec2-mult
+           #:vec2-scalar-mult
+           #:vec2-dot
+           #:vec2-normalize
+           #:vec2-equal
+           #:vec2-copy
 
            #:vec3
            #:make-vec3
@@ -32,6 +42,7 @@
            #:make-vec4
            #:destroy-vec4
            #:with-vec4
+           #:with-vec4*
 
            #:mat3
            #:make-mat3
@@ -49,6 +60,7 @@
            #:translate-mat4
            #:scale-mat4
            #:mat4-mult
+           #:mat4-vec-mult
 
            #:quat
            #:make-quat

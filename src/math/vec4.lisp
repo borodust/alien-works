@@ -20,6 +20,17 @@
   (iffi:destroy-intricate-instance '%glm:glm+vec4 vec))
 
 
+(defmacro with-vec4 ((vec &key (x 0f0) (y 0f0) (z 0f0) (w 0f0)) &body body)
+  `(let ((,vec (make-vec4 ,x ,y ,z ,w)))
+     (unwind-protect
+          (progn ,@body)
+       (destroy-vec3 ,vec))))
+
+
+(defmacro with-vec4* ((&rest declarations) &body body)
+  (u:expand-multibinding 'with-vec4 declarations body))
+
+
 (u:definline vec4-add (result this that)
   (%glm:glm+operator+
    '(:pointer %glm:glm+vec4) result

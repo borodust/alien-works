@@ -1,5 +1,6 @@
 (cl:in-package :alien-works.graphics)
 
+
 (declaim (special *canvas*))
 
 (defvar *paint-stack* (make-array 1 :fill-pointer 0 :adjustable t))

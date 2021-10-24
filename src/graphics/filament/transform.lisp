@@ -21,3 +21,17 @@
    '(claw-utils:claw-pointer %filament::transform-manager) transform-manager
    '(claw-utils:claw-pointer %filament::transform-manager+instance) entity-instance
    '(claw-utils:claw-pointer %filament::math+mat4f) mat4f))
+
+
+(defun attach-transform (transform-manager entity-instance)
+  (iffi:with-intricate-instance (transform-instance %filament::transform-manager+instance)
+    (%filament:create
+     '(claw-utils:claw-pointer %filament::transform-manager) transform-manager
+     '(claw-utils:claw-pointer %filament::utils+entity) entity-instance
+     '(claw-utils:claw-pointer %filament::transform-manager+instance) transform-instance)))
+
+
+(defun detach-transform (transform-manager entity-instance)
+  (%filament:destroy
+   '(claw-utils:claw-pointer %filament::transform-manager) transform-manager
+   '(claw-utils:claw-pointer %filament::utils+entity) entity-instance))

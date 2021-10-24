@@ -30,3 +30,9 @@
   (%filament::add-entity
    '(claw-utils:claw-pointer %filament::scene) scene
    '(claw-utils:claw-pointer %filament::utils+entity) entity))
+
+
+(defun remove-scene-entity (scene entity)
+  (%filament::remove
+   '(claw-utils:claw-pointer %filament::scene) scene
+   '(claw-utils:claw-pointer %filament::utils+entity) entity))

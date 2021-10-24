@@ -112,6 +112,10 @@
   (%fm:add-scene-entity (scene-of engine) entity))
 
 
+(defun remove-scene-entity (engine entity)
+  (%fm:remove-scene-entity (scene-of engine) entity))
+
+
 (defun transform-entity (engine entity transform)
   (let ((transform-manager (%fm:transform-manager (handle-of engine))))
     (%fm:with-transform-instance (instance entity) transform-manager
@@ -358,6 +362,8 @@
       (loop for opt in options
             do (funcall opt builder))
       (%make-renderable (handle-of engine) entity)
+      (let ((transform-manager (%fm:transform-manager (handle-of engine))))
+        (%fm:attach-transform transform-manager entity))
       entity)))
 
 
@@ -396,7 +402,7 @@
                                           (float efficiency 0f0)))
 
 (defmethod %.falloff ((this light-builder) value)
-  (%fm:light-builder-falloff (handle-of this) value))
+  (%fm:light-builder-falloff (handle-of this) (float value 0f0)))
 
 (defmethod %.spot-light-cone ((this light-builder) inner outer)
   (%fm:light-builder-spot-light-cone (handle-of this)
@@ -419,6 +425,8 @@
       (loop for opt in options
             do (funcall opt builder))
       (%build (handle-of engine) entity)
+      (let ((transform-manager (%fm:transform-manager (handle-of engine))))
+        (%fm:attach-transform transform-manager entity))
       entity)))
 
 (defun destroy-light (engine light)

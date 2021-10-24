@@ -87,3 +87,10 @@
    '(:pointer %glm::glm+mat4) result
    '(:pointer %glm::glm+mat4) this
    '(:pointer %glm::glm+mat4) that))
+
+
+(u:definline mat4-vec-mult (result-vec4 mat4 vec4)
+  (%glm:glm+operator*
+   '(:pointer %glm::glm+vec4) result-vec4
+   '(:pointer %glm::glm+mat4) mat4
+   '(:pointer %glm::glm+vec4) vec4))

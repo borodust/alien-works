@@ -46,10 +46,13 @@
 
 
 (defun (setf material-instance-parameter-float) (value material name)
-  (%filament:set-parameter
-   '(claw-utils:claw-pointer %filament::material-instance) material
-   'claw-utils:claw-string name
-   :float value))
+  (cref:c-with ((fval :float))
+    (setf fval (float value 0f0))
+    (%filament:set-parameter
+     '(claw-utils:claw-pointer %filament::material-instance) material
+     'claw-utils:claw-string name
+     '(claw-utils:claw-pointer :float) (fval &)))
+  value)
 
 
 (defun (setf material-instance-parameter-float2) (value material name)

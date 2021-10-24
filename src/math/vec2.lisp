@@ -1,11 +1,11 @@
 (cl:in-package :alien-works.math)
 
 
-(defun vec2 (vec idx)
+(u:definline vec2 (vec idx)
   (cffi:mem-ref (%glm:glm+operator[] '(:pointer %glm:glm+vec2) vec :int idx) :float))
 
 
-(defun (setf vec2) (value vec idx)
+(u:definline (setf vec2) (value vec idx)
   (let ((ptr (%glm:glm+operator[] '(:pointer %glm:glm+vec2) vec :int idx)))
     (setf (cffi:mem-ref ptr :float) (float value 0f0))))
 
@@ -25,6 +25,10 @@
        (destroy-vec2 ,vec))))
 
 
+(defmacro with-vec2* ((&rest declarations) &body body)
+  (u:expand-multibinding 'with-vec2 declarations body))
+
+
 (defun make-vec2 (x y)
   (iffi:make-intricate-instance '%glm:glm+vec2
                                 :float (float x 0f0)
@@ -35,15 +39,54 @@
   (iffi:destroy-intricate-instance '%glm:glm+vec2 vec))
 
 
-(defun vec2-add (result this that)
+(u:definline vec2-add (result this that)
   (%glm:glm+operator+
    '(:pointer %glm:glm+vec2) result
    '(:pointer %glm:glm+vec2) this
    '(:pointer %glm:glm+vec2) that))
 
 
-(defun vec2-mult (result this that)
+(u:definline vec2-subt (result this that)
+  (%glm:glm+operator-
+   '(:pointer %glm:glm+vec2) result
+   '(:pointer %glm:glm+vec2) this
+   '(:pointer %glm:glm+vec2) that))
+
+
+(u:definline vec2-mult (result this that)
   (%glm:glm+operator*
    '(:pointer %glm:glm+vec2) result
    '(:pointer %glm:glm+vec2) this
    '(:pointer %glm:glm+vec2) that))
+
+
+(u:definline vec2-scalar-mult (result vec2 scalar)
+  (%glm:glm+operator*
+   '(:pointer %glm:glm+vec2) result
+   '(:pointer %glm:glm+vec2) vec2
+   :float (float scalar 0f0)))
+
+
+(u:definline vec2-dot (this that)
+  (%glm:glm+dot
+   '(:pointer %glm:glm+vec2) this
+   '(:pointer %glm:glm+vec2) that))
+
+
+(u:definline vec2-normalize (result vec2)
+  (%glm:glm+normalize
+   '(:pointer %glm:glm+vec2) result
+   '(:pointer %glm:glm+vec2) vec2))
+
+
+(u:definline vec2-copy (result vec2)
+  (%glm:glm+operator=
+   '(:pointer %glm:glm+vec2) result
+   '(:pointer %glm:glm+vec2) vec2))
+
+
+(u:definline vec2-equal (this that &optional (epsilon +epsilon+))
+  (with-vec2 (result)
+    (vec2-subt result this that)
+    (and (>= epsilon (abs (vec2 result 0)))
+         (>= epsilon (abs (vec2 result 1))))))
