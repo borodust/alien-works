@@ -322,6 +322,12 @@
   (%sdl:gl-set-attribute (gl-attr :share-with-current-context) 1)
   (%sdl:gl-set-attribute (gl-attr :context-profile-mask)
                          (gl-profile :core))
+  (%sdl:gl-set-attribute (gl-attr :red-size) 8)
+  (%sdl:gl-set-attribute (gl-attr :green-size) 8)
+  (%sdl:gl-set-attribute (gl-attr :blue-size) 8)
+  (%sdl:gl-set-attribute (gl-attr :alpha-size) 8)
+  (%sdl:gl-set-attribute (gl-attr :depth-size) 24)
+  (%sdl:gl-set-attribute (gl-attr :stencil-size) 8)
 
   (setup-most-recent-opengl-context)
 
