@@ -319,15 +319,28 @@
                                     %sdl:+init-haptic+)))
     (error "Failed to initialize SDL"))
   (%init-host)
+
   (%sdl:gl-set-attribute (gl-attr :share-with-current-context) 1)
   (%sdl:gl-set-attribute (gl-attr :context-profile-mask)
                          (gl-profile :core))
-  (%sdl:gl-set-attribute (gl-attr :red-size) 8)
-  (%sdl:gl-set-attribute (gl-attr :green-size) 8)
-  (%sdl:gl-set-attribute (gl-attr :blue-size) 8)
-  (%sdl:gl-set-attribute (gl-attr :alpha-size) 8)
-  (%sdl:gl-set-attribute (gl-attr :depth-size) 24)
-  (%sdl:gl-set-attribute (gl-attr :stencil-size) 8)
+  ;; TODO: move filament package somewhere else, probably
+  (cref:c-with ((pf (:struct %filament.extra:pixel-format)))
+    (%filament.extra:select-pixel-format (pf &))
+
+    (%sdl:gl-set-attribute (gl-attr :red-size) (pf :red-bits))
+    (%sdl:gl-set-attribute (gl-attr :green-size) (pf :green-bits))
+    (%sdl:gl-set-attribute (gl-attr :blue-size) (pf :blue-bits))
+    (%sdl:gl-set-attribute (gl-attr :alpha-size) (pf :alpha-bits))
+
+    (%sdl:gl-set-attribute (gl-attr :accum-red-size) (pf :accum-red-bits))
+    (%sdl:gl-set-attribute (gl-attr :accum-green-size) (pf :accum-green-bits))
+    (%sdl:gl-set-attribute (gl-attr :accum-blue-size) (pf :accum-blue-bits))
+    (%sdl:gl-set-attribute (gl-attr :accum-alpha-size) (pf :accum-alpha-bits))
+
+    (%sdl:gl-set-attribute (gl-attr :buffer-size) (pf :buffer-bits))
+    (%sdl:gl-set-attribute (gl-attr :depth-size) (pf :depth-bits))
+    (%sdl:gl-set-attribute (gl-attr :stencil-size) (pf :stencil-bits)))
+  (%sdl:gl-set-attribute (gl-attr :doublebuffer) 1)
 
   (setup-most-recent-opengl-context)
 
