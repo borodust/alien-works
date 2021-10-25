@@ -1,15 +1,14 @@
 (cl:in-package :alien-works.audio)
 
 
-(defun decode-audio (octet-stream-in)
+(defun decode-audio (octet-stream-in &key (channels 1))
   (flexi-streams:with-output-to-sequence (out :element-type '(signed-byte 16))
-    (%aw.opus:decode-audio octet-stream-in out 48000 1)))
+    (%aw.opus:decode-audio octet-stream-in out 48000 channels)))
 
 
-(defun encode-audio (s16-mono-pcm-stream-in octet-stream-out)
+(defun encode-audio (s16-mono-pcm-stream-in octet-stream-out &key (channels 1))
   (let ((frame-duration 20) ;; msec
-        (sample-rate 48000)
-        (channels 1))
+        (sample-rate 48000))
     (%aw.opus:encode-audio s16-mono-pcm-stream-in octet-stream-out
                            (* (/ sample-rate 1000) frame-duration channels)
                            sample-rate
@@ -25,9 +24,9 @@
      ,@body))
 
 
-(defun make-audio-buffer (s16-mono-pcm)
+(defun make-audio-buffer (s16-48k-pcm &key (channels 1))
   (let ((buffer (%aw.al:make-audio-buffer)))
-    (setf (%aw.al:audio-buffer-data buffer) s16-mono-pcm)
+    (setf (%aw.al:audio-buffer-data buffer :channels channels) s16-48k-pcm)
     buffer))
 
 
@@ -41,10 +40,10 @@
     source))
 
 
-(defun make-audio-source-from-pcm (s16-mono-pcm)
+(defun make-audio-source-from-pcm (s16-48k-pcm &key (channels 1))
   (let ((buffer (%aw.al:make-audio-buffer))
         (source (%aw.al:make-audio-source)))
-    (setf (%aw.al:audio-buffer-data buffer) s16-mono-pcm
+    (setf (%aw.al:audio-buffer-data buffer :channels channels) s16-48k-pcm
           (%aw.al:audio-source-buffer source) buffer)
     (values source buffer)))
 

@@ -115,12 +115,14 @@
     buf))
 
 
-(defun (setf audio-buffer-data) (s16-mono-48k-pcm-data buffer)
-  (sv:with-static-vector (foreign-data (length s16-mono-48k-pcm-data)
+(defun (setf audio-buffer-data) (s16-48k-pcm-data buffer &key (channels 1))
+  (sv:with-static-vector (foreign-data (length s16-48k-pcm-data)
                                        :element-type '(signed-byte 16)
-                                       :initial-contents s16-mono-48k-pcm-data)
+                                       :initial-contents s16-48k-pcm-data)
     ;; Load sample data into the buffer
-    (%al:buffer-data buffer %al:+format-mono16+
+    (%al:buffer-data buffer (ecase channels
+                              (1 %al:+format-mono16+)
+                              (2 %al:+format-stereo16+))
                      (static-vectors:static-vector-pointer foreign-data)
                      (* (length foreign-data) 2)
                      48000)))
