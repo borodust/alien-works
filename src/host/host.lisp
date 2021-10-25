@@ -311,7 +311,7 @@
   *native-graphics-context*)
 
 
-(defun call-with-window (callback)
+(defun call-with-window (callback &key title)
   (%sdl:set-main-ready)
   (unless (zerop (%sdl:init (logior %sdl:+init-timer+
                                     %sdl:+init-video+
@@ -325,7 +325,7 @@
 
   (setup-most-recent-opengl-context)
 
-  (let ((window (cffi:with-foreign-string (name "ALIEN-WORKS")
+  (let ((window (cffi:with-foreign-string (name (or title "ALIEN-WORKS"))
                   (%sdl:create-window name
                                       %sdl:+windowpos-undefined+
                                       %sdl:+windowpos-undefined+
@@ -352,9 +352,11 @@
         (%sdl:quit)))))
 
 
-(defmacro with-window ((window &key) &body body)
+(defmacro with-window ((window &key title) &body body)
   `(call-with-window (lambda (,window)
-                       ,@body)))
+                       ,@body)
+                     ,@(when title
+                         `(:title ,title))))
 
 
 (defun %host:make-shared-context-thread (window action)

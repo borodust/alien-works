@@ -481,8 +481,11 @@
   (relay x y radius))
 
 
-(define-command text (x y text)
-  (relay text x y))
+(define-command text (x y text &rest args)
+  (relay (if args
+             (apply #'format nil text args)
+             text)
+         x y))
 
 
 (define-command (clear-canvas %aw.skia:clear-canvas) ()
