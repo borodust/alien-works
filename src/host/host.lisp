@@ -859,9 +859,15 @@ Returns -32768 to 32767 for sticks and 0 to 32767 for triggers"
 
 (defun run ()
   (add-known-foreign-library-directories)
-  (loop with args = (uiop:command-line-arguments)
-        for hook in *init-hooks*
-        do (apply hook args)))
+  (unwind-protect
+       (progn
+         (cl-opengl-library:load-opengl-library)
+         (bodge-blobs-support:load-foreign-libraries)
+         (loop with args = (uiop:command-line-arguments)
+               for hook in *init-hooks*
+               do (apply hook args)))
+    (bodge-blobs-support:close-foreign-libraries)
+    (cl-opengl-library:close-opengl-library)))
 
 
 (defmacro definit (name (&rest lambda-list) &body body)

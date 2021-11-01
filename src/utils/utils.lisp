@@ -10,7 +10,9 @@
            #:define-case-converter
 
            #:expand-multibinding
-           #:definline))
+           #:definline
+
+           #:read-file-into-shareable-vector))
 (cl:in-package :alien-works.utils)
 
 
@@ -64,15 +66,13 @@
 
 (defmacro define-enumbit-combiner (name enum)
   (flet ((%expand-enumbit (names)
-           `(apply #'enumbit ',enum ,names)))
+           (list* 'enumbit `(quote ,name) names)))
     (a:with-gensyms (names)
       `(progn
-         (defun ,name (&rest names)
-           (apply #'enumbit ',enum names))
-         (define-compiler-macro ,name (&rest names)
-           (let ((,names names))
-             ,(%expand-enumbit names)))))))
-
+         (defun ,name (&rest ,names)
+           (apply #'enumbit ',enum ,names))
+         (define-compiler-macro ,name (&rest ,names)
+           (list* 'alien-works.utils:enumbit '',enum ,names))))))
 
 
 (defun expand-multibinding (name bindings body)
@@ -125,3 +125,31 @@
            (if (or (keywordp ,value) (integerp ,value))
                (,that->this ,value)
                ,whole))))))
+
+
+(defun read-file-into-shareable-vector (location &key ((:into provided-shareable-vector))
+                                                   offset ((:size provided-size)))
+  (when (and provided-shareable-vector
+             provided-size
+             (> provided-size (length provided-shareable-vector)))
+    (error "Provided size is smaller than length of provided shareable vector"))
+  (with-open-file (stream location :direction :input :element-type '(unsigned-byte 8))
+    (let* ((file-size (file-length stream))
+           (offset (if (> file-size 0)
+                       (mod (or offset 0) file-size)
+                       0))
+           (rest-file-size (- file-size offset))
+           (calculated-size
+             (min rest-file-size
+                  (or provided-size rest-file-size)
+                  (or (and provided-shareable-vector (length provided-shareable-vector))
+                      rest-file-size))))
+      (when (> (+ offset (or provided-size 0)) file-size)
+        (error "Sum of offset and provided size is greater than size of the ~A: got ~A, expected no more than ~A"
+               location (+ offset calculated-size) file-size))
+      (file-position stream offset)
+      (let* ((out (if provided-shareable-vector
+                      provided-shareable-vector
+                      (cffi:make-shareable-byte-vector calculated-size))))
+        (read-sequence out stream :start 0 :end calculated-size)
+        (values out file-size)))))

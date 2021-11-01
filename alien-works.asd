@@ -1,3 +1,5 @@
+(pushnew :cl-opengl-no-preload *features*)
+
 (asdf:defsystem :alien-works
   :description "High-performance game foundation framework"
   :version "0.0.0"

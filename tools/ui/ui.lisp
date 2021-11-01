@@ -14,7 +14,6 @@
    (keyboard-modifier-state :initform (host:make-keyboard-modifier-state))))
 
 
-
 (%ui:define-ui-callback ui-callback ()
   (funcall *ui-callback*))
 

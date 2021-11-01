@@ -1,4 +1,8 @@
 (cl:in-package :alien-works.math)
 
 
-(a:define-constant +epsilon+ (%glm:glm+epsilon))
+(define-symbol-macro +epsilon+
+    (handler-case
+        (%glm:glm+epsilon)
+      (serious-condition ()
+        `(%glm:glm+epsilon))))
