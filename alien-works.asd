@@ -18,7 +18,8 @@
                #:aw-skia
                #:aw-openal
                #:aw-opus
-               #:cl-opengl
+               (:feature :android #:cl-opengl/es2)
+               (:feature (:not :android) #:cl-opengl)
                ;; ffi
                #:static-vectors
                #:claw-utils
