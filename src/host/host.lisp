@@ -186,24 +186,28 @@
        (close ,var))))
 
 
-(defun read-host-file-into-static-vector (location &key ((:into provided-static-vector))
-                                                     offset ((:size provided-size))
-                                                     element-type)
+(defun %read-host-file-into-vector (location &key ((:into provided-vector))
+
+                                               offset ((:size provided-size))
+                                               element-type
+                                               constructor
+                                               destructor
+                                               call-with-pointer)
   (when (and element-type
-             provided-static-vector
-             (not (subtypep element-type (array-element-type provided-static-vector))))
+             provided-vector
+             (not (subtypep element-type (array-element-type provided-vector))))
     (error ":INTO array and :ELEMENT-TYPE are not compatible"))
-  (let ((element-type (or (and provided-static-vector
-                               (array-element-type provided-static-vector))
+  (let ((element-type (or (and provided-vector
+                               (array-element-type provided-vector))
                           element-type
                           '(unsigned-byte 8))))
     (unless (and (listp element-type)
                  (member (first element-type) '(unsigned-byte signed-byte))
                  (member (second element-type) '(8 16 32 64)))
       (error "Element type of static-vector must be either unsigned-byte or signed-byte of size 8, 16, 32 or 64"))
-    (when (and provided-static-vector
+    (when (and provided-vector
                provided-size
-               (> provided-size (length provided-static-vector)))
+               (> provided-size (length provided-vector)))
       (error "Provided size is smaller than length of provided static-vector"))
     (let ((file (%sdl:rw-from-file (namestring location) "rb")))
       (when (cffi:null-pointer-p file)
@@ -217,7 +221,7 @@
                   (calculated-size
                     (min rest-file-size
                          (or provided-size rest-file-size)
-                         (or (and provided-static-vector (length provided-static-vector))
+                         (or (and provided-vector (length provided-vector))
                              rest-file-size))))
              (when (< file-size 0)
                (error "Failed to lookup ~A size: ~A" location (sdl-error)))
@@ -225,19 +229,49 @@
                (error "Sum of offset and provided size is greater than size of the ~A: got ~A, expected no more than ~A"
                       location (+ offset calculated-size) file-size))
              (%sdl:r-wseek file offset %sdl:+rw-seek-set+)
-             (let* ((out (if provided-static-vector
-                             provided-static-vector
-                             (sv:make-static-vector calculated-size
-                                                    :element-type element-type)))
-                    (objects-read (%sdl:r-wread file (sv:static-vector-pointer out)
-                                                calculated-size
-                                                1)))
+             (let* ((out (if provided-vector
+                             provided-vector
+                             (funcall constructor calculated-size :element-type element-type)))
+                    (objects-read (funcall call-with-pointer out
+                                           (lambda (ptr)
+                                             (%sdl:r-wread file ptr calculated-size 1)))))
                (unless (= objects-read 1)
-                 (unless provided-static-vector
-                   (sv:free-static-vector out))
+                 (unless provided-vector
+                   (funcall destructor out))
                  (error "Failed to read ~A of size ~A: ~A" location file-size (sdl-error)))
                (values out file-size)))
         (%sdl:r-wclose file)))))
+
+
+(defun read-host-file-into-static-vector (location &key ((:into provided-static-vector))
+                                                     offset ((:size provided-size))
+                                                     element-type)
+  (%read-host-file-into-vector location
+                               :into provided-static-vector
+                               :offset offset
+                               :size provided-size
+                               :element-type element-type
+                               :constructor #'sv:make-static-vector
+                               :destructor #'sv:free-static-vector
+                               :call-with-pointer (lambda (vec call-with-pointer)
+                                                    (funcall call-with-pointer
+                                                             (sv:static-vector-pointer vec)))))
+
+
+(defun read-host-file-into-shareable-vector (location &key ((:into provided-shareable-vector))
+                                                        offset ((:size provided-size)))
+  (%read-host-file-into-vector location
+                               :into provided-shareable-vector
+                               :offset offset
+                               :size provided-size
+                               :element-type '(unsigned-byte 8)
+                               :constructor (lambda (size &rest args)
+                                              (declare (ignore args))
+                                              (cffi:make-shareable-byte-vector size))
+                               :destructor (lambda (vec) (declare (ignore vec)))
+                               :call-with-pointer (lambda (vec call-with-pointer)
+                                                    (cffi:with-pointer-to-vector-data (ptr vec)
+                                                      (funcall call-with-pointer ptr)))))
 
 ;;;
 ;;; DISPLAY
@@ -276,7 +310,7 @@
 ;;;
 ;;; WINDOW
 ;;;
-(declaim (special *primary* *secondary*))
+(declaim (special *primary* *secondary* *root* *root-window*))
 
 (u:define-enumval-extractor gl-attr %sdl:g-lattr)
 (u:define-enumval-extractor gl-profile %sdl:g-lprofile)
@@ -301,7 +335,17 @@
           (%sdl:destroy-window win))))))
 
 
+(defun setup-most-recent-opengl-es-context ()
+  (%sdl:gl-set-attribute (gl-attr :context-profile-mask)
+                         (gl-profile :es))
+  (loop for (major minor) in '((3 2) (3 1) (3 0))
+          thereis (setup-opengl-version major minor)
+        finally (error "Required OpenGL ES version is not available (3.0+)")))
+
+
 (defun setup-most-recent-opengl-context ()
+  (%sdl:gl-set-attribute (gl-attr :context-profile-mask)
+                         (gl-profile :core))
   (loop for (major minor) in '((4 6) (4 5) (4 3) (4 1))
           thereis (setup-opengl-version major minor)
         finally (error "Required OpenGL version is not available (4.1+)")))
@@ -309,6 +353,11 @@
 
 (defun %host:window-graphics-context ()
   *native-graphics-context*)
+
+
+(defun ensure-root-context ()
+  (unless (= (%sdl:gl-make-current *root-window* *root*) 0)
+    (error "Failed to make root GL context current")))
 
 
 (defun call-with-window (callback &key title)
@@ -321,8 +370,6 @@
   (%init-host)
 
   (%sdl:gl-set-attribute (gl-attr :share-with-current-context) 1)
-  (%sdl:gl-set-attribute (gl-attr :context-profile-mask)
-                         (gl-profile :core))
   ;; TODO: move filament package somewhere else, probably
   (cref:c-with ((pf (:struct %filament.extra:pixel-format)))
     (%filament.extra:select-pixel-format (pf &))
@@ -342,31 +389,35 @@
     (%sdl:gl-set-attribute (gl-attr :stencil-size) (pf :stencil-bits)))
   (%sdl:gl-set-attribute (gl-attr :doublebuffer) 1)
 
-  (setup-most-recent-opengl-context)
+  (if (uiop:featurep :android)
+      (setup-most-recent-opengl-es-context)
+      (setup-most-recent-opengl-context))
 
   (let ((window (cffi:with-foreign-string (name (or title "ALIEN-WORKS"))
                   (%sdl:create-window name
                                       %sdl:+windowpos-undefined+
                                       %sdl:+windowpos-undefined+
                                       1280 960
-                                      (window-flags :opengl :allow-highdpi :shown)))))
+                                      (window-flags :opengl :allow-highdpi :shown))))
+        (*root-window* (%sdl:create-window "HIDDEN_ROOT"
+                                           %sdl:+windowpos-undefined+
+                                           %sdl:+windowpos-undefined+
+                                           1 1
+                                           (window-flags :opengl :hidden))))
     (when (cffi:null-pointer-p window)
-      (error "Failed to create a window"))
-    (let ((main-ctx (%sdl:gl-create-context window))
-          (primary-ctx (%sdl:gl-create-context window))
-          (secondary-ctx (%sdl:gl-create-context window)))
-      (unless (= (%sdl:gl-make-current window main-ctx) 0)
-        (error "Failed to make main GL context current"))
+      (error "Failed to create main window"))
+    (when (cffi:null-pointer-p *root-window*)
+      (error "Failed to create hidden root window"))
+    (let ((*root* (%sdl:gl-create-context *root-window*))
+          (*primary* (%sdl:gl-create-context window)))
+      (ensure-root-context)
       (unwind-protect
            (cref:c-with ((event %sdl:event))
              (let* ((*event* (event &))
-                    (*primary* primary-ctx)
-                    (*secondary* secondary-ctx)
                     (*native-graphics-context* (%native-gl-context *primary*)))
                (funcall callback window)))
-        (%sdl:gl-delete-context secondary-ctx)
-        (%sdl:gl-delete-context primary-ctx)
-        (%sdl:gl-delete-context main-ctx)
+        (%sdl:gl-delete-context *primary*)
+        (%sdl:gl-delete-context *root*)
         (%sdl:destroy-window window)
         (%sdl:quit)))))
 
@@ -379,12 +430,29 @@
 
 
 (defun %host:make-shared-context-thread (window action)
-  (let ((ctx *secondary*))
+  (declare (ignore window))
+  (let* ((win (%sdl:create-window "SECONDARY"
+                                  %sdl:+windowpos-undefined+
+                                  %sdl:+windowpos-undefined+
+                                  1 1
+                                  (window-flags :opengl :hidden)))
+         (ctx (%sdl:gl-create-context win)))
+    (ensure-root-context)
     (bt:make-thread
      (lambda ()
-       (let ((*native-graphics-context* (%native-gl-context ctx)))
-         (%sdl:gl-make-current window ctx)
-         (funcall action)))
+       (unwind-protect
+            (let ((*native-graphics-context* (%native-gl-context ctx)))
+              (unless (= (%sdl:gl-make-current win ctx) 0)
+                (error "Failed to make secondary context current: ~A" (sdl-error)))
+              (format t "~%Shared context thread GL: ~{~A~^; ~}"
+                      (list
+                       (gl:get-string :version)
+                       (gl:get-string :renderer)
+                       (gl:get-string :vendor)))
+              (finish-output)
+              (funcall action))
+         (%sdl:gl-delete-context ctx)
+         (%sdl:destroy-window win)))
      :name "shared-context-thread")))
 
 
@@ -858,9 +926,9 @@ Returns -32768 to 32767 for sticks and 0 to 32767 for triggers"
 
 
 (defun run ()
-  (add-known-foreign-library-directories)
   (unwind-protect
        (progn
+         (setf %gl:*gl-get-proc-address* #'%sdl:gl-get-proc-address)
          (cl-opengl-library:load-opengl-library)
          (bodge-blobs-support:load-foreign-libraries)
          (loop with args = (uiop:command-line-arguments)

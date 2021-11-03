@@ -381,8 +381,6 @@
        (lambda ()
          (unwind-protect
               (progn
-                (format t "~%Canvas thread init: GL ~A" (gl:get-string :version))
-                (finish-output)
                 (setf (canvas-context-framebuffer ctx) (make-canvas-context-framebuffer)
                       (canvas-context-handle ctx) (%aw.skia:make-context
                                                    (canvas-context-framebuffer-id
