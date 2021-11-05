@@ -398,7 +398,13 @@
                                       %sdl:+windowpos-undefined+
                                       %sdl:+windowpos-undefined+
                                       1280 960
-                                      (window-flags :opengl :allow-highdpi :shown))))
+                                      (apply #'window-flags
+                                             :opengl
+                                             :allow-highdpi
+                                             :shown
+                                             (append
+                                              (when (uiop:featurep :android)
+                                                (list :fullscreen)))))))
         (*root-window* (%sdl:create-window "HIDDEN_ROOT"
                                            %sdl:+windowpos-undefined+
                                            %sdl:+windowpos-undefined+
@@ -408,6 +414,7 @@
       (error "Failed to create main window"))
     (when (cffi:null-pointer-p *root-window*)
       (error "Failed to create hidden root window"))
+
     (let ((*root* (%sdl:gl-create-context *root-window*))
           (*primary* (%sdl:gl-create-context window)))
       (ensure-root-context)
@@ -550,8 +557,9 @@
       (:textediting :text-edit)
       (:textinput :text-input)
       (:windowevent :window)
+      (:multigesture :simple-gesture)
 
-      ((:multigesture :quit) type)
+      ((:quit) type)
 
       (otherwise :unknown))))
 
@@ -588,7 +596,18 @@
   (cref:c-ref event %sdl:event :text :text &))
 
 
-(defun event-mouse-button (event)
+(defmacro define-event-accessor (name type (event &rest lambda-list) &body body)
+  (multiple-value-bind (doc body)
+      (if (stringp (first body))
+          (values (first body) (rest body))
+          (values nil body))
+    `(defun ,name (,event ,@lambda-list)
+       ,@(when doc `(,doc))
+       (when (member (event-type ,event) '(,@(a:ensure-list type)))
+         ,@body))))
+
+
+(define-event-accessor event-mouse-button (:mouse-button-up :mouse-button-down) (event)
   (case (cref:c-ref event %sdl:event :button :button)
     (#.%sdl:+button-left+ :left)
     (#.%sdl:+button-right+ :right)
@@ -596,7 +615,7 @@
     (otherwise nil)))
 
 
-(defun event-mouse-wheel (event)
+(define-event-accessor event-mouse-wheel :mouse-wheel (event)
   (cref:c-val ((event %sdl:event))
     (values (event :wheel :y) (event :wheel :x))))
 
@@ -618,19 +637,23 @@
   (%scancode (host->keymod value)))
 
 
-(defun event-key-scan-code (event)
+(define-event-accessor event-key-scan-code (:keyboard-button-down :keyboard-button-up) (event)
   (keymod->host (cref:c-ref event %sdl:event :key :keysym :scancode)))
 
 
-(defun event-game-controller-id (event)
+(define-event-accessor event-game-controller-id (:game-controller-button-down
+                                                 :game-controller-button-up)
+    (event)
   (cref:c-ref event %sdl:event :jbutton :which))
 
 
-(defun event-game-controller-button (event)
+(define-event-accessor event-game-controller-button (:game-controller-button-down
+                                                     :game-controller-button-up)
+    (event)
   (cref:c-ref event %sdl:event :jbutton :button))
 
 
-(defun event-gamepad-id (event)
+(define-event-accessor event-gamepad-id (:gamepad-button-down :gamepad-button-up) (event)
   (cref:c-ref event %sdl:event :cbutton :which))
 
 
@@ -650,7 +673,7 @@
   (:trigger-right :triggerright))
 
 
-(defun event-gamepad-button (event)
+(define-event-accessor event-gamepad-button (:gamepad-button-down :gamepad-button-up) (event)
   (controller-button->host
    (controller-button
     (cref:c-ref event %sdl:event :cbutton :button))))
@@ -893,6 +916,52 @@ Returns -32768 to 32767 for sticks and 0 to 32767 for triggers"
 (defun play-rumble (haptic-device strength length-ms)
   (%sdl:haptic-rumble-play haptic-device (float strength 0f0) (max 0 (floor length-ms)))
   (values))
+
+;;;
+;;; TOUCH
+;;;
+(define-event-accessor event-finger-id (:finger-down :finger-motion :finger-up) (event)
+  (cref:c-ref event %sdl:event :tfinger :finger-id))
+
+
+(define-event-accessor event-finger-x (:finger-down :finger-up) (event)
+  (cref:c-ref event %sdl:event :tfinger :x))
+
+
+(define-event-accessor event-finger-y (:finger-down :finger-up) (event)
+  (cref:c-ref event %sdl:event :tfinger :y))
+
+
+(define-event-accessor event-finger-x-offset :finger-motion (event)
+  (cref:c-ref event %sdl:event :tfinger :dx))
+
+
+(define-event-accessor event-finger-y-offset :finger-motion (event)
+  (cref:c-ref event %sdl:event :tfinger :dy))
+
+
+;;;
+;;; SIMPLE GESTURE
+;;;
+(define-event-accessor event-simple-gesture-finger-count :simple-gesture (event)
+  (cref:c-ref event %sdl:event :mgesture :num-fingers))
+
+
+(define-event-accessor event-simple-gesture-distance-offset :simple-gesture (event)
+  (cref:c-ref event %sdl:event :mgesture :d-dist))
+
+
+(define-event-accessor event-simple-gesture-rotation-offset :simple-gesture (event)
+  (cref:c-ref event %sdl:event :mgesture :d-theta))
+
+
+(define-event-accessor event-simple-gesture-x :simple-gesture (event)
+  (cref:c-ref event %sdl:event :mgesture :x))
+
+
+(define-event-accessor event-simple-gesture-y :simple-gesture (event)
+  (cref:c-ref event %sdl:event :mgesture :y))
+
 
 ;;;
 ;;; RUNNING

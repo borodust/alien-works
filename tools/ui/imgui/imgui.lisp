@@ -4,6 +4,9 @@
 (u:define-enumval-extractor key-enum %imgui:im-gui-key-enum)
 
 
+(defvar +undefined-float+ (- (float %imgui:+flt-max+ 0f0)))
+
+
 ;;;
 ;;; HELPER
 ;;;
@@ -148,11 +151,24 @@
           log-filename (cffi:null-pointer))))
 
 
+(defun (setf font-scale) (scale io)
+  (iffi:with-intricate-slots %imgui:im-gui-io ((value %imgui:font-global-scale)) io
+    (setf value (float scale 0f0))))
+
+
+(defun font-scale (io)
+  (iffi:with-intricate-slots %imgui:im-gui-io ((value %imgui:font-global-scale)) io
+    value))
+
+
 (defun update-mouse-position (io x y)
   (iffi:with-intricate-slots %imgui:im-gui-io ((mouse-pos %imgui:mouse-pos)) io
     (with-vec2 ((pos mouse-pos) mouse-x mouse-y)
-      (setf mouse-x (float x 0f0)
-            mouse-y (float y 0f0)))))
+      (if (and x y)
+          (setf mouse-x (float x 0f0)
+                mouse-y (float y 0f0))
+          (setf mouse-x +undefined-float+
+                mouse-y +undefined-float+)))))
 
 
 (defun update-keyboard-buttons (io scan-code pressed-p shift-p alt-p ctrl-p super-p)
@@ -183,7 +199,7 @@
 
 (defun update-mouse-wheel (io y-offset &optional x-offset)
   (iffi:with-intricate-slots %imgui:im-gui-io ((mouse-wheel-x %imgui:mouse-wheel-h)
-                                                        (mouse-wheel-y %imgui:mouse-wheel))
+                                               (mouse-wheel-y %imgui:mouse-wheel))
                              io
     (incf mouse-wheel-x (float (or x-offset 0f0) 0f0))
     (incf mouse-wheel-y (float y-offset 0f0))))
@@ -220,6 +236,26 @@
 
 
 ;;;
+;;; STYLE
+;;;
+(defmacro with-style ((style) &body body)
+  `(let ((,style (%imgui:get-style)))
+     ,@body))
+
+
+(defun scale-style (style scale)
+  (%imgui:scale-all-sizes
+   '(claw-utils:claw-pointer %filament.imgui::im-gui-style) style
+   :float (float scale 0f0)))
+
+
+(defun update-touch-padding (style x-padding y-padding)
+  (iffi:with-intricate-slots %imgui:im-gui-style ((value %imgui:touch-extra-padding)) style
+    (with-vec2 ((padding value) x y)
+      (setf x (float x-padding 0f0)
+            y (float y-padding 0f0)))))
+
+;;;
 ;;; WIDGETS
 ;;;
 (defun show-demo-window ()
@@ -250,10 +286,9 @@
                     `(,result)))
             (unwind-protect
                  (when ,keep-open
-                   (,@(if on-close
-                          `(setf ,result)
-                          '(progn))
-                    ,@body))
+                   ,@(if on-close
+                         `((setf ,result (progn ,@body)))
+                         body))
               (%imgui:end)
               ,(when on-close
                  `(unless ,close-not-clicked

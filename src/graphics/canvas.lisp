@@ -219,16 +219,22 @@
 
   width
   height
+  framebuffer-width
+  framebuffer-height
   depth-stencil-renderbuffer-id
   last-flushed
   triple-command-queue
   triple-texture)
 
 
-(defun make-canvas (engine width height)
-  (let ((canvas-context (canvas-context-of engine)))
+(defun make-canvas (engine width height &key framebuffer-width framebuffer-height)
+  (let ((canvas-context (canvas-context-of engine))
+        (framebuffer-width (or framebuffer-width width))
+        (framebuffer-height (or framebuffer-height height)))
     (flet ((%unbufered-texture ()
-             (make-unbuffered-texture engine width height)))
+             (make-unbuffered-texture engine
+                                      framebuffer-width
+                                      framebuffer-height)))
       (let ((canvas (%make-canvas :triple-command-queue (make-triple-buffered-value
                                                          (make-canvas-command-queue)
                                                          (make-canvas-command-queue)
@@ -238,14 +244,19 @@
                                                                               (%unbufered-texture))
                                   :width width
                                   :height height
+                                  :framebuffer-width framebuffer-width
+                                  :framebuffer-height framebuffer-height
                                   :handle (%aw.skia:make-canvas
-                                           (canvas-context-handle canvas-context) width height)
+                                           (canvas-context-handle canvas-context)
+                                           framebuffer-width framebuffer-height)
                                   :context canvas-context
                                   :engine engine)))
         (flet ((%init ()
                  (let ((rbo (gl:gen-renderbuffer)))
                    (gl:bind-renderbuffer :renderbuffer rbo)
-                   (gl:renderbuffer-storage :renderbuffer :depth24-stencil8 width height)
+                   (gl:renderbuffer-storage :renderbuffer :depth24-stencil8
+                                            framebuffer-width
+                                            framebuffer-height)
                    (setf (%canvas-depth-stencil-renderbuffer-id canvas) rbo)
                    (push-canvas-context-canvas canvas-context canvas))))
           (push-canvas-context-task canvas-context #'%init))
@@ -269,21 +280,27 @@
 
 (defun draw-canvas (canvas framebuffer)
   (let ((front-command-queue (swap-triple-buffered-value (%canvas-triple-command-queue canvas)))
-        (back-texture (triple-buffered-value-back (%canvas-triple-texture canvas))))
+        (back-texture (triple-buffered-value-back (%canvas-triple-texture canvas)))
+        (width (%canvas-width canvas))
+        (height (%canvas-height canvas))
+        (framebuffer-width (%canvas-framebuffer-width canvas))
+        (framebuffer-height (%canvas-framebuffer-height canvas)))
     (unless (eq front-command-queue (%canvas-last-flushed canvas))
       (setf (%canvas-last-flushed canvas) front-command-queue)
       (bind-framebuffer framebuffer
                         (%canvas-depth-stencil-renderbuffer-id canvas)
                         (unbuffered-texture-id back-texture)
-                        (%canvas-width canvas)
-                        (%canvas-height canvas))
-
+                        framebuffer-width
+                        framebuffer-height)
       (let ((%aw.skia:*canvas* (%canvas-handle canvas))
             (%aw.skia:*paint* nil)
             (%aw.skia:*font* nil))
         (%push-paint)
         (unwind-protect
-             (drain-draw-commands front-command-queue)
+             (progn
+               (%aw.skia:save-transform)
+               (%aw.skia:scale (/ framebuffer-width width) (/ framebuffer-height height))
+               (drain-draw-commands front-command-queue))
           (%pop-paint)
           (%aw.skia:reset-transform))
         (%aw.skia:flush-context (canvas-context-handle (%canvas-context canvas))))

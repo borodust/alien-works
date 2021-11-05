@@ -24,6 +24,11 @@
            #:add-input-characters
            #:mouse-dragging-p
            #:mouse-drag-delta
+           #:font-scale
+
+           #:with-style
+           #:update-touch-padding
+           #:scale-style
 
            #:with-panel
 
@@ -47,6 +52,7 @@
 (cl:defpackage :alien-works.tools.ui
   (:local-nicknames (:a :alexandria)
                     (:u :alien-works.utils)
+                    (:math :alien-works.math)
                     (:host :alien-works.host)
                     (:%gx :%alien-works.graphics)
                     (:%fm :%alien-works.filament)

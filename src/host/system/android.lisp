@@ -4,7 +4,9 @@
 (u:define-enumval-extractor gl-profile %sdl:g-lprofile)
 
 
-(defun %init-host ())
+(defun %init-host ()
+  (%sdl:set-hint %sdl:+hint-mouse-touch-events+ "0")
+  (%sdl:set-hint %sdl:+hint-touch-mouse-events+ "0"))
 
 
 (defun %window-surface (wm-info)

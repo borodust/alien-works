@@ -56,6 +56,18 @@
            #:keyboard-modifier-state
            #:keyboard-modifier-state-some-pressed-p
 
+           #:event-finger-id
+           #:event-finger-x
+           #:event-finger-y
+           #:event-finger-x-offset
+           #:event-finger-y-offset
+
+           #:event-simple-gesture-finger-count
+           #:event-simple-gesture-distance-offset
+           #:event-simple-gesture-rotation-offset
+           #:event-simple-gesture-x
+           #:event-simple-gesture-y
+
            #:scancode
 
            #:do-game-controller-ids

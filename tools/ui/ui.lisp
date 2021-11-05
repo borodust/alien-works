@@ -4,6 +4,139 @@
 (declaim (special *ui-callback*))
 
 
+(defstruct finger
+  id
+  x
+  y
+  x-offset
+  y-offset)
+
+
+(defstruct gesture
+  (finger-count 0)
+  (distance 0)
+  (rotation 0)
+  (x nil)
+  (y nil))
+
+
+(defclass touch-mouse-emulation ()
+  ((finger-table :initform (make-hash-table :test 'eql))
+   (gesture :initform (make-gesture))
+
+   (first-finger :initform nil)
+
+   (left-pressed-p :initform nil :reader left-pressed-of)
+   (right-pressed-p :initform nil :reader right-pressed-of)
+   (middle-pressed-p :initform nil :reader middle-pressed-of)
+   (x :initform nil :reader x-of)
+   (y :initform nil :reader y-of)
+   (x-scroll :initform 0)
+   (y-scroll :initform 0)))
+
+
+(defun read-touch-mouse-scroll (emulator)
+  (with-slots (x-scroll y-scroll) emulator
+    (let ((x x-scroll)
+          (y y-scroll))
+      (setf x-scroll 0
+            y-scroll 0)
+      (values x y))))
+
+
+(defun %update-touch-mouse-state (emulator)
+  (with-slots (finger-table gesture first-finger
+               left-pressed-p right-pressed-p middle-pressed-p
+               x y x-scroll y-scroll)
+      emulator
+    (let ((finger-count (hash-table-count finger-table)))
+      (cond
+        ((and first-finger (zerop finger-count))
+         (setf first-finger nil
+
+               left-pressed-p nil
+               middle-pressed-p nil
+               right-pressed-p nil
+               x nil
+               y nil
+               x-scroll 0
+               y-scroll 0
+
+               (gesture-finger-count gesture) 0
+               (gesture-distance gesture) 0
+               (gesture-rotation gesture) 0
+               (gesture-x gesture) nil
+               (gesture-y gesture) nil))
+        ((null first-finger)
+         (setf first-finger (first (a:hash-table-values finger-table)))))
+
+      (when first-finger
+        (cond
+          ((= finger-count 1)
+           (setf right-pressed-p nil
+                 middle-pressed-p nil
+                 left-pressed-p t
+                 x-scroll 0
+                 y-scroll 0))
+          ((= finger-count 2)
+           (let ((finger-x-scroll (if (and x (finger-x first-finger))
+                                      (- (finger-x first-finger) x)
+                                      0))
+                 (finger-y-scroll (if (and y (finger-y first-finger))
+                                      (- (finger-y first-finger) y)
+                                      0)))
+             (setf right-pressed-p t
+                   middle-pressed-p nil
+                   left-pressed-p nil
+                   x-scroll (+ x-scroll finger-x-scroll)
+                   y-scroll (+ x-scroll finger-y-scroll))))
+          ((= finger-count 3)
+           (setf right-pressed-p nil
+                 middle-pressed-p t
+                 left-pressed-p nil
+                 x-scroll 0
+                 y-scroll 0))
+          (t (setf right-pressed-p nil
+                   middle-pressed-p nil
+                   left-pressed-p nil
+                   x-scroll 0
+                   y-scroll 0)))
+
+        (setf x (finger-x first-finger)
+              y (finger-y first-finger))))))
+
+
+(defun update-touch-mouse-finger (emulator id pressing x y x-offset y-offset)
+  (with-slots (finger-table) emulator
+    (if pressing
+        (let ((finger (gethash id finger-table)))
+          (if finger
+              (setf (finger-x finger) x
+                    (finger-y finger) y
+                    (finger-x-offset finger) x-offset
+                    (finger-y-offset finger) y-offset)
+              (setf (gethash id finger-table) (make-finger :id id
+                                                           :x x
+                                                           :y y
+                                                           :x-offset x-offset
+                                                           :y-offset y-offset))))
+        (remhash id finger-table))
+    (%update-touch-mouse-state emulator)))
+
+
+(defun update-touch-mouse-multigesture (emulator finger-count distance rotation x y)
+  (with-slots (gesture) emulator
+    (incf (gesture-distance gesture) distance)
+    (incf (gesture-rotation gesture) rotation)
+    (setf (gesture-finger-count gesture) finger-count
+          (gesture-x gesture) x
+          (gesture-y gesture) y)
+    (%update-touch-mouse-state emulator)))
+
+
+;;;
+;;; UI
+;;;
 (defclass ui ()
   ((engine :initarg :engine)
    (renderer :initarg :renderer)
@@ -11,20 +144,31 @@
    (callback :initarg :callback)
    (imgui-helper :initarg :imgui)
    (mouse-state :initform (host:make-mouse-state))
-   (keyboard-modifier-state :initform (host:make-keyboard-modifier-state))))
+   (keyboard-modifier-state :initform (host:make-keyboard-modifier-state))
+   (touch-mouse :initform (make-instance 'touch-mouse-emulation))))
 
 
 (%ui:define-ui-callback ui-callback ()
   (funcall *ui-callback*))
 
 
-(defun make-ui (engine)
+(defun make-ui (engine &key scale touch-padding)
   (let* ((engine-handle (%alien-works.graphics:handle-of engine))
          (view (%fm:create-view engine-handle))
          (helper (%ui:make-imgui-helper engine-handle view "")))
 
     (%ui:with-io (io)
-      (%ui:init-io io))
+      (%ui:init-io io)
+      (when scale
+        (setf (%ui:font-scale io) scale)))
+
+    (%ui:with-style (style)
+      (when touch-padding
+        (%ui:update-touch-padding style touch-padding touch-padding))
+
+      ;; must be last
+      (when scale
+        (%ui:scale-style style scale)))
 
     (make-instance 'ui :engine engine
                        :renderer (slot-value engine 'alien-works.graphics::renderer)
@@ -50,8 +194,21 @@
                                  (1- (host:mouse-state-y mouse-state))))))
 
 
+(defun update-input-from-touch (io touch-mouse)
+  (%ui:update-mouse-buttons io
+                            (left-pressed-of touch-mouse)
+                            (middle-pressed-of touch-mouse)
+                            (right-pressed-of touch-mouse))
+  (multiple-value-bind (x-scroll y-scroll)
+      (read-touch-mouse-scroll touch-mouse)
+    (%ui:update-mouse-wheel io x-scroll y-scroll))
+  (%ui:update-mouse-position io
+                             (x-of touch-mouse)
+                             (y-of touch-mouse)))
+
+
 (defun handle-ui-event (ui event)
-  (with-slots (keyboard-modifier-state) ui
+  (with-slots (keyboard-modifier-state touch-mouse) ui
     (host:keyboard-modifier-state keyboard-modifier-state)
     (%ui:with-io (io)
       (case (host:event-type event)
@@ -79,18 +236,46 @@
                                        (pressed-p :middle)))))
         (:mouse-wheel
          (multiple-value-bind (y-offset x-offset) (host:event-mouse-wheel event)
-           (%ui:update-mouse-wheel io y-offset x-offset)))))))
+           (%ui:update-mouse-wheel io y-offset x-offset)))
+        ((:finger-down :finger-up :finger-motion)
+         (update-touch-mouse-finger touch-mouse
+                                    (host:event-finger-id event)
+                                    (not (eq (host:event-type event) :finger-up))
+                                    (host:event-finger-x event)
+                                    (host:event-finger-y event)
+                                    (host:event-finger-x-offset event)
+                                    (host:event-finger-y-offset event))
+         (update-input-from-touch io touch-mouse))
+        (:simple-gesture
+         (update-touch-mouse-multigesture touch-mouse
+                                          (host:event-simple-gesture-finger-count event)
+                                          (host:event-simple-gesture-distance-offset event)
+                                          (host:event-simple-gesture-rotation-offset event)
+                                          (host:event-simple-gesture-x event)
+                                          (host:event-simple-gesture-y event))
+         (update-input-from-touch io touch-mouse))))))
 
 
-(defun render-ui (ui width height time-delta ui-callback)
+(defun render-ui (ui width height time-delta ui-callback
+                   &key framebuffer-width framebuffer-height)
   (with-slots (view imgui-helper callback renderer) ui
-    (%fm:update-view-viewport view 0 0 width height)
-    (%ui:update-display-size imgui-helper width height 1f0 1f0)
+    (let ((framebuffer-width (or framebuffer-width width))
+          (framebuffer-height (or framebuffer-height height)))
+      (%fm:update-view-viewport view 0 0
+                                framebuffer-width framebuffer-height)
+      (%ui:update-display-size imgui-helper width height
+                               (/ framebuffer-width width)
+                               (/ framebuffer-height height)))
     (let ((*ui-callback* ui-callback))
       (%ui:render-imgui imgui-helper callback time-delta))
     (%fm:render-view renderer view)))
 
 
-(defmacro ui ((ui width height time-delta) &body body)
+(defmacro ui ((ui width height time-delta &key
+                framebuffer-width framebuffer-height) &body body)
   `(render-ui ,ui ,width ,height ,time-delta
-              (lambda () ,@body)))
+              (lambda () ,@body)
+              ,@(when framebuffer-width
+                  `(:framebuffer-width ,framebuffer-width))
+              ,@(when framebuffer-height
+                  `(:framebuffer-height ,framebuffer-height))))
