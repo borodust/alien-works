@@ -39,6 +39,7 @@
            #:event-key-scan-code
            #:event-mouse-button
            #:event-mouse-wheel
+           #:event-mouse-position
            #:event-game-controller-id
            #:event-game-controller-button
            #:event-gamepad-id
@@ -61,6 +62,7 @@
            #:event-finger-y
            #:event-finger-x-offset
            #:event-finger-y-offset
+           #:event-finger-position
 
            #:event-simple-gesture-finger-count
            #:event-simple-gesture-distance-offset

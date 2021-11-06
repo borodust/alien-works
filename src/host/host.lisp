@@ -615,6 +615,11 @@
     (otherwise nil)))
 
 
+(define-event-accessor event-mouse-position (:mouse-motion) (event)
+  (cref:c-val ((event %sdl:event))
+    (values (event :motion :x) (event :motion :y))))
+
+
 (define-event-accessor event-mouse-wheel :mouse-wheel (event)
   (cref:c-val ((event %sdl:event))
     (values (event :wheel :y) (event :wheel :x))))
@@ -924,12 +929,18 @@ Returns -32768 to 32767 for sticks and 0 to 32767 for triggers"
   (cref:c-ref event %sdl:event :tfinger :finger-id))
 
 
-(define-event-accessor event-finger-x (:finger-down :finger-up) (event)
+(define-event-accessor event-finger-x (:finger-down :finger-motion :finger-up) (event)
   (cref:c-ref event %sdl:event :tfinger :x))
 
 
-(define-event-accessor event-finger-y (:finger-down :finger-up) (event)
+(define-event-accessor event-finger-y (:finger-down :finger-motion :finger-up) (event)
   (cref:c-ref event %sdl:event :tfinger :y))
+
+
+(define-event-accessor event-finger-position (:finger-down :finger-motion :finger-up) (event)
+  (cref:c-val ((event %sdl:event))
+    (values (cref:c-ref event %sdl:event :tfinger :x)
+            (cref:c-ref event %sdl:event :tfinger :y))))
 
 
 (define-event-accessor event-finger-x-offset :finger-motion (event)

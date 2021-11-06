@@ -6,10 +6,10 @@
 
 (defstruct finger
   id
-  x
-  y
-  x-offset
-  y-offset)
+  (x 0)
+  (y 0)
+  (x-offset 0)
+  (y-offset 0))
 
 
 (defstruct gesture
@@ -31,23 +31,25 @@
    (middle-pressed-p :initform nil :reader middle-pressed-of)
    (x :initform nil :reader x-of)
    (y :initform nil :reader y-of)
+   (x-scroll-prev :initform 0)
+   (y-scroll-prev :initform 0)
    (x-scroll :initform 0)
    (y-scroll :initform 0)))
 
 
 (defun read-touch-mouse-scroll (emulator)
-  (with-slots (x-scroll y-scroll) emulator
-    (let ((x x-scroll)
-          (y y-scroll))
-      (setf x-scroll 0
-            y-scroll 0)
+  (with-slots (x-scroll y-scroll x-scroll-prev y-scroll-prev) emulator
+    (let ((x (- x-scroll x-scroll-prev))
+          (y (- y-scroll y-scroll-prev)))
+      (setf x-scroll-prev x-scroll
+            y-scroll-prev y-scroll)
       (values x y))))
 
 
 (defun %update-touch-mouse-state (emulator)
   (with-slots (finger-table gesture first-finger
                left-pressed-p right-pressed-p middle-pressed-p
-               x y x-scroll y-scroll)
+               x y x-scroll y-scroll x-scroll-prev y-scroll-prev)
       emulator
     (let ((finger-count (hash-table-count finger-table)))
       (cond
@@ -57,8 +59,6 @@
                left-pressed-p nil
                middle-pressed-p nil
                right-pressed-p nil
-               x nil
-               y nil
                x-scroll 0
                y-scroll 0
 
@@ -77,50 +77,54 @@
                  middle-pressed-p nil
                  left-pressed-p t
                  x-scroll 0
-                 y-scroll 0))
+                 y-scroll 0
+                 x-scroll-prev 0
+                 y-scroll-prev 0))
           ((= finger-count 2)
-           (let ((finger-x-scroll (if (and x (finger-x first-finger))
-                                      (- (finger-x first-finger) x)
-                                      0))
-                 (finger-y-scroll (if (and y (finger-y first-finger))
-                                      (- (finger-y first-finger) y)
-                                      0)))
-             (setf right-pressed-p t
-                   middle-pressed-p nil
-                   left-pressed-p nil
-                   x-scroll (+ x-scroll finger-x-scroll)
-                   y-scroll (+ x-scroll finger-y-scroll))))
+           (setf right-pressed-p t
+                 middle-pressed-p nil
+                 left-pressed-p nil
+                 x-scroll (finger-x-offset first-finger)
+                 y-scroll (finger-y-offset first-finger)))
           ((= finger-count 3)
            (setf right-pressed-p nil
                  middle-pressed-p t
                  left-pressed-p nil
                  x-scroll 0
-                 y-scroll 0))
+                 y-scroll 0
+                 x-scroll-prev 0
+                 y-scroll-prev 0))
           (t (setf right-pressed-p nil
                    middle-pressed-p nil
                    left-pressed-p nil
                    x-scroll 0
-                   y-scroll 0)))
+                   y-scroll 0
+                   x-scroll-prev 0
+                   y-scroll-prev 0)))
 
-        (setf x (finger-x first-finger)
-              y (finger-y first-finger))))))
+        (setf x (+ (finger-x first-finger) (finger-x-offset first-finger))
+              y (+ (finger-y first-finger) (finger-y-offset first-finger)))))))
 
 
-(defun update-touch-mouse-finger (emulator id pressing x y x-offset y-offset)
+(defun update-touch-mouse-finger (emulator id pressing x y)
   (with-slots (finger-table) emulator
     (if pressing
         (let ((finger (gethash id finger-table)))
           (if finger
               (setf (finger-x finger) x
-                    (finger-y finger) y
-                    (finger-x-offset finger) x-offset
-                    (finger-y-offset finger) y-offset)
+                    (finger-y finger) y)
               (setf (gethash id finger-table) (make-finger :id id
                                                            :x x
-                                                           :y y
-                                                           :x-offset x-offset
-                                                           :y-offset y-offset))))
+                                                           :y y))))
         (remhash id finger-table))
+    (%update-touch-mouse-state emulator)))
+
+
+(defun update-touch-mouse-motion (emulator id x-offset y-offset)
+  (with-slots (finger-table) emulator
+    (let ((finger (gethash id finger-table)))
+      (incf (finger-x-offset finger) x-offset)
+      (incf (finger-y-offset finger) y-offset))
     (%update-touch-mouse-state emulator)))
 
 
@@ -143,7 +147,6 @@
    (view :initarg :view)
    (callback :initarg :callback)
    (imgui-helper :initarg :imgui)
-   (mouse-state :initform (host:make-mouse-state))
    (keyboard-modifier-state :initform (host:make-keyboard-modifier-state))
    (touch-mouse :initform (make-instance 'touch-mouse-emulation))))
 
@@ -186,22 +189,23 @@
 
 
 (defun update-ui-input (ui)
-  (with-slots (mouse-state) ui
-    (host:mouse-state mouse-state)
+  (with-slots (touch-mouse) ui
     (%ui:with-io (io)
-      (%ui:update-mouse-position io
-                                 (1- (host:mouse-state-x mouse-state))
-                                 (1- (host:mouse-state-y mouse-state))))))
+      (flet ((%clamp (value)
+               (cond
+                 ((< -0.00001 value 0.00001) 0)
+                 ((< value 0) -1/8)
+                 (t 1/8))))
+        (multiple-value-bind (x-scroll y-scroll)
+            (read-touch-mouse-scroll touch-mouse)
+          (%ui:update-mouse-wheel io (%clamp y-scroll) (%clamp x-scroll)))))))
 
 
 (defun update-input-from-touch (io touch-mouse)
   (%ui:update-mouse-buttons io
                             (left-pressed-of touch-mouse)
-                            (middle-pressed-of touch-mouse)
-                            (right-pressed-of touch-mouse))
-  (multiple-value-bind (x-scroll y-scroll)
-      (read-touch-mouse-scroll touch-mouse)
-    (%ui:update-mouse-wheel io x-scroll y-scroll))
+                            (right-pressed-of touch-mouse)
+                            (middle-pressed-of touch-mouse))
   (%ui:update-mouse-position io
                              (x-of touch-mouse)
                              (y-of touch-mouse)))
@@ -237,22 +241,36 @@
         (:mouse-wheel
          (multiple-value-bind (y-offset x-offset) (host:event-mouse-wheel event)
            (%ui:update-mouse-wheel io y-offset x-offset)))
-        ((:finger-down :finger-up :finger-motion)
+        (:mouse-motion
+         (multiple-value-bind (x y)
+             (host:event-mouse-position event)
+           (%ui:update-mouse-position io (1- x) (1- y))))
+        ((:finger-down :finger-up)
          (update-touch-mouse-finger touch-mouse
                                     (host:event-finger-id event)
                                     (not (eq (host:event-type event) :finger-up))
-                                    (host:event-finger-x event)
-                                    (host:event-finger-y event)
-                                    (host:event-finger-x-offset event)
-                                    (host:event-finger-y-offset event))
+                                    (* (host:event-finger-x event)
+                                       notalone-thriced::*width*)
+                                    (* (host:event-finger-y event)
+                                       notalone-thriced::*height*))
+         (update-input-from-touch io touch-mouse))
+        (:finger-motion
+         (update-touch-mouse-motion touch-mouse
+                                    (host:event-finger-id event)
+                                    (* (host:event-finger-x-offset event)
+                                       notalone-thriced::*width*)
+                                    (* (host:event-finger-y-offset event)
+                                       notalone-thriced::*height*))
          (update-input-from-touch io touch-mouse))
         (:simple-gesture
          (update-touch-mouse-multigesture touch-mouse
                                           (host:event-simple-gesture-finger-count event)
                                           (host:event-simple-gesture-distance-offset event)
                                           (host:event-simple-gesture-rotation-offset event)
-                                          (host:event-simple-gesture-x event)
-                                          (host:event-simple-gesture-y event))
+                                          (* (host:event-simple-gesture-x event)
+                                             notalone-thriced::*width*)
+                                          (* (host:event-simple-gesture-y event)
+                                             notalone-thriced::*height*))
          (update-input-from-touch io touch-mouse))))))
 
 
