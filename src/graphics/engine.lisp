@@ -1,119 +1,50 @@
 (cl:in-package :alien-works.graphics)
 
+
+(declaim (special *renderer*))
+
+
 (defclass engine ()
   ((engine :reader handle-of)
-   (scene :reader scene-of)
    (canvas-context :reader canvas-context-of)
-   swap-chain renderer camera camera-entity view))
+   renderer
+   swap-chain))
 
 
-;;;
-;;; SKYBOX
-;;;
-(defun make-color-skybox (engine r g b a)
-  (%fm:with-vec4f (color r g b a)
-    (%fm:with-skybox-builder (%make-skybox (:color color))
-      (%make-skybox (handle-of engine)))))
-
-
-(defun make-cubemap-skybox (engine cubemap)
-  (%fm:with-skybox-builder (%make-skybox (:environment cubemap))
-    (%make-skybox (handle-of engine))))
-
-
-(defun (setf skybox) (skybox engine)
-  (with-slots (scene) engine
-    (setf (%fm:scene-skybox scene) skybox)))
-
-
-(defun (setf indirect-light) (indirect-light engine)
-  (with-slots (scene) engine
-    (setf (%fm:scene-indirect-light scene) indirect-light)))
-
-
-(defmethod initialize-instance :after ((this engine) &key window width height)
-  (with-slots (engine swap-chain renderer scene camera camera-entity view canvas-context)
-      this
+(defmethod initialize-instance :after ((this engine) &key window)
+  (with-slots (engine swap-chain renderer canvas-context) this
     (setf engine (%fm:create-engine (%host:window-graphics-context))
           swap-chain (%fm:create-swap-chain engine (%host:window-surface window))
           renderer (%fm:create-renderer engine)
-          camera-entity (%fm:create-entity)
-          camera (%fm:create-camera engine camera-entity)
-          view (%fm:create-view engine)
-          scene (%fm:create-scene engine)
-          canvas-context (make-canvas-context window))
-    ;; view setup
-    (setf (%fm:view-camera view) camera
-          (%fm:view-scene view) scene
-          (%fm:view-post-processing-enabled-p view) t)
-    (%fm:update-view-bloom-options view :enabled t)
-    (let ((width (or width 1280))
-          (height (or height width 960)))
-      (%fm:update-view-viewport view 0 0 width height)
-      (%fm:update-camera-lens-projection camera 28f0 (/ width height) 0.01 100))))
+          canvas-context (make-canvas-context window))))
 
 
-(defun create-engine (window &key width height)
-  (make-instance 'engine :window window :width width :height height))
+(defun create-engine (window &key)
+  (make-instance 'engine :window window))
 
 
 (defun destroy-engine (engine)
-  (with-slots (engine swap-chain renderer scene camera-entity view canvas-context) engine
+  (with-slots (engine swap-chain renderer canvas-context) engine
     (destroy-canvas-context canvas-context)
-    (%fm:destroy-view engine view)
-    (%fm:destroy-camera engine camera-entity)
-    (%fm:destroy-scene engine scene)
     (%fm:destroy-renderer engine renderer)
     (%fm:destroy-swap-chain engine swap-chain)
     (%fm:destroy-engine engine)))
 
 
-(defun render-frame (engine)
-  (with-slots (renderer view swap-chain) engine
-    (when (%fm:begin-frame renderer swap-chain)
-      (%fm:render-view renderer view)
-      (%fm:end-frame renderer))))
-
-
-(defmacro with-frame ((engine) &body body)
-  `(with-slots (renderer view swap-chain) ,engine
+(defmacro when-frame ((engine) &body body)
+  `(with-slots (renderer swap-chain) ,engine
      (when (%fm:begin-frame renderer swap-chain)
-       (%fm:render-view renderer view)
        (unwind-protect
-            (progn ,@body)
+            (let ((*renderer* renderer))
+              ,@body)
          (%fm:end-frame renderer)))))
 
 
-(defmacro with-engine ((engine &key (window (error ":window missing")) width height)
-                       &body body)
-  `(let ((,engine (create-engine ,window :width ,width :height ,height)))
+(defmacro with-renderer ((engine &key (window (error ":window missing"))) &body body)
+  `(let ((,engine (create-engine ,window)))
      (unwind-protect
           (progn ,@body)
        (destroy-engine ,engine))))
-
-
-(defun transform-camera (engine transform)
-  (with-slots (camera) engine
-    (%fm:with-mat4f (mat transform)
-      (%fm:update-camera-model-matrix camera mat))))
-
-
-(defun camera-lens-projection (engine focal-length aspect near far)
-  (with-slots (camera) engine
-    (%fm:update-camera-lens-projection camera focal-length aspect near far)))
-
-
-(defun camera-ortho-projection (engine left right bottom top &key (near 0f0) (far 1f0))
-  (with-slots (camera) engine
-    (%fm:update-camera-projection camera :ortho left right bottom top near far)))
-
-
-(defun add-scene-entity (engine entity)
-  (%fm:add-scene-entity (scene-of engine) entity))
-
-
-(defun remove-scene-entity (engine entity)
-  (%fm:remove-scene-entity (scene-of engine) entity))
 
 
 (defun transform-entity (engine entity transform)
@@ -616,3 +547,100 @@
 
 (defun destroy-indirect-light (engine light)
   (%fm:destroy-indirect-light (handle-of engine) light))
+
+
+;;;
+;;; SCENE
+;;;
+(defclass scene ()
+  ((engine :initarg :engine)
+   scene
+   view
+   camera
+   camera-entity))
+
+
+(defmethod initialize-instance :after ((this scene) &key width height)
+  (with-slots (engine scene camera view camera-entity) this
+    (setf camera-entity (%fm:create-entity)
+          camera (%fm:create-camera engine camera-entity)
+          view (%fm:create-view engine)
+          scene (%fm:create-scene engine)
+
+          (%fm:view-camera view) camera
+          (%fm:view-scene view) scene
+          (%fm:view-post-processing-enabled-p view) t)
+    (%fm:update-view-bloom-options view :enabled t)
+    (let ((width (or width 1280))
+          (height (or height width 960)))
+      (%fm:update-view-viewport view 0 0 width height)
+      (%fm:update-camera-lens-projection camera 28f0 (/ width height) 0.01 100))))
+
+
+(defun make-scene (engine viewport-width viewport-height)
+  (make-instance 'scene :engine (handle-of engine)
+                        :width viewport-width
+                        :height viewport-height))
+
+
+(defun destroy-scene (scene)
+  (with-slots (engine view scene camera-entity camera) scene
+    (%fm:destroy-camera engine camera-entity)
+    (%fm:destroy-entity camera-entity)
+    (%fm:destroy-scene engine scene)
+    (%fm:destroy-view engine view)))
+
+
+(defun (setf scene-skybox) (skybox scene)
+  (with-slots (scene) scene
+    (setf (%fm:scene-skybox scene) skybox)))
+
+
+(defun (setf scene-indirect-light) (indirect-light scene)
+  (with-slots (scene) scene
+    (setf (%fm:scene-indirect-light scene) indirect-light)))
+
+
+(defun render-scene (scene)
+  (with-slots (view) scene
+    (%fm:render-view *renderer* view)))
+
+
+(defun transform-scene-camera (scene transform)
+  (with-slots (camera) scene
+    (%fm:with-mat4f (mat transform)
+      (%fm:update-camera-model-matrix camera mat))))
+
+
+(defun scene-camera-lens-projection (scene focal-length aspect near far)
+  (with-slots (camera) scene
+    (%fm:update-camera-lens-projection camera focal-length aspect near far)))
+
+
+(defun scene-camera-ortho-projection (scene left right bottom top &key (near 0f0) (far 1f0))
+  (with-slots (camera) scene
+    (%fm:update-camera-projection camera :ortho left right bottom top near far)))
+
+
+(defun add-scene-entity (scene entity)
+  (with-slots (scene) scene
+    (%fm:add-scene-entity scene entity)))
+
+
+(defun remove-scene-entity (scene entity)
+  (with-slots (scene) scene
+    (%fm:remove-scene-entity scene entity)))
+
+
+;;;
+;;; SKYBOX
+;;;
+(defun make-color-skybox (engine r g b a)
+  (%fm:with-vec4f (color r g b a)
+    (%fm:with-skybox-builder (%make-skybox (:color color))
+      (%make-skybox (handle-of engine)))))
+
+
+(defun make-cubemap-skybox (engine cubemap)
+  (%fm:with-skybox-builder (%make-skybox (:environment cubemap))
+    (%make-skybox (handle-of engine))))

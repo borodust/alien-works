@@ -97,6 +97,7 @@
 
            #:create-scene
            #:destroy-scene
+
            #:scene-skybox
            #:scene-indirect-light
            #:add-scene-entity
@@ -256,19 +257,20 @@
 
                 #:make-typeface
                 #:destroy-typeface)
-  (:export #:with-engine
-           #:render-frame
-           #:with-frame
+  (:export #:with-renderer
+           #:when-frame
 
+           #:make-scene
+           #:destroy-scene
            #:add-scene-entity
            #:remove-scene-entity
+           #:render-scene
+           #:transform-scene-camera
+           #:scene-camera-lens-projection
+           #:scene-camera-ortho-projection
 
-           #:transform-camera
-           #:camera-lens-projection
-           #:camera-ortho-projection
-
-           #:skybox
-           #:indirect-light
+           #:scene-skybox
+           #:scene-indirect-light
            #:make-color-skybox
            #:make-cubemap-skybox
 
