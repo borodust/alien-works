@@ -93,6 +93,8 @@
            #:disable-view-color-grading
            #:update-view-bloom-options
            #:view-post-processing-enabled-p
+           #:view-shadows-enabled-p
+           #:view-blend-mode
            #:update-view-viewport
 
            #:create-scene

@@ -560,7 +560,10 @@
    camera-entity))
 
 
-(defmethod initialize-instance :after ((this scene) &key width height)
+(defmethod initialize-instance :after ((this scene) &key width height
+                                                      (post-processing-enabled t)
+                                                      (shadows-enabled t)
+                                                      (blend-mode :opaque))
   (with-slots (engine scene camera view camera-entity) this
     (setf camera-entity (%fm:create-entity)
           camera (%fm:create-camera engine camera-entity)
@@ -569,18 +572,27 @@
 
           (%fm:view-camera view) camera
           (%fm:view-scene view) scene
-          (%fm:view-post-processing-enabled-p view) t)
-    (%fm:update-view-bloom-options view :enabled t)
+          (%fm:view-post-processing-enabled-p view) post-processing-enabled
+          (%fm:view-shadows-enabled-p view) shadows-enabled
+          (%fm:view-blend-mode view) blend-mode)
+    (when post-processing-enabled
+      (%fm:update-view-bloom-options view :enabled t))
     (let ((width (or width 1280))
           (height (or height width 960)))
       (%fm:update-view-viewport view 0 0 width height)
       (%fm:update-camera-lens-projection camera 28f0 (/ width height) 0.01 100))))
 
 
-(defun make-scene (engine viewport-width viewport-height)
+(defun make-scene (engine viewport-width viewport-height
+                   &key (post-processing t)
+                     (shadows t)
+                     (blend-mode :opaque))
   (make-instance 'scene :engine (handle-of engine)
                         :width viewport-width
-                        :height viewport-height))
+                        :height viewport-height
+                        :post-processing-enabled post-processing
+                        :shadows-enabled shadows
+                        :blend-mode blend-mode))
 
 
 (defun destroy-scene (scene)
