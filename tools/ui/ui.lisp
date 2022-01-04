@@ -142,8 +142,7 @@
 ;;; UI
 ;;;
 (defclass ui ()
-  ((engine :initarg :engine)
-   (renderer :initarg :renderer)
+  ((renderer :initarg :renderer)
    (view :initarg :view)
    (callback :initarg :callback)
    (imgui-helper :initarg :imgui)
@@ -155,8 +154,8 @@
   (funcall *ui-callback*))
 
 
-(defun make-ui (engine &key scale touch-padding)
-  (let* ((engine-handle (%alien-works.graphics:handle-of engine))
+(defun make-ui (&key scale touch-padding)
+  (let* ((engine-handle (%alien-works.graphics:engine-handle))
          (view (%fm:create-view engine-handle))
          (helper (%ui:make-imgui-helper engine-handle view "")))
 
@@ -173,17 +172,16 @@
       (when scale
         (%ui:scale-style style scale)))
 
-    (make-instance 'ui :engine engine
-                       :renderer (slot-value engine 'alien-works.graphics::renderer)
+    (make-instance 'ui :renderer (%alien-works.graphics:renderer-handle)
                        :view view
                        :callback (iffi:make-intricate-callback 'ui-callback)
                        :imgui helper)))
 
 
 (defun destroy-ui (ui)
-  (with-slots (engine imgui-helper view callback) ui
+  (with-slots (imgui-helper view callback) ui
     (%ui:destroy-imgui-helper imgui-helper)
-    (let ((engine-handle (%alien-works.graphics:handle-of engine)))
+    (let ((engine-handle (%alien-works.graphics:engine-handle)))
       (%fm:destroy-view engine-handle view))
     (%ui:destroy-ui-callback 'ui-callback callback)))
 

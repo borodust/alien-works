@@ -107,6 +107,10 @@
                                            (:file "scene")
                                            (:file "actor")))
                              (:file "physics")))
+               (:module "framework"
+                :serial t
+                :components ((:file "packages")
+                             (:file "framework")))
                (:file "packages")))
 
 

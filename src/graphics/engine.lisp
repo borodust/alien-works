@@ -1,26 +1,35 @@
 (cl:in-package :alien-works.graphics)
 
 
-(declaim (special *renderer*))
+(declaim (special *engine*
+                  *renderer*))
 
 
 (defclass engine ()
   ((engine :reader handle-of)
    (canvas-context :reader canvas-context-of)
-   renderer
+   (renderer :reader renderer-of)
    swap-chain))
 
 
-(defmethod initialize-instance :after ((this engine) &key window)
+(defun engine-handle ()
+  (handle-of *engine*))
+
+
+(defun renderer-handle ()
+  (renderer-of *engine*))
+
+
+(defmethod initialize-instance :after ((this engine) &key)
   (with-slots (engine swap-chain renderer canvas-context) this
     (setf engine (%fm:create-engine (%host:window-graphics-context))
-          swap-chain (%fm:create-swap-chain engine (%host:window-surface window))
+          swap-chain (%fm:create-swap-chain engine (%host:window-surface))
           renderer (%fm:create-renderer engine)
-          canvas-context (make-canvas-context window))))
+          canvas-context (make-canvas-context))))
 
 
-(defun create-engine (window &key)
-  (make-instance 'engine :window window))
+(defun create-engine (&key)
+  (make-instance 'engine))
 
 
 (defun destroy-engine (engine)
@@ -31,8 +40,8 @@
     (%fm:destroy-engine engine)))
 
 
-(defmacro when-frame ((engine) &body body)
-  `(with-slots (renderer swap-chain) ,engine
+(defmacro when-frame (() &body body)
+  `(with-slots (renderer swap-chain) *engine*
      (when (%fm:begin-frame renderer swap-chain)
        (unwind-protect
             (let ((*renderer* renderer))
@@ -40,15 +49,15 @@
          (%fm:end-frame renderer)))))
 
 
-(defmacro with-renderer ((engine &key (window (error ":window missing"))) &body body)
-  `(let ((,engine (create-engine ,window)))
+(defmacro %graphics:with-renderer (() &body body)
+  `(let ((*engine* (create-engine)))
      (unwind-protect
           (progn ,@body)
-       (destroy-engine ,engine))))
+       (destroy-engine *engine*))))
 
 
-(defun transform-entity (engine entity transform)
-  (let ((transform-manager (%fm:transform-manager (handle-of engine))))
+(defun transform-entity (entity transform)
+  (let ((transform-manager (%fm:transform-manager (handle-of *engine*))))
     (%fm:with-transform-instance (instance entity) transform-manager
       (%fm:with-mat4f (mat transform)
         (setf (%fm:transform transform-manager instance) mat)))))
@@ -164,22 +173,22 @@
                                         (%fm:vertex-attribute-enum attribute) normalized-p))
 
 
-(defun make-vertex-buffer (engine vertex-count &rest options)
+(defun make-vertex-buffer (vertex-count &rest options)
   (%fm:with-vertex-buffer-builder ((%make-vertex-buffer :instance handle)
                                    (:buffer-count 1)
                                    (:vertex-count vertex-count))
     (let ((builder (make-instance 'vertex-buffer-builder :handle handle)))
       (loop for step in options
             do (funcall step builder)))
-    (%make-vertex-buffer (handle-of engine))))
+    (%make-vertex-buffer (handle-of *engine*))))
 
 
-(defun destroy-vertex-buffer (engine buffer)
-  (%fm:destroy-vertex-buffer (handle-of engine) buffer))
+(defun destroy-vertex-buffer (buffer)
+  (%fm:destroy-vertex-buffer (handle-of *engine*) buffer))
 
 
-(defun fill-vertex-buffer (engine buffer data-ptr data-size &optional (offset 0))
-  (%fm:update-vertex-buffer buffer (handle-of engine) 0 data-ptr data-size offset))
+(defun fill-vertex-buffer (buffer data-ptr data-size &optional (offset 0))
+  (%fm:update-vertex-buffer buffer (handle-of *engine*) 0 data-ptr data-size offset))
 
 ;;;
 ;;; INDEX BUFFER
@@ -195,29 +204,29 @@
   (%fm:index-buffer-builder-buffer-type (handle-of this) (%fm:index-type-enum type)))
 
 
-(defun make-index-buffer (engine index-count &rest options)
+(defun make-index-buffer (index-count &rest options)
   (%fm:with-index-buffer-builder ((%make-index-buffer :instance handle)
                                   (:index-count index-count))
     (let ((builder (make-instance 'index-buffer-builder :handle handle)))
       (loop for step in options
             do (funcall step builder)))
-    (%make-index-buffer (handle-of engine))))
+    (%make-index-buffer (handle-of *engine*))))
 
 
-(defun destroy-index-buffer (engine buffer)
-  (%fm:destroy-index-buffer (handle-of engine) buffer))
+(defun destroy-index-buffer (buffer)
+  (%fm:destroy-index-buffer (handle-of *engine*) buffer))
 
 
-(defun fill-index-buffer (engine buffer data-ptr data-size &optional (offset 0))
-  (%fm:update-index-buffer buffer (handle-of engine) data-ptr data-size offset))
+(defun fill-index-buffer (buffer data-ptr data-size &optional (offset 0))
+  (%fm:update-index-buffer buffer (handle-of *engine*) data-ptr data-size offset))
 
 ;;;
 ;;; MATERIAL
 ;;;
-(defun make-material-from-memory (engine data size)
+(defun make-material-from-memory (data size)
   (%fm:with-material-builder (%make-material
                               (:package data size))
-    (%make-material (handle-of engine))))
+    (%make-material (handle-of *engine*))))
 
 
 ;;;
@@ -286,20 +295,20 @@
   (%fm:renderable-builder-blend-order (handle-of this) index order))
 
 
-(defun make-renderable (engine count &rest options)
+(defun make-renderable (count &rest options)
   (%fm:with-renderable-builder ((%make-renderable :instance handle) (count))
     (let ((builder (make-instance 'renderable-builder :handle handle))
           (entity (%fm:create-entity)))
       (loop for opt in options
             do (funcall opt builder))
-      (%make-renderable (handle-of engine) entity)
-      (let ((transform-manager (%fm:transform-manager (handle-of engine))))
+      (%make-renderable (handle-of *engine*) entity)
+      (let ((transform-manager (%fm:transform-manager (handle-of *engine*))))
         (%fm:attach-transform transform-manager entity))
       entity)))
 
 
-(defun destroy-renderable (engine renderable)
-  (%fm:destroy-engine-entity (handle-of engine) renderable))
+(defun destroy-renderable (renderable)
+  (%fm:destroy-engine-entity (handle-of *engine*) renderable))
 
 ;;;
 ;;; LIGHT
@@ -349,19 +358,19 @@
 (defmethod %.sun-halo-falloff ((this light-builder) value)
   (%fm:light-builder-sun-halo-falloff (handle-of this) (float value 0f0)))
 
-(defun make-light (engine type &rest options)
+(defun make-light (type &rest options)
   (%fm:with-light-builder ((%build :instance handle) (type))
     (let ((builder (make-instance 'light-builder :handle handle))
           (entity (%fm:create-entity)))
       (loop for opt in options
             do (funcall opt builder))
-      (%build (handle-of engine) entity)
-      (let ((transform-manager (%fm:transform-manager (handle-of engine))))
+      (%build (handle-of *engine*) entity)
+      (let ((transform-manager (%fm:transform-manager (handle-of *engine*))))
         (%fm:attach-transform transform-manager entity))
       entity)))
 
-(defun destroy-light (engine light)
-  (%fm:destroy-engine-entity (handle-of engine) light))
+(defun destroy-light (light)
+  (%fm:destroy-engine-entity (handle-of *engine*) light))
 
 
 ;;;
@@ -402,23 +411,23 @@
   (%fm:texture-builder-import (handle-of this) value))
 
 
-(defun make-texture (engine &rest options)
+(defun make-texture (&rest options)
   (%fm:with-texture-builder ((%build :instance handle))
     (let ((builder (make-instance 'texture-builder :handle handle)))
       (loop for opt in options
             do (funcall opt builder))
-      (%build (handle-of engine)))))
+      (%build (handle-of *engine*)))))
 
 
-(defun destroy-texture (engine texture)
-  (%fm:destroy-texture (handle-of engine) texture))
+(defun destroy-texture (texture)
+  (%fm:destroy-texture (handle-of *engine*) texture))
 
 
-(defun update-texture-image (engine texture level pixel-buffer)
-  (%fm:update-texture-image (handle-of engine) texture level pixel-buffer))
+(defun update-texture-image (texture level pixel-buffer)
+  (%fm:update-texture-image (handle-of *engine*) texture level pixel-buffer))
 
 
-(defun update-cubemap-images (engine texture level pixel-buffer face-stride &rest rest-strides)
+(defun update-cubemap-images (texture level pixel-buffer face-stride &rest rest-strides)
   (%fm:with-face-offsets (offsets)
     (loop with current-offset = 0
           for sizes = (list* face-stride rest-strides) then (rest sizes)
@@ -426,11 +435,11 @@
           for i from 0 below 6
           do (setf (%fm:face-offset offsets i) current-offset)
              (incf current-offset current-size))
-    (%fm:update-cubemap-images (handle-of engine) texture level pixel-buffer offsets)))
+    (%fm:update-cubemap-images (handle-of *engine*) texture level pixel-buffer offsets)))
 
 
-(defun generate-texture-mipmaps (engine texture)
-  (%fm:generate-texture-mipmaps (handle-of engine) texture))
+(defun generate-texture-mipmaps (texture)
+  (%fm:generate-texture-mipmaps (handle-of *engine*) texture))
 
 
 (defun make-pixel-buffer (data-ptr data-size pixel-format pixel-type &optional release-callback)
@@ -460,8 +469,8 @@
   (%fm:make-material-instance material))
 
 
-(defun destroy-material-instance (engine instance)
-  (%fm:destroy-material-instance (handle-of engine) instance))
+(defun destroy-material-instance (instance)
+  (%fm:destroy-material-instance (handle-of *engine*) instance))
 
 (defun (setf material-instance-parameter-float) (value material name)
   (setf (%fm:material-instance-parameter-float material name) value))
@@ -537,16 +546,16 @@
     (%fm:indirect-light-rotation (handle-of this) mat)))
 
 
-(defun make-indirect-light (engine &rest options)
+(defun make-indirect-light (&rest options)
   (%fm:with-indirect-light-builder ((%build :instance handle))
     (let ((builder (make-instance 'indirect-light-builder :handle handle)))
       (loop for opt in options
             do (funcall opt builder))
-      (%build (handle-of engine)))))
+      (%build (handle-of *engine*)))))
 
 
-(defun destroy-indirect-light (engine light)
-  (%fm:destroy-indirect-light (handle-of engine) light))
+(defun destroy-indirect-light (light)
+  (%fm:destroy-indirect-light (handle-of *engine*) light))
 
 
 ;;;
@@ -583,11 +592,11 @@
       (%fm:update-camera-lens-projection camera 28f0 (/ width height) 0.01 100))))
 
 
-(defun make-scene (engine viewport-width viewport-height
+(defun make-scene (viewport-width viewport-height
                    &key (post-processing t)
                      (shadows t)
                      (blend-mode :opaque))
-  (make-instance 'scene :engine (handle-of engine)
+  (make-instance 'scene :engine (handle-of *engine*)
                         :width viewport-width
                         :height viewport-height
                         :post-processing-enabled post-processing
@@ -647,12 +656,12 @@
 ;;;
 ;;; SKYBOX
 ;;;
-(defun make-color-skybox (engine r g b a)
+(defun make-color-skybox (r g b a)
   (%fm:with-vec4f (color r g b a)
     (%fm:with-skybox-builder (%make-skybox (:color color))
-      (%make-skybox (handle-of engine)))))
+      (%make-skybox (handle-of *engine*)))))
 
 
-(defun make-cubemap-skybox (engine cubemap)
+(defun make-cubemap-skybox (cubemap)
   (%fm:with-skybox-builder (%make-skybox (:environment cubemap))
-    (%make-skybox (handle-of engine))))
+    (%make-skybox (handle-of *engine*))))

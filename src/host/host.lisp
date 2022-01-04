@@ -7,7 +7,8 @@
 (a:define-constant +max-controller-guid-length+ 128)
 
 (declaim (special *event*
-                  *native-graphics-context*))
+                  *native-graphics-context*
+                  *window*))
 
 
 (defun sdl-error ()
@@ -421,23 +422,23 @@
       (unwind-protect
            (cref:c-with ((event %sdl:event))
              (let* ((*event* (event &))
-                    (*native-graphics-context* (%native-gl-context *primary*)))
-               (funcall callback window)))
+                    (*native-graphics-context* (%native-gl-context *primary*))
+                    (*window* window))
+               (funcall callback)))
         (%sdl:gl-delete-context *primary*)
         (%sdl:gl-delete-context *root*)
         (%sdl:destroy-window window)
         (%sdl:quit)))))
 
 
-(defmacro with-window ((window &key title) &body body)
-  `(call-with-window (lambda (,window)
+(defmacro %host:with-window ((&key title) &body body)
+  `(call-with-window (lambda ()
                        ,@body)
                      ,@(when title
                          `(:title ,title))))
 
 
-(defun %host:make-shared-context-thread (window action)
-  (declare (ignore window))
+(defun %host:make-shared-context-thread (action)
   (let* ((win (%sdl:create-window "SECONDARY"
                                   %sdl:+windowpos-undefined+
                                   %sdl:+windowpos-undefined+
@@ -463,42 +464,42 @@
      :name "shared-context-thread")))
 
 
-(defun %host:window-surface (window)
+(defun %host:window-surface ()
   (cref:c-with ((wm-info %sdl:sys-w-minfo))
     (setf (wm-info :version :major) %sdl:+major-version+
           (wm-info :version :minor) %sdl:+minor-version+
           (wm-info :version :patch) %sdl:+patchlevel+)
 
-    (%sdl:get-window-wm-info window (wm-info &))
+    (%sdl:get-window-wm-info *window* (wm-info &))
     (%window-surface (wm-info &))))
 
 
-(defun window-width (window)
+(defun window-width ()
   (cref:c-with ((width :int))
-    (%sdl:get-window-size window (width &) (cffi:null-pointer))
+    (%sdl:get-window-size *window* (width &) (cffi:null-pointer))
     width))
 
 
-(defun window-height (window)
+(defun window-height ()
   (cref:c-with ((height :int))
-    (%sdl:get-window-size window (cffi:null-pointer) (height &))
+    (%sdl:get-window-size *window* (cffi:null-pointer) (height &))
     height))
 
 
-(defun framebuffer-width (window)
+(defun framebuffer-width ()
   (cref:c-with ((width :int))
-    (%sdl:gl-get-drawable-size window (width &) (cffi:null-pointer))
+    (%sdl:gl-get-drawable-size *window* (width &) (cffi:null-pointer))
     width))
 
 
-(defun framebuffer-height (window)
+(defun framebuffer-height ()
   (cref:c-with ((height :int))
-    (%sdl:gl-get-drawable-size window (cffi:null-pointer) (height &))
+    (%sdl:gl-get-drawable-size *window* (cffi:null-pointer) (height &))
     height))
 
 
-(defun window-display (window)
-  (make-display (%sdl:get-window-display-index window)))
+(defun window-display ()
+  (make-display (%sdl:get-window-display-index *window*)))
 
 
 ;;;

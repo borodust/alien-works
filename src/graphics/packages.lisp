@@ -243,7 +243,9 @@
 
 (cl:defpackage :%alien-works.graphics
   (:use)
-  (:export #:handle-of))
+  (:export #:engine-handle
+           #:renderer-handle
+           #:with-renderer))
 
 (cl:defpackage :alien-works.graphics
   (:local-nicknames (:a :alexandria)
@@ -253,14 +255,14 @@
                     (:sv :static-vectors)
                     (:cref :cffi-c-ref)
                     (:m :alien-works.math)
-                    (:%host :%alien-works.host))
+                    (:%host :%alien-works.host)
+                    (:%graphics :%alien-works.graphics))
   (:use :cl :%alien-works.graphics)
   (:import-from :%alien-works.skia
 
                 #:make-typeface
                 #:destroy-typeface)
-  (:export #:with-renderer
-           #:when-frame
+  (:export #:when-frame
 
            #:make-scene
            #:destroy-scene

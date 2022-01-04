@@ -1,6 +1,8 @@
 (cl:defpackage :%alien-works.host
   (:use)
-  (:export #:get-clipboard-foreign-text
+  (:export #:with-window
+
+           #:get-clipboard-foreign-text
            #:set-clipboard-foreign-text
 
            #:event-input-foreign-text
@@ -27,7 +29,6 @@
            #:display-orientation
            #:list-displays
 
-           #:with-window
            #:window-display
            #:window-width
            #:window-height

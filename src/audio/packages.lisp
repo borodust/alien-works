@@ -50,9 +50,14 @@
            #:decode-audio))
 
 
+(cl:defpackage :%alien-works.audio
+  (:export #:with-audio))
+
+
 (cl:defpackage :alien-works.audio
   (:local-nicknames (:%aw.al :alien-works.audio.openal)
-                    (:%aw.opus :alien-works.audio.opus))
+                    (:%aw.opus :alien-works.audio.opus)
+                    (:%audio :%alien-works.audio))
   (:use :cl)
   (:import-from :alien-works.audio.openal
                 #:do-output-audio-devices
@@ -71,8 +76,7 @@
                 #:audio-source-direction
                 #:audio-source-offset
                 #:audio-source-looping-p)
-  (:export #:with-audio
-           #:play-audio
+  (:export #:play-audio
            #:decode-audio
            #:encode-audio
 

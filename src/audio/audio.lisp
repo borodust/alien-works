@@ -19,7 +19,7 @@
   (%aw.al:play-pcm-s16-mono s16-mono-pcm))
 
 
-(defmacro with-audio (() &body body)
+(defmacro %audio:with-audio (() &body body)
   `(%aw.al:with-context ()
      ,@body))
 

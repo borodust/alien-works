@@ -7,6 +7,8 @@
 (defvar *font-stack* (make-array 1 :fill-pointer 0 :adjustable t))
 (defparameter *pi-degree* (float (/ 180 pi) 0f0))
 
+(defvar *canvas-task-queue* nil)
+
 ;;;
 ;;; PAINT
 ;;;
@@ -121,7 +123,7 @@
   filatex)
 
 
-(defun make-unbuffered-texture (engine width height)
+(defun make-unbuffered-texture (width height)
   (let ((tex-id (gl:gen-texture)))
     (gl:bind-texture :texture-2d tex-id)
     (gl:tex-image-2d :texture-2d 0 :rgba8 width height 0
@@ -132,8 +134,7 @@
     (gl:tex-parameter :texture-2d :texture-max-level 0)
     (%make-unbuffered-texture
      :id tex-id
-     :filatex (make-texture engine
-                            (.import tex-id)
+     :filatex (make-texture (.import tex-id)
                             (.sampler :2d)
                             (.width width)
                             (.height height)
@@ -148,8 +149,8 @@
   (%unbuffered-texture-filatex unbuffered-texture))
 
 
-(defun destroy-unbuffered-texture (engine unbuffered-texture)
-  (destroy-texture engine (%unbuffered-texture-filatex unbuffered-texture))
+(defun destroy-unbuffered-texture (unbuffered-texture)
+  (destroy-texture (%unbuffered-texture-filatex unbuffered-texture))
   (gl:delete-texture (%unbuffered-texture-id unbuffered-texture)))
 
 
@@ -213,7 +214,6 @@
 (atomics:defstruct (canvas
                     (:constructor %make-canvas)
                     (:conc-name %canvas-))
-  engine
   context
   handle
 
@@ -227,13 +227,12 @@
   triple-texture)
 
 
-(defun make-canvas (engine width height &key framebuffer-width framebuffer-height)
-  (let ((canvas-context (canvas-context-of engine))
+(defun make-canvas (width height &key framebuffer-width framebuffer-height)
+  (let ((canvas-context (canvas-context-of *engine*))
         (framebuffer-width (or framebuffer-width width))
         (framebuffer-height (or framebuffer-height height)))
     (flet ((%unbufered-texture ()
-             (make-unbuffered-texture engine
-                                      framebuffer-width
+             (make-unbuffered-texture framebuffer-width
                                       framebuffer-height)))
       (let ((canvas (%make-canvas :triple-command-queue (make-triple-buffered-value
                                                          (make-canvas-command-queue)
@@ -249,8 +248,7 @@
                                   :handle (%aw.skia:make-canvas
                                            (canvas-context-handle canvas-context)
                                            framebuffer-width framebuffer-height)
-                                  :context canvas-context
-                                  :engine engine)))
+                                  :context canvas-context)))
         (flet ((%init ()
                  (let ((rbo (gl:gen-renderbuffer)))
                    (gl:bind-renderbuffer :renderbuffer rbo)
@@ -264,18 +262,17 @@
 
 
 (defun destroy-canvas (canvas)
-  (let ((engine (%canvas-engine canvas)))
-    (flet ((%destroy ()
-             (delete-canvas-context-canvas (%canvas-context canvas) canvas)
-             (gl:delete-renderbuffers (list (%canvas-depth-stencil-renderbuffer-id canvas)))
-             (%aw.skia:destroy-canvas (%canvas-handle canvas))
-             (flet ((~texture (unbuffered-texture)
-                      (destroy-unbuffered-texture engine unbuffered-texture)))
-               (let ((tritex (%canvas-triple-texture canvas)))
-                 (~texture (triple-buffered-value-front tritex))
-                 (~texture (triple-buffered-value-prepared tritex))
-                 (~texture (triple-buffered-value-back tritex))))))
-      (push-canvas-context-task (%canvas-context canvas) #'%destroy))))
+  (flet ((%destroy ()
+           (delete-canvas-context-canvas (%canvas-context canvas) canvas)
+           (gl:delete-renderbuffers (list (%canvas-depth-stencil-renderbuffer-id canvas)))))
+    (push-canvas-context-task (%canvas-context canvas) #'%destroy t)
+    (%aw.skia:destroy-canvas (%canvas-handle canvas))
+    (flet ((~texture (unbuffered-texture)
+             (destroy-unbuffered-texture unbuffered-texture)))
+      (let ((tritex (%canvas-triple-texture canvas)))
+        (~texture (triple-buffered-value-front tritex))
+        (~texture (triple-buffered-value-prepared tritex))
+        (~texture (triple-buffered-value-back tritex))))))
 
 
 (defun draw-canvas (canvas framebuffer)
@@ -347,8 +344,18 @@
   (tasks (make-cas-queue)))
 
 
-(defun push-canvas-context-task (ctx task)
-  (push-cas-queue-value (canvas-context-tasks ctx) task))
+(defun push-canvas-context-task (ctx task &optional (wait nil))
+  (assert (not (and wait *canvas-task-queue*))
+          (wait *canvas-task-queue*)
+          "Wait cannot be requested from within canvas task queue.")
+  (if wait
+      (mt:wait-with-latch (latch)
+        (push-cas-queue-value (canvas-context-tasks ctx)
+                              (lambda ()
+                                (unwind-protect
+                                     (funcall task)
+                                  (mt:open-latch latch)))))
+      (push-cas-queue-value (canvas-context-tasks ctx) task)))
 
 
 (defun push-canvas-context-canvas (ctx canvas)
@@ -364,13 +371,14 @@
 
 
 (defun drain-tasks (ctx)
-  (loop for task in (dump-canvas-context-tasks ctx)
-        do (tagbody begin
-              (restart-case
-                  (funcall task)
-                (restart-canvas-task () (go begin))
-                (skip-canvas-task () (go end)))
-            end)))
+  (let ((*canvas-task-queue* ctx))
+    (loop for task in (dump-canvas-context-tasks ctx)
+          do (tagbody begin
+                (restart-case
+                    (funcall task)
+                  (restart-canvas-task () (go begin))
+                  (skip-canvas-task () (go end)))
+              end))))
 
 
 (defun draw-canvases (ctx)
@@ -390,11 +398,10 @@
     (drain-tasks ctx)))
 
 
-(defun make-canvas-context (window)
+(defun make-canvas-context ()
   (let ((ctx (%make-canvas-context :exit-latch (muth:make-latch))))
     (muth:wait-with-latch (ready-latch)
       (%host:make-shared-context-thread
-       window
        (lambda ()
          (unwind-protect
               (progn
