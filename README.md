@@ -9,9 +9,9 @@ as a full-featured game engine, but rather a stylobate for one.
 * Non-consing in tight loops
 * Non-modular highly-coupled subsystems
 * Multiplatform: Windows, MacOS, Linux, Android, iOS
-* SBCL, CCL and ECL compatible
+* SBCL, CCL, LispWorks and ECL compatible
 * Implementation purity last
-  * Pure Lisp vs foreign solutions is the least concern)
+  * Pure Lisp vs foreign solutions is the least concern
   * If any pure CL alternative exists with the same or better performance and
     similar feature set, it must replace foreign library
   * If foreign alternative exists with better performance and similar feature

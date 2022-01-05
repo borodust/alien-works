@@ -212,64 +212,60 @@
 (defun handle-ui-event (ui event)
   (with-slots (keyboard-modifier-state touch-mouse) ui
     (host:keyboard-modifier-state keyboard-modifier-state)
-    (%ui:with-io (io)
-      (case (host:event-type event)
-        (:text-input
-         (%ui:add-input-characters io (%alien-works.host:event-input-foreign-text event)))
-        ((:keyboard-button-up :keyboard-button-down)
-         (%ui:update-keyboard-buttons io (host:scancode (host:event-key-scan-code event))
-                                      (eq (host:event-type event) :keyboard-button-down)
-                                      (host:keyboard-modifier-state-some-pressed-p
-                                       keyboard-modifier-state :shift)
-                                      (host:keyboard-modifier-state-some-pressed-p
-                                       keyboard-modifier-state :alt)
-                                      (host:keyboard-modifier-state-some-pressed-p
-                                       keyboard-modifier-state :ctrl)
-                                      (host:keyboard-modifier-state-some-pressed-p
-                                       keyboard-modifier-state :super)))
-        ((:mouse-button-down :mouse-button-up)
-         (let ((button (host:event-mouse-button event))
-               (pressed (eq (host:event-type event) :mouse-button-down)))
-           (macrolet ((pressed-p (btn)
-                        `(and pressed (eq button ,btn))))
-             (%ui:update-mouse-buttons io
-                                       (pressed-p :left)
-                                       (pressed-p :right)
-                                       (pressed-p :middle)))))
-        (:mouse-wheel
-         (multiple-value-bind (y-offset x-offset) (host:event-mouse-wheel event)
-           (%ui:update-mouse-wheel io y-offset x-offset)))
-        (:mouse-motion
-         (multiple-value-bind (x y)
-             (host:event-mouse-position event)
-           (%ui:update-mouse-position io (1- x) (1- y))))
-        ((:finger-down :finger-up)
-         (update-touch-mouse-finger touch-mouse
-                                    (host:event-finger-id event)
-                                    (not (eq (host:event-type event) :finger-up))
-                                    (* (host:event-finger-x event)
-                                       notalone-thriced::*width*)
-                                    (* (host:event-finger-y event)
-                                       notalone-thriced::*height*))
-         (update-input-from-touch io touch-mouse))
-        (:finger-motion
-         (update-touch-mouse-motion touch-mouse
-                                    (host:event-finger-id event)
-                                    (* (host:event-finger-x-offset event)
-                                       notalone-thriced::*width*)
-                                    (* (host:event-finger-y-offset event)
-                                       notalone-thriced::*height*))
-         (update-input-from-touch io touch-mouse))
-        (:simple-gesture
-         (update-touch-mouse-multigesture touch-mouse
-                                          (host:event-simple-gesture-finger-count event)
-                                          (host:event-simple-gesture-distance-offset event)
-                                          (host:event-simple-gesture-rotation-offset event)
-                                          (* (host:event-simple-gesture-x event)
-                                             notalone-thriced::*width*)
-                                          (* (host:event-simple-gesture-y event)
-                                             notalone-thriced::*height*))
-         (update-input-from-touch io touch-mouse))))))
+    (let ((width (alien-works:window-width))
+          (height (alien-works:window-height)))
+      (%ui:with-io (io)
+        (case (host:event-type event)
+          (:text-input
+           (%ui:add-input-characters io (%alien-works.host:event-input-foreign-text event)))
+          ((:keyboard-button-up :keyboard-button-down)
+           (%ui:update-keyboard-buttons io (host:scancode (host:event-key-scan-code event))
+                                        (eq (host:event-type event) :keyboard-button-down)
+                                        (host:keyboard-modifier-state-some-pressed-p
+                                         keyboard-modifier-state :shift)
+                                        (host:keyboard-modifier-state-some-pressed-p
+                                         keyboard-modifier-state :alt)
+                                        (host:keyboard-modifier-state-some-pressed-p
+                                         keyboard-modifier-state :ctrl)
+                                        (host:keyboard-modifier-state-some-pressed-p
+                                         keyboard-modifier-state :super)))
+          ((:mouse-button-down :mouse-button-up)
+           (let ((button (host:event-mouse-button event))
+                 (pressed (eq (host:event-type event) :mouse-button-down)))
+             (macrolet ((pressed-p (btn)
+                          `(and pressed (eq button ,btn))))
+               (%ui:update-mouse-buttons io
+                                         (pressed-p :left)
+                                         (pressed-p :right)
+                                         (pressed-p :middle)))))
+          (:mouse-wheel
+           (multiple-value-bind (y-offset x-offset) (host:event-mouse-wheel event)
+             (%ui:update-mouse-wheel io y-offset x-offset)))
+          (:mouse-motion
+           (multiple-value-bind (x y)
+               (host:event-mouse-position event)
+             (%ui:update-mouse-position io (1- x) (1- y))))
+          ((:finger-down :finger-up)
+           (update-touch-mouse-finger touch-mouse
+                                      (host:event-finger-id event)
+                                      (not (eq (host:event-type event) :finger-up))
+                                      (* (host:event-finger-x event) width)
+                                      (* (host:event-finger-y event) height))
+           (update-input-from-touch io touch-mouse))
+          (:finger-motion
+           (update-touch-mouse-motion touch-mouse
+                                      (host:event-finger-id event)
+                                      (* (host:event-finger-x-offset event) width)
+                                      (* (host:event-finger-y-offset event) height))
+           (update-input-from-touch io touch-mouse))
+          (:simple-gesture
+           (update-touch-mouse-multigesture touch-mouse
+                                            (host:event-simple-gesture-finger-count event)
+                                            (host:event-simple-gesture-distance-offset event)
+                                            (host:event-simple-gesture-rotation-offset event)
+                                            (* (host:event-simple-gesture-x event) width)
+                                            (* (host:event-simple-gesture-y event) height))
+           (update-input-from-touch io touch-mouse)))))))
 
 
 (defun render-ui (ui width height time-delta ui-callback
