@@ -1010,13 +1010,13 @@ Returns -32768 to 32767 for sticks and 0 to 32767 for triggers"
   (unwind-protect
        (progn
          (setf %gl:*gl-get-proc-address* #'%sdl:gl-get-proc-address)
+         (u:reload-foreign-libraries)
          (cl-opengl-library:load-opengl-library)
-         (bodge-blobs-support:load-foreign-libraries)
          (loop with args = (uiop:command-line-arguments)
                for hook in *init-hooks*
                do (apply hook args)))
     (bodge-blobs-support:close-foreign-libraries)
-    (cl-opengl-library:close-opengl-library)))
+    (u:unload-foreign-libraries)))
 
 
 (defmacro definit (name (&rest lambda-list) &body body)
