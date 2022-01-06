@@ -164,7 +164,7 @@
       (when scale
         (setf (%ui:font-scale io) scale)))
 
-    (%ui:with-style (style)
+    (let ((style (%ui:style)))
       (when touch-padding
         (%ui:update-touch-padding style touch-padding touch-padding))
 

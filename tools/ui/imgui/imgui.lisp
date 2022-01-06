@@ -2,17 +2,18 @@
 
 
 (u:define-enumval-extractor key-enum %imgui:im-gui-key-enum)
+(u:define-enumval-extractor style-var-enum %imgui:im-gui-style-var-enum)
 
+(u:define-enumbit-combiner window-flags-enum %imgui:im-gui-window-flags-enum)
 
 (defvar +undefined-float+ (- (float %imgui:+flt-max+ 0f0)))
-
 
 ;;;
 ;;; HELPER
 ;;;
 (defun make-imgui-helper (filament-engine filament-view font-path)
   (iffi:with-intricate-instance (path %filament:utils+path
-                                      'claw-utils:claw-string (namestring font-path))
+                                  'claw-utils:claw-string (namestring font-path))
     (iffi:make-intricate-instance '%filament:im-gui-helper
                                   '(:pointer %filament:engine) filament-engine
                                   '(:pointer %filament:view) filament-view
@@ -87,7 +88,6 @@
         ,@(when (and y (listp y))
             `((setf ,y-name ,(second y))))
         ,@body))))
-
 
 ;;;
 ;;; IO
@@ -211,7 +211,6 @@
    'claw-utils:claw-string text))
 
 
-
 (defun mouse-dragging-p (button &optional lock-threshold)
   (%imgui:is-mouse-dragging
    '%filament.imgui:im-gui-mouse-button (ecase button
@@ -238,9 +237,25 @@
 ;;;
 ;;; STYLE
 ;;;
-(defmacro with-style ((style) &body body)
-  `(let ((,style (%imgui:get-style)))
-     ,@body))
+(defmacro with-style ((&key window-rounding window-border) &body body)
+  (let ((style-var-count 0))
+    (flet ((%push-float-var (value name)
+             (when value
+               (incf style-var-count)
+               `((%imgui:push-style-var
+                  '%filament.imgui::im-gui-style-var ,(style-var-enum name)
+                  :float (float ,value 0f0))))))
+      `(progn
+         ,@(%push-float-var window-rounding :window-rounding)
+         ,@(%push-float-var window-border :window-border-size)
+         (unwind-protect
+              (progn ,@body)
+           ,@(unless (zerop style-var-count)
+               `((%imgui:pop-style-var :int ,style-var-count))))))))
+
+
+(defun style ()
+  (%imgui:get-style))
 
 
 (defun scale-style (style scale)
@@ -264,35 +279,91 @@
     (%imgui:show-demo-window '(claw-utils:claw-pointer :bool) (closed &))
     (not closed)))
 
-
-(defmacro with-panel ((text &key on-close width height) &body body)
-  (a:with-gensyms (keep-open close-not-clicked result size x y)
+(defmacro with-panel ((text &key on-close
+                              x y
+                              width height
+                              menu-bar
+                              (background t)
+                              (resizable t)
+                              (movable t)
+                              (title-bar t)
+                              (vertically-scrollable t)
+                              horizontally-scrollable
+                              (collapsible t)
+                              (focus-on-appearing t)
+                              (bring-to-front-on-focus t))
+                      &body body)
+  (a:with-gensyms (keep-open close-not-clicked result size pos tmp-x tmp-y)
     (a:once-only (text)
       `(cref:c-with ((,close-not-clicked :bool))
          (setf ,close-not-clicked t)
-         (,@(if (or width height)
-                `(with-vec2 (,size ,x ,y)
-                   (setf ,x (float ,(or width 0f0) 0f0)
-                         ,y (float ,(or height 0f0) 0f0))
-                   (%imgui:set-next-window-size
-                    '(claw-utils:claw-pointer %filament.imgui:im-vec2) ,size
-                    '%filament.imgui:im-gui-cond 0))
-                `(progn))
-          (let ((,keep-open (%imgui:begin
-                             'claw-utils:claw-string ,text
-                             '(claw-utils:claw-pointer :bool) (,close-not-clicked &)
-                             '%imgui:im-gui-window-flags 0))
-                ,@(when on-close
-                    `(,result)))
-            (unwind-protect
-                 (when ,keep-open
-                   ,@(if on-close
-                         `((setf ,result (progn ,@body)))
-                         body))
-              (%imgui:end)
-              ,(when on-close
-                 `(unless ,close-not-clicked
-                    (funcall ,on-close ,result))))))))))
+         ,@(when (or width height)
+             `((with-vec2 (,size ,tmp-x ,tmp-y)
+                 (setf ,tmp-x (float ,(or width 0f0) 0f0)
+                       ,tmp-y (float ,(or height 0f0) 0f0))
+                 (%imgui:set-next-window-size
+                  '(claw-utils:claw-pointer %filament.imgui:im-vec2) ,size
+                  '%filament.imgui:im-gui-cond 0))))
+         ,@(when (or x y)
+             `((with-vec2 (,pos ,tmp-x ,tmp-y)
+                 (setf ,tmp-x (float ,(or x 0f0) 0f0)
+                       ,tmp-y (float ,(or y 0f0) 0f0))
+                 (with-vec2 (,size)
+                   (%imgui:set-next-window-pos
+                    '(claw-utils:claw-pointer %filament.imgui::im-vec2) ,pos
+                    '%filament.imgui::im-gui-cond 0
+                    '(claw-utils:claw-pointer %filament.imgui::im-vec2) ,size)))))
+         (let ((,keep-open (%imgui:begin
+                            'claw-utils:claw-string ,text
+                            '(claw-utils:claw-pointer :bool) (,close-not-clicked &)
+                            '%imgui:im-gui-window-flags (window-flags-enum
+                                                         ,@(when menu-bar
+                                                             '(:menu-bar))
+                                                         ,@(unless background
+                                                             '(:no-background))
+                                                         ,@(unless resizable
+                                                             '(:no-resize))
+                                                         ,@(unless movable
+                                                             '(:no-move))
+                                                         ,@(unless title-bar
+                                                             '(:no-title-bar))
+                                                         ,@(unless vertically-scrollable
+                                                             '(:no-scrollbar))
+                                                         ,@(when horizontally-scrollable
+                                                             '(:horizontal-scrollbar))
+                                                         ,@(unless collapsible
+                                                             '(:no-collapse))
+                                                         ,@(unless focus-on-appearing
+                                                             '(:no-focus-on-appearing))
+                                                         ,@(unless bring-to-front-on-focus
+                                                             '(:no-bring-to-front-on-focus)))))
+               ,@(when on-close
+                   `(,result)))
+           (unwind-protect
+                (when ,keep-open
+                  ,@(if on-close
+                        `((setf ,result (progn ,@body)))
+                        body))
+             (%imgui:end)
+             ,(when on-close
+                `(unless ,close-not-clicked
+                   (funcall ,on-close ,result)))))))))
+
+
+(defmacro with-menu-bar (() &body body)
+  `(when (%imgui:begin-menu-bar)
+     (unwind-protect
+          (progn ,@body)
+       (%imgui:end-menu-bar))))
+
+
+(defmacro with-menu ((title &optional (enabled t)) &body body)
+  `(when (%imgui:begin-menu
+          'claw-utils:claw-string ,title
+          :bool ,enabled)
+     (unwind-protect
+          (progn ,@body)
+       (%imgui:end-menu))))
 
 
 (defun button (text)
@@ -362,7 +433,8 @@
 
 
 (defun same-line (&key offset spacing)
-  (%imgui:same-line :float (or offset 0f0) :float (or spacing -1f0)))
+  (%imgui:same-line :float (float (or offset 0f0) 0f0)
+                    :float (float (or spacing -1f0) 0f0)))
 
 
 (defun float-slider (label value &key min max format power)
@@ -401,3 +473,11 @@
                       'claw-utils:claw-string (or format "%.3f")
                       '%filament.imgui:im-gui-input-text-flags 0)))
       (values fvalue changed-p))))
+
+
+(defun next-item-width (value)
+  (%imgui:set-next-item-width :float (float value 0f0)))
+
+
+(defun spacing ()
+  (%imgui:spacing))

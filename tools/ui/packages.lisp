@@ -27,6 +27,7 @@
            #:font-scale
 
            #:with-style
+           #:style
            #:update-touch-padding
            #:scale-style
 
@@ -46,7 +47,10 @@
            #:indent
            #:unindent
            #:item-active-p
-           #:float-input))
+           #:float-input
+
+           #:with-menu-bar
+           #:with-menu))
 
 
 (cl:defpackage :alien-works.tools.ui
@@ -77,7 +81,12 @@
                 #:indent
                 #:unindent
                 #:item-active-p
-                #:float-input)
+                #:float-input
+
+                #:with-style
+
+                #:with-menu-bar
+                #:with-menu)
   (:export #:make-ui
            #:destroy-ui
            #:update-ui-input
@@ -103,4 +112,9 @@
            #:indent
            #:unindent
            #:item-active-p
-           #:float-input))
+           #:float-input
+
+           #:with-style
+
+           #:with-menu-bar
+           #:with-menu))

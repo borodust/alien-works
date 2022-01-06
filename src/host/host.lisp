@@ -506,8 +506,7 @@
 ;;; EVENTS
 ;;;
 (defun handle-events (handler)
-  (loop for result = (%sdl:poll-event *event*)
-        while (> result 0)
+  (loop while (> (%sdl:poll-event *event*) 0)
         do (funcall handler *event*)))
 
 
@@ -557,8 +556,16 @@
 
       (:textediting :text-edit)
       (:textinput :text-input)
-      (:windowevent :window)
       (:multigesture :simple-gesture)
+
+      (:windowevent
+       (let* ((window-event-id (cref:c-ref event %sdl:event :window :event))
+              (window-event-type (cffi:foreign-enum-keyword '%sdl:window-event-id
+                                                            window-event-id
+                                                            :errorp nil)))
+         (case window-event-type
+           (:close :quit)
+           (otherwise :window))))
 
       ((:quit) type)
 
