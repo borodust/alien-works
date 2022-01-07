@@ -291,7 +291,8 @@
                               horizontally-scrollable
                               (collapsible t)
                               (focus-on-appearing t)
-                              (bring-to-front-on-focus t))
+                              (bring-to-front-on-focus t)
+                              auto-resize)
                       &body body)
   (a:with-gensyms (keep-open close-not-clicked result size pos tmp-x tmp-y)
     (a:once-only (text)
@@ -336,7 +337,9 @@
                                                          ,@(unless focus-on-appearing
                                                              '(:no-focus-on-appearing))
                                                          ,@(unless bring-to-front-on-focus
-                                                             '(:no-bring-to-front-on-focus)))))
+                                                             '(:no-bring-to-front-on-focus))
+                                                         ,@(when auto-resize
+                                                             '(:always-auto-resize)))))
                ,@(when on-close
                    `(,result)))
            (unwind-protect
@@ -364,6 +367,13 @@
      (unwind-protect
           (progn ,@body)
        (%imgui:end-menu))))
+
+
+(defun menu-item (label)
+  (%imgui:menu-item 'claw-utils:claw-string label
+                    'claw-utils:claw-string (cffi:null-pointer)
+                    :bool nil
+                    :bool t))
 
 
 (defun button (text)
@@ -475,9 +485,52 @@
       (values fvalue changed-p))))
 
 
+(defun text-input (label size &key text)
+  (cffi:with-foreign-pointer-as-string (str-ptr size)
+    (if text
+        (cffi:lisp-string-to-foreign text str-ptr size)
+        (setf (cffi:mem-ref str-ptr :char 0) 0))
+    (%imgui:input-text 'claw-utils:claw-string label
+                       'claw-utils:claw-string str-ptr
+                       '%filament.imgui::size-t size
+                       '%filament.imgui::im-gui-input-text-flags 0
+                       '%filament.imgui::im-gui-input-text-callback (cffi:null-pointer)
+                       '(claw-utils:claw-pointer :void) (cffi:null-pointer))))
+
+
 (defun next-item-width (value)
   (%imgui:set-next-item-width :float (float value 0f0)))
 
 
 (defun spacing ()
   (%imgui:spacing))
+
+
+(defun open-popup (id)
+  (%imgui:open-popup
+   'claw-utils:claw-string id
+   '%filament.imgui::im-gui-popup-flags 0))
+
+
+(defmacro with-popup ((id) &body body)
+  `(when (%imgui:begin-popup 'claw-utils:claw-string ,id
+                             '%filament.imgui::im-gui-window-flags 0)
+     (unwind-protect
+          (progn ,@body)
+       (%imgui:end-popup))))
+
+
+(defmacro with-child-panel ((id &key width height borderless) &body body)
+  (a:with-gensyms (size tmp-x tmp-y)
+    `(unwind-protect
+          (progn
+            (with-vec2 (,size ,tmp-x ,tmp-y)
+              (setf ,tmp-x (float (or ,width 0f0) 0f0)
+                    ,tmp-y (float (or ,height 0f0) 0f0))
+              (%imgui:begin-child
+               'claw-utils:claw-string ,id
+               '(claw-utils:claw-pointer %filament.imgui::im-vec2) ,size
+               :bool ,borderless
+               '%filament.imgui::im-gui-window-flags 0))
+            ,@body)
+       (%imgui:end-child))))

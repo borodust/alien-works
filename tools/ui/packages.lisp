@@ -47,10 +47,12 @@
            #:indent
            #:unindent
            #:item-active-p
+           #:text-input
            #:float-input
 
            #:with-menu-bar
-           #:with-menu))
+           #:with-menu
+           #:menu-item))
 
 
 (cl:defpackage :alien-works.tools.ui
@@ -82,11 +84,13 @@
                 #:unindent
                 #:item-active-p
                 #:float-input
+                #:text-input
 
                 #:with-style
 
                 #:with-menu-bar
-                #:with-menu)
+                #:with-menu
+                #:menu-item)
   (:export #:make-ui
            #:destroy-ui
            #:update-ui-input
@@ -113,8 +117,10 @@
            #:unindent
            #:item-active-p
            #:float-input
+           #:text-input
 
            #:with-style
 
            #:with-menu-bar
-           #:with-menu))
+           #:with-menu
+           #:menu-item))
