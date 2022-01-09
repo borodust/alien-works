@@ -361,7 +361,7 @@
     (error "Failed to make root GL context current")))
 
 
-(defun call-with-window (callback &key title)
+(defun call-with-window (callback &key title width height)
   (%sdl:set-main-ready)
   (unless (zerop (%sdl:init (logior %sdl:+init-timer+
                                     %sdl:+init-video+
@@ -398,7 +398,7 @@
                   (%sdl:create-window name
                                       %sdl:+windowpos-undefined+
                                       %sdl:+windowpos-undefined+
-                                      1280 960
+                                      (or width 1280) (or height 960)
                                       (apply #'window-flags
                                              :opengl
                                              :allow-highdpi
@@ -431,11 +431,14 @@
         (%sdl:quit)))))
 
 
-(defmacro %host:with-window ((&key title) &body body)
-  `(call-with-window (lambda ()
-                       ,@body)
+(defmacro %host:with-window ((&key title width height) &body body)
+  `(call-with-window (lambda () ,@body)
                      ,@(when title
-                         `(:title ,title))))
+                         `(:title ,title))
+                     ,@(when width
+                         `(:width ,width))
+                     ,@(when height
+                         `(:height ,height))))
 
 
 (defun %host:make-shared-context-thread (action)

@@ -32,6 +32,7 @@
            #:scale-style
 
            #:with-panel
+           #:with-child-panel
 
            #:button
            #:checkbox
@@ -69,6 +70,8 @@
                 #:mouse-drag-delta
 
                 #:with-panel
+                #:with-child-panel
+
                 #:button
                 #:checkbox
                 #:text
@@ -102,6 +105,8 @@
            #:mouse-drag-delta
 
            #:with-panel
+           #:with-child-panel
+
            #:button
            #:checkbox
            #:text

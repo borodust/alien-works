@@ -294,7 +294,7 @@
                               (bring-to-front-on-focus t)
                               auto-resize)
                       &body body)
-  (a:with-gensyms (keep-open close-not-clicked result size pos tmp-x tmp-y)
+  (a:with-gensyms (keep-open close-not-clicked result size pos zero-vec tmp-x tmp-y)
     (a:once-only (text)
       `(cref:c-with ((,close-not-clicked :bool))
          (setf ,close-not-clicked t)
@@ -309,11 +309,11 @@
              `((with-vec2 (,pos ,tmp-x ,tmp-y)
                  (setf ,tmp-x (float ,(or x 0f0) 0f0)
                        ,tmp-y (float ,(or y 0f0) 0f0))
-                 (with-vec2 (,size)
+                 (with-vec2 (,zero-vec)
                    (%imgui:set-next-window-pos
                     '(claw-utils:claw-pointer %filament.imgui::im-vec2) ,pos
                     '%filament.imgui::im-gui-cond 0
-                    '(claw-utils:claw-pointer %filament.imgui::im-vec2) ,size)))))
+                    '(claw-utils:claw-pointer %filament.imgui::im-vec2) ,zero-vec)))))
          (let ((,keep-open (%imgui:begin
                             'claw-utils:claw-string ,text
                             '(claw-utils:claw-pointer :bool) (,close-not-clicked &)
@@ -520,17 +520,26 @@
        (%imgui:end-popup))))
 
 
-(defmacro with-child-panel ((id &key width height borderless) &body body)
-  (a:with-gensyms (size tmp-x tmp-y)
+(defmacro with-child-panel ((id &key x y width height borderless) &body body)
+  (a:with-gensyms (size pos zero-vec tmp-x tmp-y)
     `(unwind-protect
           (progn
+            ,@(when (or x y)
+                `((with-vec2 (,pos ,tmp-x ,tmp-y)
+                    (setf ,tmp-x (float ,(or x 0f0) 0f0)
+                          ,tmp-y (float ,(or y 0f0) 0f0))
+                    (with-vec2 (,zero-vec)
+                      (%imgui:set-next-window-pos
+                       '(claw-utils:claw-pointer %filament.imgui::im-vec2) ,pos
+                       '%filament.imgui::im-gui-cond 0
+                       '(claw-utils:claw-pointer %filament.imgui::im-vec2) ,zero-vec)))))
             (with-vec2 (,size ,tmp-x ,tmp-y)
-              (setf ,tmp-x (float (or ,width 0f0) 0f0)
-                    ,tmp-y (float (or ,height 0f0) 0f0))
+              (setf ,tmp-x (float ,(or width 0f0) 0f0)
+                    ,tmp-y (float ,(or height 0f0) 0f0))
               (%imgui:begin-child
                'claw-utils:claw-string ,id
                '(claw-utils:claw-pointer %filament.imgui::im-vec2) ,size
-               :bool ,borderless
+               :bool ,(not borderless)
                '%filament.imgui::im-gui-window-flags 0))
             ,@body)
        (%imgui:end-child))))
