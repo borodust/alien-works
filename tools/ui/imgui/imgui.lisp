@@ -6,6 +6,8 @@
 
 (u:define-enumbit-combiner window-flags-enum %imgui:im-gui-window-flags-enum)
 
+(u:define-enumbit-combiner color-edit-flags-enum %imgui:im-gui-color-edit-flags-enum)
+
 (defvar +undefined-float+ (- (float %imgui:+flt-max+ 0f0)))
 
 ;;;
@@ -543,3 +545,40 @@
                '%filament.imgui::im-gui-window-flags 0))
             ,@body)
        (%imgui:end-child))))
+
+
+(defmacro with-combo ((label &key text) &body body)
+  `(when (%imgui:begin-combo
+          'claw-utils:claw-string ,label
+          'claw-utils:claw-string (or ,text "")
+          '%filament.imgui::im-gui-combo-flags 0)
+     (unwind-protect
+          (progn ,@body)
+       (%imgui:end-combo))))
+
+
+(defun columns (count)
+  (%imgui:columns
+   :int (ceiling count)
+   'claw-utils:claw-string (cffi:null-pointer)
+   :bool nil))
+
+
+(defun next-column ()
+  (%imgui:next-column))
+
+
+(defun color-input (label &optional (r 0f0) (g 0f0) (b 0f0) (a 1f0))
+  (cref:c-with ((color :float :count 4))
+    (setf (color 0) (float r 0f0)
+          (color 1) (float g 0f0)
+          (color 2) (float b 0f0)
+          (color 3) (float a 0f0))
+    (when (%imgui:color-edit4
+           'claw-utils:claw-string label
+           '(:pointer :float) (color &)
+           '%filament.imgui::im-gui-color-edit-flags (color-edit-flags-enum
+                                                      :float
+                                                      :alpha-bar
+                                                      :alpha-preview-half))
+      (values (color 0) (color 1) (color 2) (color 3)))))

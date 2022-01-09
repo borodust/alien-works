@@ -48,12 +48,18 @@
            #:indent
            #:unindent
            #:item-active-p
+           #:with-combo
+
            #:text-input
            #:float-input
+           #:color-input
 
            #:with-menu-bar
            #:with-menu
-           #:menu-item))
+           #:menu-item
+
+           #:columns
+           #:next-column))
 
 
 (cl:defpackage :alien-works.tools.ui
@@ -86,8 +92,11 @@
                 #:indent
                 #:unindent
                 #:item-active-p
+                #:with-combo
+
                 #:float-input
                 #:text-input
+                #:color-input
 
                 #:with-style
 
@@ -121,11 +130,16 @@
            #:indent
            #:unindent
            #:item-active-p
+           #:with-combo
+
            #:float-input
            #:text-input
+           #:color-input
 
            #:with-style
 
            #:with-menu-bar
            #:with-menu
-           #:menu-item))
+           #:menu-item
+
+           #:rows))

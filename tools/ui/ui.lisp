@@ -291,3 +291,30 @@
                   `(:framebuffer-width ,framebuffer-width))
               ,@(when framebuffer-height
                   `(:framebuffer-height ,framebuffer-height))))
+
+
+(defmacro rows (() &body rows)
+  (let ((column-count (apply #'max (mapcar #'length rows))))
+    (labels ((add-rest-columns (list count)
+               (nconc list (loop repeat count
+                                 collect '(%ui:next-column))))
+             (process-columns (row)
+               (loop with column-collected = 0
+                     for element in row
+                     collect (progn
+                               (incf column-collected)
+                               `(,@(if (null element)
+                                       '(progn)
+                                       `(unwind-protect ,element))
+                                 (%ui:next-column)))
+                       into elements
+                     finally (return (add-rest-columns elements
+                                                       (- column-count
+                                                          column-collected))))))
+      `(progn
+         (%ui:columns ,column-count)
+         (unwind-protect
+              (progn
+                ,@(loop for row in rows
+                        append (process-columns row)))
+           (%ui:columns 1))))))
