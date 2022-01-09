@@ -5,8 +5,8 @@
 (u:define-enumval-extractor style-var-enum %imgui:im-gui-style-var-enum)
 
 (u:define-enumbit-combiner window-flags-enum %imgui:im-gui-window-flags-enum)
-
 (u:define-enumbit-combiner color-edit-flags-enum %imgui:im-gui-color-edit-flags-enum)
+(u:define-enumbit-combiner tree-node-flags-enum %imgui:im-gui-tree-node-flags-enum)
 
 (defvar +undefined-float+ (- (float %imgui:+flt-max+ 0f0)))
 
@@ -403,24 +403,30 @@
    'claw-utils:claw-string (cffi:null-pointer)))
 
 
-(defun collapsing-header (text &key)
+(defun collapsing-header (text &key open)
   (%imgui:collapsing-header
    'claw-utils:claw-string text
    '(claw-utils:claw-pointer :bool) (cffi:null-pointer)
-   '%filament.imgui:im-gui-tree-node-flags 0))
+   '%filament.imgui:im-gui-tree-node-flags (apply #'tree-node-flags-enum
+                                                  (append
+                                                   (when open
+                                                     '(:default-open))))))
 
 
-(defun tree-node (text &key)
+(defun tree-node (text &key open)
   (%imgui:tree-node-ex
    'claw-utils:claw-string text
-   '%filament.imgui:im-gui-tree-node-flags 0))
+   '%filament.imgui:im-gui-tree-node-flags (apply #'tree-node-flags-enum
+                                                  (append
+                                                   (when open
+                                                     '(:default-open))))))
 
 
 (defun tree-pop ()
   (%imgui:tree-pop))
 
 
-(defmacro with-tree-node ((text &rest keys &key) &body body)
+(defmacro with-tree-node ((text &rest keys &key &allow-other-keys) &body body)
   `(when (tree-node ,text ,@keys)
      (unwind-protect
           (progn ,@body)

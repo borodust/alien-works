@@ -108,6 +108,7 @@
            #:with-skybox-builder
            #:create-color-skybox
            #:create-cubemap-skybox
+           #:destroy-skybox
 
            #:create-box
            #:destroy-box
@@ -259,7 +260,6 @@
                     (:%graphics :%alien-works.graphics))
   (:use :cl :%alien-works.graphics)
   (:import-from :%alien-works.skia
-
                 #:make-typeface
                 #:destroy-typeface)
   (:export #:when-frame
@@ -277,6 +277,7 @@
            #:scene-indirect-light
            #:make-color-skybox
            #:make-cubemap-skybox
+           #:destroy-skybox
 
            #:make-material-from-memory
 

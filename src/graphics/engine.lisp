@@ -665,3 +665,7 @@
 (defun make-cubemap-skybox (cubemap)
   (%fm:with-skybox-builder (%make-skybox (:environment cubemap))
     (%make-skybox (handle-of *engine*))))
+
+
+(defun destroy-skybox (skybox)
+  (%fm:destroy-skybox (handle-of *engine*) skybox))

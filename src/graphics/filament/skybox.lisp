@@ -38,3 +38,9 @@
                      '(!::engine)
                      steps
                      body)))
+
+
+(defun destroy-skybox (engine skybox)
+  (%filament:destroy
+   '(claw-utils:claw-pointer %filament::engine) engine
+   '(claw-utils:claw-pointer %filament::skybox) skybox))
