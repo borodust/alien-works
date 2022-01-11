@@ -59,7 +59,11 @@
            #:menu-item
 
            #:columns
-           #:next-column))
+           #:next-column
+
+           #:focus-window
+           #:focus-previous-item-by-default
+           #:focus-keyboard))
 
 
 (cl:defpackage :alien-works.tools.ui
@@ -102,7 +106,11 @@
 
                 #:with-menu-bar
                 #:with-menu
-                #:menu-item)
+                #:menu-item
+
+                #:focus-window
+                #:focus-previous-item-by-default
+                #:focus-keyboard)
   (:export #:make-ui
            #:destroy-ui
            #:update-ui-input
@@ -142,4 +150,8 @@
            #:with-menu
            #:menu-item
 
-           #:rows))
+           #:rows
+
+           #:focus-window
+           #:focus-previous-item-by-default
+           #:focus-keyboard))

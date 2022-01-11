@@ -706,6 +706,23 @@
 
 
 (defun keyboard-modifier-state-pressed-p (state &rest modifiers)
+  (let ((pressed-code (apply #'key-modifier modifiers)))
+    (zerop (logxor pressed-code
+                   (logand (keyboard-modifier-state-buttons state) pressed-code)))))
+
+
+(define-compiler-macro keyboard-modifier-state-pressed-p (state &rest modifiers)
+  (a:with-gensyms (pressed-code)
+    `(let ((,pressed-code (key-modifier ,@(loop for mod in modifiers
+                                                collect (if (keywordp mod)
+                                                            (host->keymod mod)
+                                                            `(host->keymod ,mod))))))
+       (zerop (logxor ,pressed-code
+                      (logand (keyboard-modifier-state-buttons ,state)
+                              ,pressed-code))))))
+
+
+(defun keyboard-modifier-state-some-pressed-p (state &rest modifiers)
   (/= 0 (logand (keyboard-modifier-state-buttons state)
                 (apply #'key-modifier modifiers))))
 
@@ -713,7 +730,9 @@
 (define-compiler-macro keyboard-modifier-state-some-pressed-p (state &rest modifiers)
   `(/= 0 (logand (keyboard-modifier-state-buttons ,state)
                  (key-modifier ,@(loop for mod in modifiers
-                                       collect `(host->keymod ,mod))))))
+                                       collect (if (keywordp mod)
+                                                   (host->keymod mod)
+                                                   `(host->keymod ,mod)))))))
 
 
 ;;;

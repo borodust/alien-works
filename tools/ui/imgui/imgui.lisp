@@ -588,3 +588,17 @@
                                                       :alpha-bar
                                                       :alpha-preview-half))
       (values (color 0) (color 1) (color 2) (color 3)))))
+
+
+(defun focus-window (&optional name)
+  (if name
+      (%imgui:set-window-focus 'claw-utils:claw-string name)
+      (%imgui:set-window-focus)))
+
+
+(defun focus-previous-item-by-default ()
+  (%imgui:set-item-default-focus))
+
+
+(defun focus-keyboard (&optional (offset 0))
+  (%imgui:set-keyboard-focus-here :int (floor offset)))

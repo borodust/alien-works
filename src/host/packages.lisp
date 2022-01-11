@@ -56,6 +56,7 @@
 
            #:make-keyboard-modifier-state
            #:keyboard-modifier-state
+           #:keyboard-modifier-state-pressed-p
            #:keyboard-modifier-state-some-pressed-p
 
            #:event-finger-id
