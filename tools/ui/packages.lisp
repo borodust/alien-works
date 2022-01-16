@@ -28,6 +28,8 @@
 
            #:with-style
            #:style
+           #:style-window-rounding
+           #:style-window-border
            #:update-touch-padding
            #:scale-style
 
@@ -103,6 +105,8 @@
                 #:color-input
 
                 #:with-style
+                #:style-window-rounding
+                #:style-window-border
 
                 #:with-menu-bar
                 #:with-menu
@@ -145,6 +149,8 @@
            #:color-input
 
            #:with-style
+           #:style-window-rounding
+           #:style-window-border
 
            #:with-menu-bar
            #:with-menu
