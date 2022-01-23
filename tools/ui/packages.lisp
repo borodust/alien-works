@@ -10,6 +10,7 @@
   (:export #:make-imgui-helper
            #:destroy-imgui-helper
            #:render-imgui
+           #:update-font-atlas
            #:update-display-size
            #:define-ui-callback
            #:make-ui-callback
@@ -24,7 +25,14 @@
            #:add-input-characters
            #:mouse-dragging-p
            #:mouse-drag-delta
+
            #:font-scale
+           #:add-default-font
+           #:add-font
+           #:add-font-from-foreign
+           #:with-font
+
+           #:framebuffer-scale
 
            #:with-style
            #:style
@@ -114,7 +122,9 @@
 
                 #:focus-window
                 #:focus-previous-item-by-default
-                #:focus-keyboard)
+                #:focus-keyboard
+
+                #:with-font)
   (:export #:make-ui
            #:destroy-ui
            #:update-ui-input
@@ -160,4 +170,7 @@
 
            #:focus-window
            #:focus-previous-item-by-default
-           #:focus-keyboard))
+           #:focus-keyboard
+
+           #:add-font
+           #:with-font))

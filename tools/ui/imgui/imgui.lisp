@@ -34,6 +34,12 @@
    '(claw-utils:claw-pointer %filament:im-gui-helper+callback) callback))
 
 
+(defun update-font-atlas (helper engine)
+  (%filament:create-atlas-texture
+   '(claw-utils:claw-pointer %filament:im-gui-helper) helper
+   '(claw-utils:claw-pointer %filament::engine) engine))
+
+
 (defun update-display-size (imgui-helper width height scale-x scale-y)
   (%filament:set-display-size
    '(claw-utils:claw-pointer %filament:im-gui-helper) imgui-helper
@@ -163,6 +169,24 @@
     value))
 
 
+(defun framebuffer-scale (io)
+  (iffi:with-intricate-slots %imgui:im-gui-io ((value %imgui:display-framebuffer-scale)) io
+    (with-vec2 ((vec value) x y)
+      (values x y))))
+
+
+(defun set-framebuffer-scale (io new-x &optional new-y)
+  (iffi:with-intricate-slots %imgui:im-gui-io ((value %imgui:display-framebuffer-scale)) io
+    (with-vec2 ((vec value) x y)
+      (setf x (float new-x 0f0)
+            y (float (or new-y new-x) 0f0))
+      (values x y))))
+
+
+(defsetf framebuffer-scale (io) (x y)
+  `(set-framebuffer-scale ,io ,x ,y))
+
+
 (defun update-mouse-position (io x y)
   (iffi:with-intricate-slots %imgui:im-gui-io ((mouse-pos %imgui:mouse-pos)) io
     (with-vec2 ((pos mouse-pos) mouse-x mouse-y)
@@ -236,6 +260,53 @@
     result-vec2))
 
 
+(defun add-default-font (io &key pixel-size)
+  (iffi:with-intricate-slots %imgui:im-gui-io ((fonts %imgui:fonts)) io
+    (iffi:with-intricate-instance (font-config %imgui:im-font-config)
+      (iffi:with-intricate-slots %imgui:im-font-config ((%size-pixels %imgui:size-pixels)) font-config
+        (when (numberp pixel-size)
+          (setf %size-pixels (float pixel-size 0f0))))
+      (%imgui:add-font-default
+       '(claw-utils:claw-pointer %filament.imgui::im-font-atlas) fonts
+       '(claw-utils:claw-pointer %filament.imgui::im-font-config) font-config))))
+
+
+(defun add-font-from-foreign (io foreign-data-ptr foreign-data-size pixel-size
+                              &key transfer-ownership)
+  (iffi:with-intricate-slots %imgui:im-gui-io ((fonts %imgui:fonts)) io
+    (iffi:with-intricate-instance (font-config %imgui:im-font-config)
+      (iffi:with-intricate-slots %imgui:im-font-config ((owned-by-atlas %imgui:font-data-owned-by-atlas)
+                                                        (oversample-h %imgui:oversample-h)
+                                                        (oversample-v %imgui:oversample-v)
+                                                        (pixel-snap-h %imgui:pixel-snap-h))
+                                 font-config
+        (setf owned-by-atlas transfer-ownership
+              oversample-h 1
+              oversample-v 1
+              pixel-snap-h t)
+        (%imgui:add-font-from-memory-ttf
+         '(claw-utils:claw-pointer %filament.imgui:im-font-atlas) fonts
+         '(claw-utils:claw-pointer :void) foreign-data-ptr
+         :int foreign-data-size
+         :float (float pixel-size 0f0)
+         '(claw-utils:claw-pointer %filament.imgui:im-font-config) font-config
+         '(claw-utils:claw-pointer %filament.imgui:im-wchar) (cffi:null-pointer))))))
+
+
+(defun add-font (io data pixel-size)
+  (let* ((foreign-data-size (length data))
+         (foreign-data-ptr (cffi:foreign-array-alloc
+                            data `(:array :uint8 ,foreign-data-size))))
+    (add-font-from-foreign io foreign-data-ptr foreign-data-size pixel-size :transfer-ownership t)))
+
+
+(defmacro with-font ((font) &body body)
+  `(unwind-protect
+        (progn
+          (%imgui:push-font '(claw-utils:claw-pointer %filament.imgui:im-font) ,font)
+          ,@body)
+     (%imgui:pop-font)))
+
 ;;;
 ;;; STYLE
 ;;;
@@ -245,7 +316,7 @@
              (when value
                (incf style-var-count)
                `((%imgui:push-style-var
-                  '%filament.imgui::im-gui-style-var ,(style-var-enum name)
+                  '%filament.imgui:im-gui-style-var ,(style-var-enum name)
                   :float (float ,value 0f0))))))
       `(progn
          ,@(%push-float-var window-rounding :window-rounding)
@@ -270,7 +341,7 @@
 
 (defun scale-style (style scale)
   (%imgui:scale-all-sizes
-   '(claw-utils:claw-pointer %filament.imgui::im-gui-style) style
+   '(claw-utils:claw-pointer %filament.imgui:im-gui-style) style
    :float (float scale 0f0)))
 
 
@@ -321,9 +392,9 @@
                        ,tmp-y (float ,(or y 0f0) 0f0))
                  (with-vec2 (,zero-vec)
                    (%imgui:set-next-window-pos
-                    '(claw-utils:claw-pointer %filament.imgui::im-vec2) ,pos
-                    '%filament.imgui::im-gui-cond 0
-                    '(claw-utils:claw-pointer %filament.imgui::im-vec2) ,zero-vec)))))
+                    '(claw-utils:claw-pointer %filament.imgui:im-vec2) ,pos
+                    '%filament.imgui:im-gui-cond 0
+                    '(claw-utils:claw-pointer %filament.imgui:im-vec2) ,zero-vec)))))
          (let ((,keep-open (%imgui:begin
                             'claw-utils:claw-string (string ,text)
                             '(claw-utils:claw-pointer :bool) (,close-not-clicked &)
@@ -504,9 +575,9 @@
         (setf (cffi:mem-ref str-ptr :char 0) 0))
     (%imgui:input-text 'claw-utils:claw-string (string label)
                        'claw-utils:claw-string str-ptr
-                       '%filament.imgui::size-t size
-                       '%filament.imgui::im-gui-input-text-flags 0
-                       '%filament.imgui::im-gui-input-text-callback (cffi:null-pointer)
+                       '%filament.imgui:size-t size
+                       '%filament.imgui:im-gui-input-text-flags 0
+                       '%filament.imgui:im-gui-input-text-callback (cffi:null-pointer)
                        '(claw-utils:claw-pointer :void) (cffi:null-pointer))))
 
 
@@ -521,12 +592,12 @@
 (defun open-popup (id)
   (%imgui:open-popup
    'claw-utils:claw-string (string id)
-   '%filament.imgui::im-gui-popup-flags 0))
+   '%filament.imgui:im-gui-popup-flags 0))
 
 
 (defmacro with-popup ((id) &body body)
   `(when (%imgui:begin-popup 'claw-utils:claw-string (string ,id)
-                             '%filament.imgui::im-gui-window-flags 0)
+                             '%filament.imgui:im-gui-window-flags 0)
      (unwind-protect
           (progn ,@body)
        (%imgui:end-popup))))
@@ -542,17 +613,17 @@
                           ,tmp-y (float ,(or y 0f0) 0f0))
                     (with-vec2 (,zero-vec)
                       (%imgui:set-next-window-pos
-                       '(claw-utils:claw-pointer %filament.imgui::im-vec2) ,pos
-                       '%filament.imgui::im-gui-cond 0
-                       '(claw-utils:claw-pointer %filament.imgui::im-vec2) ,zero-vec)))))
+                       '(claw-utils:claw-pointer %filament.imgui:im-vec2) ,pos
+                       '%filament.imgui:im-gui-cond 0
+                       '(claw-utils:claw-pointer %filament.imgui:im-vec2) ,zero-vec)))))
             (with-vec2 (,size ,tmp-x ,tmp-y)
               (setf ,tmp-x (float ,(or width 0f0) 0f0)
                     ,tmp-y (float ,(or height 0f0) 0f0))
               (%imgui:begin-child
                'claw-utils:claw-string (string ,id)
-               '(claw-utils:claw-pointer %filament.imgui::im-vec2) ,size
+               '(claw-utils:claw-pointer %filament.imgui:im-vec2) ,size
                :bool ,(not borderless)
-               '%filament.imgui::im-gui-window-flags 0))
+               '%filament.imgui:im-gui-window-flags 0))
             ,@body)
        (%imgui:end-child))))
 
@@ -561,7 +632,7 @@
   `(when (%imgui:begin-combo
           'claw-utils:claw-string (string ,label)
           'claw-utils:claw-string (string (or ,text ""))
-          '%filament.imgui::im-gui-combo-flags 0)
+          '%filament.imgui:im-gui-combo-flags 0)
      (unwind-protect
           (progn ,@body)
        (%imgui:end-combo))))
@@ -587,7 +658,7 @@
     (when (%imgui:color-edit4
            'claw-utils:claw-string (string label)
            '(:pointer :float) (color &)
-           '%filament.imgui::im-gui-color-edit-flags (color-edit-flags-enum
+           '%filament.imgui:im-gui-color-edit-flags (color-edit-flags-enum
                                                       :float
                                                       :alpha-bar
                                                       :alpha-preview-half))

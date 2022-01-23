@@ -142,8 +142,7 @@
 ;;; UI
 ;;;
 (defclass ui ()
-  ((renderer :initarg :renderer)
-   (view :initarg :view)
+  ((view :initarg :view)
    (callback :initarg :callback)
    (imgui-helper :initarg :imgui)
    (keyboard-modifier-state :initform (host:make-keyboard-modifier-state))
@@ -162,18 +161,16 @@
     (%ui:with-io (io)
       (%ui:init-io io)
       (when scale
-        (setf (%ui:font-scale io) scale)))
+        (setf (%ui:framebuffer-scale io) scale)))
 
     (let ((style (%ui:style)))
       (when touch-padding
         (%ui:update-touch-padding style touch-padding touch-padding))
-
       ;; must be last
       (when scale
         (%ui:scale-style style scale)))
 
-    (make-instance 'ui :renderer (%alien-works.graphics:renderer-handle)
-                       :view view
+    (make-instance 'ui :view view
                        :callback (iffi:make-intricate-callback 'ui-callback)
                        :imgui helper)))
 
@@ -270,7 +267,7 @@
 
 (defun render-ui (ui width height time-delta ui-callback
                    &key framebuffer-width framebuffer-height)
-  (with-slots (view imgui-helper callback renderer) ui
+  (with-slots (view imgui-helper callback) ui
     (let ((framebuffer-width (or framebuffer-width width))
           (framebuffer-height (or framebuffer-height height)))
       (%fm:update-view-viewport view 0 0
@@ -280,7 +277,7 @@
                                (/ framebuffer-height height)))
     (let ((*ui-callback* ui-callback))
       (%ui:render-imgui imgui-helper callback time-delta))
-    (%fm:render-view renderer view)))
+    (%fm:render-view (%alien-works.graphics:renderer-handle) view)))
 
 
 (defmacro ui ((ui width height time-delta &key
@@ -318,3 +315,11 @@
                 ,@(loop for row in rows
                         append (process-columns row)))
            (%ui:columns 1))))))
+
+
+
+(defun add-font (ui data pixel-size)
+  (with-slots (imgui-helper) ui
+    (%ui:with-io (io)
+      (prog1 (%ui:add-font io data (floor pixel-size))
+        (%ui:update-font-atlas imgui-helper (%alien-works.graphics:engine-handle))))))

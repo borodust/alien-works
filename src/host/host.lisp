@@ -284,29 +284,34 @@
   y
   width
   height
-  orientation)
+  orientation
+  dpi)
 
 
 (defun make-display (id)
-  (cref:c-with ((rect %sdl:rect))
+  (cref:c-with ((rect %sdl:rect)
+                (dpi :float))
     (let (x y w h)
       (%sdl:get-display-bounds id (rect &))
       (setf w (rect :w)
             h (rect :h)
             x (rect :x)
             y (rect :y))
+      (%sdl:get-display-dpi id (dpi &) (cffi:null-pointer) (cffi:null-pointer))
       (%make-display
-       :name (cffi:foreign-string-to-lisp (%sdl:get-display-name id))
+       :name (cffi:foreign-string-to-lisp (%sdl:get-display-name id) :encoding :utf-8)
        :width w
        :height h
        :x x
        :y y
-       :orientation (%sdl:get-display-orientation id)))))
+       :orientation (%sdl:get-display-orientation id)
+       :dpi dpi))))
 
 
 (defun list-displays ()
-  (loop for i from (%sdl:get-num-video-displays)
+  (loop for i below (%sdl:get-num-video-displays)
         collect (make-display i)))
+
 
 ;;;
 ;;; WINDOW
@@ -326,7 +331,7 @@
                                  %sdl:+windowpos-undefined+
                                  %sdl:+windowpos-undefined+
                                  1 1
-                                 (window-flags :opengl :hidden))))
+                                 (window-flags :opengl :hidden :allow-highdpi))))
     (unless (cffi:null-pointer-p win)
       (let ((ctx (%sdl:gl-create-context win)))
         (unwind-protect
@@ -394,23 +399,32 @@
       (setup-most-recent-opengl-es-context)
       (setup-most-recent-opengl-context))
 
-  (let ((window (cffi:with-foreign-string (name (or title "ALIEN-WORKS"))
-                  (%sdl:create-window name
-                                      %sdl:+windowpos-undefined+
-                                      %sdl:+windowpos-undefined+
-                                      (or width 1280) (or height 960)
-                                      (apply #'window-flags
-                                             :opengl
-                                             :allow-highdpi
-                                             :shown
-                                             (append
-                                              (when (uiop:featurep :android)
-                                                (list :fullscreen)))))))
-        (*root-window* (%sdl:create-window "HIDDEN_ROOT"
-                                           %sdl:+windowpos-undefined+
-                                           %sdl:+windowpos-undefined+
-                                           1 1
-                                           (window-flags :opengl :hidden))))
+  (let* ((display (first (list-displays)))
+         (width (round (or width
+                           (when display
+                             (* (display-width display) 0.75))
+                           640)))
+         (height (round (or height
+                            (when display
+                              (* (display-height display) 0.75))
+                            480)))
+         (window (cffi:with-foreign-string (name (or title "ALIEN-WORKS"))
+                   (%sdl:create-window name
+                                       %sdl:+windowpos-undefined+
+                                       %sdl:+windowpos-undefined+
+                                       width height
+                                       (apply #'window-flags
+                                              :opengl
+                                              :allow-highdpi
+                                              :shown
+                                              (append
+                                               (when (uiop:featurep :android)
+                                                 (list :fullscreen)))))))
+         (*root-window* (%sdl:create-window "HIDDEN_ROOT"
+                                            %sdl:+windowpos-undefined+
+                                            %sdl:+windowpos-undefined+
+                                            1 1
+                                            (window-flags :opengl :hidden))))
     (when (cffi:null-pointer-p window)
       (error "Failed to create main window"))
     (when (cffi:null-pointer-p *root-window*)

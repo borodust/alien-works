@@ -27,6 +27,7 @@
            #:display-width
            #:display-height
            #:display-orientation
+           #:display-dpi
            #:list-displays
 
            #:window-display
