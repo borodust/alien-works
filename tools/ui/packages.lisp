@@ -58,6 +58,7 @@
            #:indent
            #:unindent
            #:item-active-p
+           #:item-clicked-p
            #:with-combo
 
            #:text-input
@@ -106,6 +107,7 @@
                 #:indent
                 #:unindent
                 #:item-active-p
+                #:item-clicked-p
                 #:with-combo
 
                 #:float-input
@@ -152,6 +154,7 @@
            #:indent
            #:unindent
            #:item-active-p
+           #:item-clicked-p
            #:with-combo
 
            #:float-input

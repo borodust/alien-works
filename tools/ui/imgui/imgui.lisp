@@ -3,6 +3,7 @@
 
 (u:define-enumval-extractor key-enum %imgui:im-gui-key-enum)
 (u:define-enumval-extractor style-var-enum %imgui:im-gui-style-var-enum)
+(u:define-enumval-extractor mouse-button-enum %imgui:im-gui-mouse-button-enum)
 
 (u:define-enumbit-combiner window-flags-enum %imgui:im-gui-window-flags-enum)
 (u:define-enumbit-combiner color-edit-flags-enum %imgui:im-gui-color-edit-flags-enum)
@@ -237,12 +238,16 @@
    'claw-utils:claw-string text))
 
 
+(defun mouse-button-code (keyword)
+  (ecase keyword
+    (:left (mouse-button-enum :left))
+    (:right (mouse-button-enum :right))
+    (:middle (mouse-button-enum :middle))))
+
+
 (defun mouse-dragging-p (button &optional lock-threshold)
   (%imgui:is-mouse-dragging
-   '%filament.imgui:im-gui-mouse-button (ecase button
-                                           (:left 0)
-                                           (:right 1)
-                                           (:middle 2))
+   '%filament.imgui:im-gui-mouse-button (mouse-button-code button)
    :float (float (or lock-threshold -1f0) 0f0)))
 
 
@@ -250,10 +255,7 @@
   (with-vec2 (vec x y)
     (%imgui:get-mouse-drag-delta
      '(claw-utils:claw-pointer %filament.imgui:im-vec2) vec
-     '%filament.imgui:im-gui-mouse-button (ecase button
-                                             (:left 0)
-                                             (:right 1)
-                                             (:middle 2))
+     '%filament.imgui:im-gui-mouse-button (mouse-button-code button)
      :float (float (or lock-threshold -1f0) 0f0))
     (setf (math:vec2 result-vec2 0) x
           (math:vec2 result-vec2 1) y)
@@ -677,3 +679,8 @@
 
 (defun focus-keyboard (&optional (offset 0))
   (%imgui:set-keyboard-focus-here :int (floor offset)))
+
+
+(defun item-clicked-p (&optional (button :left))
+  (%imgui:is-item-clicked
+   '%filament.imgui:im-gui-mouse-button (mouse-button-code button)))
