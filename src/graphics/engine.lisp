@@ -617,6 +617,11 @@
     (setf (%fm:scene-skybox scene) skybox)))
 
 
+(defun scene-skybox (scene)
+  (with-slots (scene) scene
+    (%fm:scene-skybox scene)))
+
+
 (defun (setf scene-indirect-light) (indirect-light scene)
   (with-slots (scene) scene
     (setf (%fm:scene-indirect-light scene) indirect-light)))

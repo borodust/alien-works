@@ -12,6 +12,11 @@
    '(claw-utils:claw-pointer %filament::scene) scene))
 
 
+(defun scene-skybox (scene)
+  (%filament::get-skybox
+   '(claw-utils:claw-pointer %filament::scene) scene))
+
+
 (defun (setf scene-skybox) (skybox scene)
   (%filament::set-skybox
    '(claw-utils:claw-pointer %filament::scene) scene
