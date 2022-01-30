@@ -176,4 +176,6 @@
            #:focus-keyboard
 
            #:add-font
-           #:with-font))
+           #:with-font
+
+           #:skip-ui-processing))

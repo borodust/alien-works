@@ -1,7 +1,8 @@
 (cl:in-package :alien-works.tools.ui)
 
 
-(declaim (special *ui-callback*))
+(declaim (special *ui-callback*
+                  *ui-cleanup*))
 
 
 (defstruct finger
@@ -149,8 +150,22 @@
    (touch-mouse :initform (make-instance 'touch-mouse-emulation))))
 
 
+(defun skip-ui-processing (&optional cleanup-function)
+  (a:if-let (restart (find-restart 'skip-ui-processing))
+    (invoke-restart restart cleanup-function)
+    (error "No SKIP-UI-PROCESSING restart found")))
+
+
 (%ui:define-ui-callback ui-callback ()
-  (funcall *ui-callback*))
+  (block ui
+    (restart-case
+        (prog1 (values)
+          (funcall *ui-callback*))
+      (skip-ui-processing (&optional cleanup-function)
+        :report "Skip UI processing in foreign callback and call cleanup function in lisp environment"
+        (when cleanup-function
+          (setf *ui-cleanup* cleanup-function))
+        (return-from ui (values))))))
 
 
 (defun make-ui (&key scale touch-padding)
@@ -275,8 +290,11 @@
       (%ui:update-display-size imgui-helper width height
                                (/ framebuffer-width width)
                                (/ framebuffer-height height)))
-    (let ((*ui-callback* ui-callback))
-      (%ui:render-imgui imgui-helper callback time-delta))
+    (let ((*ui-callback* ui-callback)
+          (*ui-cleanup* nil))
+      (%ui:render-imgui imgui-helper callback time-delta)
+      (when *ui-cleanup*
+        (funcall *ui-cleanup*)))
     (%fm:render-view (%alien-works.graphics:renderer-handle) view)))
 
 
