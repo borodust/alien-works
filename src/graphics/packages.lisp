@@ -246,7 +246,9 @@
   (:use)
   (:export #:engine-handle
            #:renderer-handle
-           #:with-renderer))
+           #:with-renderer
+           #:make-material-from-memory))
+
 
 (cl:defpackage :alien-works.graphics
   (:local-nicknames (:a :alexandria)
@@ -279,7 +281,7 @@
            #:make-cubemap-skybox
            #:destroy-skybox
 
-           #:make-material-from-memory
+           #:make-material-from-byte-vector
 
            #:default-material-instance
            #:make-material-instance
@@ -404,4 +406,6 @@
            #:translate
            #:rotate
            #:rotate-around
-           #:scale))
+           #:scale
+
+           #:with-transform))

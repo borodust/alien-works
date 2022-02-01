@@ -1,7 +1,8 @@
 (cl:defpackage :alien-works.utils.empty
   (:use))
 (cl:defpackage :alien-works.utils
-  (:local-nicknames (:a :alexandria))
+  (:local-nicknames (:a :alexandria)
+                    (:sv :static-vectors))
   (:use :cl)
   (:export #:enumval
            #:define-enumval-extractor
@@ -11,6 +12,8 @@
 
            #:expand-multibinding
            #:definline
+
+           #:with-pinned-array-pointer
 
            #:read-file-into-shareable-vector
            #:unload-foreign-libraries
@@ -70,14 +73,12 @@
 
 
 (defmacro define-enumbit-combiner (name enum)
-  (flet ((%expand-enumbit (names)
-           (list* 'enumbit `(quote ,name) names)))
-    (a:with-gensyms (names)
-      `(progn
-         (defun ,name (&rest ,names)
-           (apply #'enumbit ',enum ,names))
-         (define-compiler-macro ,name (&rest ,names)
-           (list* 'alien-works.utils:enumbit '',enum ,names))))))
+  (a:with-gensyms (names)
+    `(progn
+       (defun ,name (&rest ,names)
+         (apply #'enumbit ',enum ,names))
+       (define-compiler-macro ,name (&rest ,names)
+         (list* 'alien-works.utils:enumbit '',enum ,names)))))
 
 
 (defun expand-multibinding (name bindings body)
@@ -158,6 +159,37 @@
                       (cffi:make-shareable-byte-vector calculated-size))))
         (read-sequence out stream :start 0 :end calculated-size)
         (values out file-size)))))
+
+
+(defun try-static-vector-pointer (data)
+  (ignore-errors
+   (static-vectors:static-vector-pointer data)))
+
+
+(defun try-shareable-vector-pointer (data)
+  (ignore-errors
+   (cffi:with-pointer-to-vector-data (ptr data)
+     ptr)))
+
+
+(defmacro with-pinned-array-pointer ((ptr data &key try-pinned-copy)
+                                     &body body)
+  (a:with-gensyms (body-fu tmp-vec)
+    (a:once-only (data)
+      `(flet ((,body-fu (,ptr)
+                ,@body))
+         (a:if-let (,ptr (try-static-vector-pointer ,data))
+           (funcall #',body-fu ,ptr)
+           (if (try-shareable-vector-pointer ,data)
+               (cffi:with-pointer-to-vector-data (,ptr ,data)
+                 (funcall #',body-fu ,ptr))
+               ,(if try-pinned-copy
+                    `(sv:with-static-vector (,tmp-vec
+                                             (length ,data)
+                                             :element-type (array-element-type ,data)
+                                             :initial-contents ,data)
+                       (funcall #',body-fu (sv:static-vector-pointer ,tmp-vec)))
+                    '(error "Failed to pin the array"))))))))
 
 
 (defun unload-foreign-libraries ()

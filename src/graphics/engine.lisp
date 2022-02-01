@@ -5,6 +5,36 @@
                   *renderer*))
 
 
+(defmacro with-transform ((transform &rest operations) &body body)
+  (alexandria:with-gensyms (transform0 transform1 vec)
+    (flet ((%expand-transform (result source operation-desc)
+             (let* ((operation (first operation-desc)))
+               (if (eq operation :transform)
+                   `(m:mat4-mult ,result ,source ,(second operation-desc))
+                   (let ((vec-config (if (eq operation :rotation)
+                                         (cddr operation-desc)
+                                         (rest operation-desc))))
+                     (destructuring-bind (&key x y z) vec-config
+                       `(m:with-vec3 (,vec
+                                      ,@(when x `(:x ,x))
+                                      ,@(when y `(:y ,y))
+                                      ,@(when z `(:z ,z)))
+                          ,(ecase operation
+                             (:rotate `(m:rotate-mat4 ,result ,source ,(second operation-desc) ,vec))
+                             (:translate `(m:translate-mat4 ,result ,source ,vec))
+                             (:scale `(m:scale-mat4 ,result ,source ,vec))))))))))
+      `(m:with-mat4* (,transform0
+                      ,transform1)
+         ,@(loop with result = transform0 and source = transform1
+                 for operation in operations
+                 collect (prog1 (%expand-transform result source operation)
+                           (rotatef result source))
+                   into transforms
+                 finally (return (append transforms
+                                         `((let ((,transform ,source))
+                                             ,@body)))))))))
+
+
 (defclass engine ()
   ((engine :reader handle-of)
    (canvas-context :reader canvas-context-of)
@@ -227,6 +257,13 @@
   (%fm:with-material-builder (%make-material
                               (:package data size))
     (%make-material (handle-of *engine*))))
+
+
+(defun make-material-from-byte-vector (data)
+  (assert (or (subtypep (array-element-type data) '(unsigned-byte 8))
+              (subtypep (array-element-type data) '(signed-byte 8))))
+  (u:with-pinned-array-pointer (ptr data :try-pinned-copy t)
+    (make-material-from-memory ptr (length data))))
 
 
 ;;;
@@ -563,7 +600,7 @@
 ;;;
 (defclass scene ()
   ((engine :initarg :engine)
-   scene
+   (scene :reader handle-of)
    view
    camera
    camera-entity))

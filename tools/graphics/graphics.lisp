@@ -1,12 +1,12 @@
 (cl:in-package :alien-works.tools.graphics)
 
 
-(defun make-material (engine source &key base-path)
+(defun make-material (source &key base-path)
   (%gxs:with-parsed-material (material source :base-path base-path)
     (%gx:with-material-builder (%make-material
                                 (:package (%gxs:material-data material)
                                           (%gxs:material-size material)))
-      (%make-material (gx::handle-of engine)))))
+      (%make-material (%alien-works.graphics:engine-handle)))))
 
 
 (defun parse-material (source &key base-path debug

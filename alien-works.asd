@@ -144,7 +144,8 @@
                               :components ((:file "utils")
                                            (:file "material")
                                            (:file "mesh")
-                                           (:file "scene")))))
+                                           (:file "scene")))
+                             (:file "gltf")))
                (:module "ui"
                 :serial t
                 :components ((:file "packages")

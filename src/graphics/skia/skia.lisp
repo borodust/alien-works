@@ -287,7 +287,7 @@
   (assert (or (subtypep (array-element-type font-data-ub8-array) '(unsigned-byte 8))
               (subtypep (array-element-type font-data-ub8-array) '(signed-byte 8))))
   (let ((typeface (iffi:intricate-alloc '%skia:sk-sp<sk-typeface>)))
-    (cffi:with-pointer-to-vector-data (font-data-ptr font-data-ub8-array)
+    (u:with-pinned-array-pointer (font-data-ptr font-data-ub8-array)
       (iffi:with-intricate-alloc (data %skia:sk-sp<sk-data>)
         (%skia:sk-data+make-with-copy
          '(claw-utils:claw-pointer %skia:sk-sp<sk-data>) data

@@ -327,7 +327,8 @@
 
 
 (defun canvas-texture (canvas)
-  (unbuffered-texture-handle (swap-triple-buffered-value (%canvas-triple-texture canvas))))
+  (unbuffered-texture-handle
+   (swap-triple-buffered-value (%canvas-triple-texture canvas))))
 
 
 ;;;
