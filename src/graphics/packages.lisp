@@ -71,6 +71,7 @@
            #:render-view
            #:begin-frame
            #:end-frame
+           #:update-renderer-clear-options
 
            #:create-swap-chain
            #:destroy-swap-chain

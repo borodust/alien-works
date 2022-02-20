@@ -82,13 +82,11 @@
 
 
 (defun update-view-viewport (view x y width height)
-  (let ((viewport (iffi:make-intricate-instance '%filament:viewport
-                                                '%filament:int32-t (coerce x 'fixnum)
-                                                '%filament:int32-t (coerce y 'fixnum)
-                                                '%filament:uint32-t (coerce width 'fixnum)
-                                                '%filament:uint32-t (coerce height 'fixnum))))
-    (unwind-protect
-         (%filament:set-viewport
-          '(claw-utils:claw-pointer %filament:view) view
-          '(claw-utils:claw-pointer %filament:viewport) viewport))
-    (iffi:destroy-intricate-instance '%filament:viewport viewport)))
+  (iffi:with-intricate-instance (viewport %filament:viewport
+                                          '%filament:int32-t (coerce x 'fixnum)
+                                          '%filament:int32-t (coerce y 'fixnum)
+                                          '%filament:uint32-t (coerce width 'fixnum)
+                                          '%filament:uint32-t (coerce height 'fixnum))
+    (%filament:set-viewport
+     '(claw-utils:claw-pointer %filament:view) view
+     '(claw-utils:claw-pointer %filament:viewport) viewport)))
