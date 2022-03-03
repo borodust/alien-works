@@ -33,6 +33,9 @@
            #:texture-channels
 
            #:load-image
+           #:load-image-from-octet-vector
+           #:read-image-into-octet-vector
+           #:encode-image-octet-vector-into-png
            #:destroy-image
 
            #:image-name

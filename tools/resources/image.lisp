@@ -32,6 +32,29 @@
                        :channels channels)))))
 
 
+(defun load-image-from-octet-vector (name data &key (premultiply-alpha t))
+  (cref:c-with ((width :int)
+                (height :int)
+                (channels :int))
+    (%stb.image:set-unpremultiply-on-load 1)
+    (u:with-pinned-array-pointer (ptr data)
+      (let ((data (%stb.image:load-from-memory ptr (length data) (width &) (height &) (channels &) 0)))
+        (when (and (= channels 4) premultiply-alpha)
+          (loop for pixel = data then (cffi:inc-pointer pixel channels)
+                for idx from 0 below (* width height)
+                do (cref:c-val ((pixel :uint8))
+                     (let ((alpha (denormalize-uint8 (pixel 3))))
+                       (setf (pixel 0) (floor (* (pixel 0) alpha))
+                             (pixel 1) (floor (* (pixel 1) alpha))
+                             (pixel 2) (floor (* (pixel 2) alpha)))))))
+        (make-instance 'image
+                       :name name
+                       :data data
+                       :width width
+                       :height height
+                       :channels channels)))))
+
+
 (defun save-image (image path)
   (%stb.image.write:write-png (namestring path)
                               (image-width image)
@@ -39,6 +62,32 @@
                               (image-channels image)
                               (image-data image)
                               0))
+
+
+(defun read-image-into-octet-vector (image)
+  (let* ((data-ptr (image-data image))
+         (data-size (* (image-width image)
+                       (image-height image)
+                       (image-channels image)))
+         (result (make-array data-size :element-type '(unsigned-byte 8))))
+    (u:with-pinned-array-pointer (result-ptr result)
+      (alien-works:memcpy result-ptr data-ptr data-size))
+    result))
+
+
+(defun encode-image-octet-vector-into-png (data width height channels)
+  (cref:c-with ((out-len :int))
+    (u:with-pinned-array-pointer (data-ptr data)
+      (let ((encoded-ptr (%stb.image.write:write-png-to-mem data-ptr
+                                                            0
+                                                            width
+                                                            height
+                                                            channels
+                                                            (out-len &)))
+            (result (make-array out-len :element-type '(unsigned-byte 8))))
+        (u:with-pinned-array-pointer (result-ptr result)
+          (alien-works:memcpy result-ptr encoded-ptr out-len))
+        result))))
 
 
 (defun destroy-image (image)
