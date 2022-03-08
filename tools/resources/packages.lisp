@@ -8,7 +8,8 @@
                     (:host :alien-works.host)
                     (:%ai :%assimp))
   (:use :cl)
-  (:export #:parse-scene
+  (:export #:resize-file
+           #:parse-scene
            #:scene-meshes
            #:scene-images
            #:scene-materials
