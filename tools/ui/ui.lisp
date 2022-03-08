@@ -227,12 +227,12 @@
     (let ((width (alien-works:window-width))
           (height (alien-works:window-height)))
       (%ui:with-io (io)
-        (case (host:event-type event)
+        (case (host:event-kind event)
           (:text-input
            (%ui:add-input-characters io (%alien-works.host:event-input-foreign-text event)))
           ((:keyboard-button-up :keyboard-button-down)
            (%ui:update-keyboard-buttons io (host:scancode (host:event-key-scan-code event))
-                                        (eq (host:event-type event) :keyboard-button-down)
+                                        (eq (host:event-kind event) :keyboard-button-down)
                                         (host:keyboard-modifier-state-some-pressed-p
                                          keyboard-modifier-state :shift)
                                         (host:keyboard-modifier-state-some-pressed-p
@@ -243,7 +243,7 @@
                                          keyboard-modifier-state :super)))
           ((:mouse-button-down :mouse-button-up)
            (let ((button (host:event-mouse-button event))
-                 (pressed (eq (host:event-type event) :mouse-button-down)))
+                 (pressed (eq (host:event-kind event) :mouse-button-down)))
              (macrolet ((pressed-p (btn)
                           `(and pressed (eq button ,btn))))
                (%ui:update-mouse-buttons io
@@ -260,7 +260,7 @@
           ((:finger-down :finger-up)
            (update-touch-mouse-finger touch-mouse
                                       (host:event-finger-id event)
-                                      (not (eq (host:event-type event) :finger-up))
+                                      (not (eq (host:event-kind event) :finger-up))
                                       (* (host:event-finger-x event) width)
                                       (* (host:event-finger-y event) height))
            (update-input-from-touch io touch-mouse))

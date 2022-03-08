@@ -37,7 +37,7 @@
            #:framebuffer-height
 
            #:handle-events
-           #:event-type
+           #:event-kind
            #:event-key-scan-code
            #:event-mouse-button
            #:event-mouse-wheel

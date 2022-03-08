@@ -527,7 +527,7 @@
         do (funcall handler *event*)))
 
 
-(defun event-type (event)
+(defun event-kind (event)
   (let* ((id (cref:c-ref event %sdl:event :type))
          (type (cffi:foreign-enum-keyword '%sdl:event-type id :errorp nil)))
     (case type
@@ -577,10 +577,10 @@
 
       (:windowevent
        (let* ((window-event-id (cref:c-ref event %sdl:event :window :event))
-              (window-event-type (cffi:foreign-enum-keyword '%sdl:window-event-id
+              (window-event-kind (cffi:foreign-enum-keyword '%sdl:window-event-id
                                                             window-event-id
                                                             :errorp nil)))
-         (case window-event-type
+         (case window-event-kind
            (:close :quit)
            (otherwise :window))))
 
@@ -628,7 +628,7 @@
           (values nil body))
     `(defun ,name (,event ,@lambda-list)
        ,@(when doc `(,doc))
-       (when (member (event-type ,event) '(,@(a:ensure-list type)))
+       (when (member (event-kind ,event) '(,@(a:ensure-list type)))
          ,@body))))
 
 
