@@ -1053,6 +1053,7 @@ Returns -32768 to 32767 for sticks and 0 to 32767 for triggers"
   (unwind-protect
        (progn
          (setf %gl:*gl-get-proc-address* #'%sdl:gl-get-proc-address)
+         (add-known-foreign-library-directories)
          (u:reload-foreign-libraries)
          (cl-opengl-library:load-opengl-library)
          (loop with args = (uiop:command-line-arguments)

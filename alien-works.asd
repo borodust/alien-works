@@ -29,7 +29,6 @@
                #:uiop
                #:alexandria
                #:trivial-main-thread
-               #:defpackage-plus
                #:trivial-gray-streams
                #:flexi-streams
                #:bordeaux-threads
