@@ -532,7 +532,7 @@
                     :float (float (or spacing -1f0) 0f0)))
 
 
-(defun float-slider (label value &key min max format power)
+(defun float-slider (label value &key min max format)
   (cref:c-with ((fvalue :float))
     (setf fvalue (float value 0f0))
     (let ((changed-p (%imgui:slider-float
@@ -541,7 +541,7 @@
                       :float (float (or min 0f0) 0f0)
                       :float (float (or max 1f0) 0f0)
                       'claw-utils:claw-string (or format "%.3f")
-                      :float (float (or power 1f0) 0f0))))
+                      '%filament.imgui::im-gui-slider-flags 0)))
       (values fvalue changed-p))))
 
 
@@ -597,12 +597,30 @@
    '%filament.imgui:im-gui-popup-flags 0))
 
 
-(defmacro with-popup ((id) &body body)
-  `(when (%imgui:begin-popup 'claw-utils:claw-string (string ,id)
-                             '%filament.imgui:im-gui-window-flags 0)
-     (unwind-protect
-          (progn ,@body)
-       (%imgui:end-popup))))
+(defun close-current-popup ()
+  (%imgui:close-current-popup))
+
+
+(defun popup-open-p (id)
+  (%imgui:is-popup-open
+   'claw-utils:claw-string (string id)
+   '%filament.imgui::im-gui-popup-flags 0))
+
+
+(defmacro with-popup ((id &key modal) &body body)
+  (let ((body `((unwind-protect
+                     (progn ,@body)
+                  (%imgui:end-popup)))))
+    (if modal
+        (a:with-gensyms (close-not-clicked)
+          `(cref:c-with ((,close-not-clicked :bool))
+             (when (%imgui:begin-popup-modal 'claw-utils:claw-string (string ,id)
+                                             '(claw-utils:claw-pointer :bool) (,close-not-clicked &)
+                                             '%filament.imgui:im-gui-window-flags 0)
+               ,@body)))
+        `(when (%imgui:begin-popup 'claw-utils:claw-string (string ,id)
+                                   '%filament.imgui:im-gui-window-flags 0)
+           ,@body))))
 
 
 (defmacro with-child-panel ((id &key x y width height borderless) &body body)

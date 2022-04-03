@@ -123,8 +123,7 @@
                #:alien-works-foundation/tools
                #:aw-filament/tools
                #:aw-assimp
-               #:aw-stb/image-write
-               #:defpackage-plus)
+               #:aw-stb/image-write)
   :serial t
   :pathname "tools/"
   :components ((:module "graphics"

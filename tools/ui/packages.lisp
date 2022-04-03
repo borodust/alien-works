@@ -43,6 +43,10 @@
 
            #:with-panel
            #:with-child-panel
+           #:with-popup
+           #:popup-open-p
+           #:open-popup
+           #:close-current-popup
 
            #:button
            #:checkbox
@@ -93,6 +97,11 @@
                 #:with-panel
                 #:with-child-panel
 
+                #:with-popup
+                #:popup-open-p
+                #:open-popup
+                #:close-current-popup
+
                 #:button
                 #:checkbox
                 #:text
@@ -139,6 +148,11 @@
 
            #:with-panel
            #:with-child-panel
+
+           #:with-popup
+           #:popup-open-p
+           #:open-popup
+           #:close-current-popup
 
            #:button
            #:checkbox
