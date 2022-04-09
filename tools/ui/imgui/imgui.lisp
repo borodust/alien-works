@@ -614,6 +614,7 @@
     (if modal
         (a:with-gensyms (close-not-clicked)
           `(cref:c-with ((,close-not-clicked :bool))
+             (setf ,close-not-clicked t)
              (when (%imgui:begin-popup-modal 'claw-utils:claw-string (string ,id)
                                              '(claw-utils:claw-pointer :bool) (,close-not-clicked &)
                                              '%filament.imgui:im-gui-window-flags 0)
