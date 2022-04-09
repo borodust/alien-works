@@ -553,6 +553,15 @@
   (%imgui:unindent :float (float (or width 0f0) 0f0)))
 
 
+(defmacro with-indent ((&optional width) &body body)
+  (a:once-only (width)
+    `(unwind-protect
+          (progn
+            (indent ,width)
+            ,@body)
+       (unindent ,width))))
+
+
 (defun item-active-p ()
   (%imgui:is-item-active))
 

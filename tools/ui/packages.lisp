@@ -61,6 +61,7 @@
            #:float-slider
            #:indent
            #:unindent
+           #:with-indent
            #:item-active-p
            #:item-clicked-p
            #:with-combo
@@ -115,6 +116,7 @@
                 #:float-slider
                 #:indent
                 #:unindent
+                #:with-indent
                 #:item-active-p
                 #:item-clicked-p
                 #:with-combo
@@ -167,6 +169,7 @@
            #:float-slider
            #:indent
            #:unindent
+           #:with-indent
            #:item-active-p
            #:item-clicked-p
            #:with-combo
