@@ -59,4 +59,5 @@
            #:gltf-model-resource-names
            #:make-gltf-resource-loader
            #:destroy-gltf-resource-loader
+           #:with-gltf-resource-loader
            #:load-gltf-model-resources))

@@ -11,7 +11,7 @@
              (let* ((operation (first operation-desc)))
                (if (eq operation :transform)
                    `(m:mat4-mult ,result ,source ,(second operation-desc))
-                   (let ((vec-config (if (eq operation :rotation)
+                   (let ((vec-config (if (eq operation :rotate)
                                          (cddr operation-desc)
                                          (rest operation-desc))))
                      (destructuring-bind (&key x y z) vec-config

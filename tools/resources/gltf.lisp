@@ -137,6 +137,13 @@
    '(claw-utils:claw-pointer %filament::gltfio+filament-asset) asset))
 
 
+(defmacro with-gltf-resource-loader ((loader) &body body)
+  `(let ((,loader (make-gltf-resource-loader)))
+     (unwind-protect
+          (progn ,@body)
+       (destroy-gltf-resource-loader ,loader))))
+
+
 ;;;
 ;;;
 ;;;
