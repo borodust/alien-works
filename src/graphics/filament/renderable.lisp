@@ -97,11 +97,6 @@
   '(claw-utils:claw-pointer %filament:renderable-manager+builder)
   '%filament:size-t)
 
-(warp-intricate-builder-option renderable-builder :morphing
-  %filament:morphing
-  '(claw-utils:claw-pointer %filament:renderable-manager+builder)
-  ':bool)
-
 (warp-intricate-builder-option renderable-builder :blend-order
   %filament:blend-order
   '(claw-utils:claw-pointer %filament:renderable-manager+builder)

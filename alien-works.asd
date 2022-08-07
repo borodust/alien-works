@@ -33,7 +33,8 @@
                #:flexi-streams
                #:bordeaux-threads
                #:atomics
-               #:cl-muth)
+               #:cl-muth
+               #:varjo)
   :serial t
   :components ((:module "utils"
                 :serial t
@@ -68,6 +69,9 @@
                 :serial t
                 :components ((:file "packages")
                              (:file "surface")
+                             (:module "varjo"
+                              :serial t
+                              :components ((:file "varjo")))
                              (:module "filament"
                               :serial t
                               :components ((:file "utils")
@@ -91,6 +95,7 @@
                               :serial t
                               :components ((:file "skia")))
                              (:file "canvas")
+                             (:file "material")
                              (:file "engine")))
                (:module "physics"
                 :serial t

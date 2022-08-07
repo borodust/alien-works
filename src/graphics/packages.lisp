@@ -243,12 +243,20 @@
            #:scale))
 
 
+(cl:defpackage :%alien-works.varjo
+  (:use :cl)
+  (:local-nicknames (:a :alexandria))
+  (:export #:format-glsl
+           #:letvar))
+
+
 (cl:defpackage :%alien-works.graphics
   (:use)
   (:export #:engine-handle
            #:renderer-handle
            #:with-renderer
-           #:make-material-from-memory))
+           #:make-material-from-memory
+           #:print-material-source))
 
 
 (cl:defpackage :alien-works.graphics
@@ -260,153 +268,164 @@
                     (:cref :cffi-c-ref)
                     (:m :alien-works.math)
                     (:%host :%alien-works.host)
-                    (:%graphics :%alien-works.graphics))
+                    (:%graphics :%alien-works.graphics)
+                    (:%varjo :%alien-works.varjo))
   (:use :cl :%alien-works.graphics)
   (:import-from :%alien-works.skia
                 #:make-typeface
                 #:destroy-typeface)
-  (:export #:when-frame
+  (:export ;; 3D
 
-           #:make-scene
-           #:destroy-scene
-           #:add-scene-entity
-           #:remove-scene-entity
-           #:render-scene
-           #:transform-scene-camera
-           #:scene-camera-lens-projection
-           #:scene-camera-ortho-projection
+   #:when-frame
 
-           #:scene-skybox
-           #:scene-indirect-light
-           #:make-color-skybox
-           #:make-cubemap-skybox
-           #:destroy-skybox
+   #:make-scene
+   #:destroy-scene
+   #:add-scene-entity
+   #:remove-scene-entity
+   #:render-scene
+   #:transform-scene-camera
+   #:scene-camera-lens-projection
+   #:scene-camera-ortho-projection
 
-           #:make-material-from-byte-vector
+   #:scene-skybox
+   #:scene-indirect-light
+   #:make-color-skybox
+   #:make-cubemap-skybox
+   #:destroy-skybox
 
-           #:default-material-instance
-           #:make-material-instance
-           #:destroy-material-instance
-           #:material-instance-parameter-float
-           #:material-instance-parameter-vec2
-           #:material-instance-parameter-vec3
-           #:material-instance-parameter-vec4
-           #:material-instance-parameter-mat3
-           #:material-instance-parameter-mat4
-           #:material-instance-parameter-sampler
+   #:make-material-from-byte-vector
 
-           #:make-vertex-buffer
-           #:destroy-vertex-buffer
-           #:fill-vertex-buffer
+   #:default-material-instance
+   #:make-material-instance
+   #:destroy-material-instance
+   #:material-instance-parameter-float
+   #:material-instance-parameter-vec2
+   #:material-instance-parameter-vec3
+   #:material-instance-parameter-vec4
+   #:material-instance-parameter-mat3
+   #:material-instance-parameter-mat4
+   #:material-instance-parameter-sampler
 
-           #:make-index-buffer
-           #:destroy-index-buffer
-           #:fill-index-buffer
+   #:make-vertex-buffer
+   #:destroy-vertex-buffer
+   #:fill-vertex-buffer
 
-           #:make-renderable
-           #:destroy-renderable
-           #:transform-entity
+   #:make-index-buffer
+   #:destroy-index-buffer
+   #:fill-index-buffer
 
-           #:make-light
-           #:destroy-light
+   #:make-renderable
+   #:destroy-renderable
+   #:transform-entity
 
-           #:make-indirect-light
-           #:destroy-indirect-light
+   #:make-light
+   #:destroy-light
 
-           #:make-texture
-           #:update-texture-image
-           #:update-cubemap-images
-           #:generate-texture-mipmaps
-           #:destroy-texture
+   #:make-indirect-light
+   #:destroy-indirect-light
 
-           #:make-sampler
-           #:destroy-sampler
+   #:make-texture
+   #:update-texture-image
+   #:update-cubemap-images
+   #:generate-texture-mipmaps
+   #:destroy-texture
 
-           #:make-pixel-buffer
-           #:make-compressed-pixel-buffer
-           #:destroy-pixel-buffer
+   #:make-sampler
+   #:destroy-sampler
 
-           #:.material
+   #:make-pixel-buffer
+   #:make-compressed-pixel-buffer
+   #:destroy-pixel-buffer
 
-           #:.vertex-count
-           #:.attribute
-           #:.normalized
+   #:.material
 
-           #:.index-count
-           #:.type
+   #:.vertex-count
+   #:.attribute
+   #:.normalized
 
-           #:.geometry
-           #:.count-bound-geometry
-           #:.index-bound-geometry
-           #:.material
-           #:.bounding-box
-           #:.layer-mask
-           #:.priority
-           #:.culling
-           #:.cast-shadows
-           #:.receive-shadows
-           #:.screen-space-contact-shadows
-           #:.transform-skinning
-           #:.bone-skinning
-           #:.skinning
-           #:.morphing
-           #:.blend-order
+   #:.index-count
+   #:.type
 
-           #:.cast-light
-           #:.position
-           #:.direction
-           #:.color
-           #:.intensity
-           #:.intensity-efficiency
-           #:.falloff
-           #:.spot-light-cone
-           #:.sun-angular-radius
-           #:.sun-halo-size
-           #:.sun-halo-falloff
+   #:.geometry
+   #:.count-bound-geometry
+   #:.index-bound-geometry
+   #:.material
+   #:.bounding-box
+   #:.layer-mask
+   #:.priority
+   #:.culling
+   #:.cast-shadows
+   #:.receive-shadows
+   #:.screen-space-contact-shadows
+   #:.transform-skinning
+   #:.bone-skinning
+   #:.skinning
+   #:.morphing
+   #:.blend-order
 
-           #:.width
-           #:.height
-           #:.depth
-           #:.levels
-           #:.sampler
-           #:.format
-           #:.usage
-           #:.swizzle
-           #:.import
+   #:.cast-light
+   #:.position
+   #:.direction
+   #:.color
+   #:.intensity
+   #:.intensity-efficiency
+   #:.falloff
+   #:.spot-light-cone
+   #:.sun-angular-radius
+   #:.sun-halo-size
+   #:.sun-halo-falloff
 
-           #:.reflections
-           #:.radiance
-           #:.irradiance
-           #:.cubemap-irradiance
-           #:.intensity
-           #:.rotation
+   #:.width
+   #:.height
+   #:.depth
+   #:.levels
+   #:.sampler
+   #:.format
+   #:.usage
+   #:.swizzle
+   #:.import
 
-           #:make-typeface
-           #:destroy-typeface
+   #:.reflections
+   #:.radiance
+   #:.irradiance
+   #:.cubemap-irradiance
+   #:.intensity
+   #:.rotation
 
-           #:make-canvas
-           #:destroy-canvas
-           #:canvas-texture
-           #:with-canvas
-           #:clear-canvas
+   #:defmaterial
+   #:define-vertex-shader
+   #:define-fragment-shader
+   #:prepare-material
+   #:fragment-attribute
 
-           #:with-paint
-           #:paint-color
+   ;; 2D
 
-           #:with-font
-           #:font-size
-           #:font-baseline-snap
-           #:font-edging
-           #:font-subpixel
+   #:make-typeface
+   #:destroy-typeface
 
-           #:rectangle
-           #:circle
-           #:text
+   #:make-canvas
+   #:destroy-canvas
+   #:canvas-texture
+   #:with-canvas
+   #:clear-canvas
 
-           #:with-saved-transform
-           #:translate
-           #:rotate
-           #:rotate-around
-           #:scale
+   #:with-paint
+   #:paint-color
 
-           #:with-transform))
+   #:with-font
+   #:font-size
+   #:font-baseline-snap
+   #:font-edging
+   #:font-subpixel
+
+   #:rectangle
+   #:circle
+   #:text
+
+   #:with-saved-transform
+   #:translate
+   #:rotate
+   #:rotate-around
+   #:scale
+
+   #:with-transform))

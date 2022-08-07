@@ -13,7 +13,8 @@
 
 (cl:defpackage :alien-works.tools.graphics
   (:local-nicknames (:a :alexandria)
-                    (:%gx :%alien-works.filament)
+                    (:%aw.fm :%alien-works.filament)
+                    (:%gx :%alien-works.graphics)
                     (:gx :alien-works.graphics)
                     (:%gxs :%alien-works.tools.filament)
                     (:u :alien-works.utils)
