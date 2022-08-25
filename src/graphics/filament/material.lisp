@@ -27,6 +27,12 @@
                      body)))
 
 
+(defun destroy-material (engine material)
+  (%filament:destroy
+   '(claw-utils:claw-pointer %filament::engine) engine
+   '(claw-utils:claw-pointer %filament::material) material))
+
+
 (defun default-material-instance (material)
   (%filament:get-default-instance
    '(claw-utils:claw-pointer %filament::material) material))

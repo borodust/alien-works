@@ -1,5 +1,19 @@
+#+sbcl
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (require "sb-cltl2"))
+
 (cl:defpackage :alien-works.utils.empty
   (:use))
+
+(defpackage #:alien-works.cltl2
+  (:use #:cl
+        #+sbcl #:sb-cltl2
+        #+lispworks #:hcl
+        #+ecl #:si
+        #+openmcl #:ccl)
+  #+lispworks (:import-from #:lw #:compiler-let)
+  (:export #:compiler-let))
+
 (cl:defpackage :alien-works.utils
   (:local-nicknames (:a :alexandria)
                     (:sv :static-vectors))
@@ -19,11 +33,21 @@
            #:unload-foreign-libraries
            #:reload-foreign-libraries
 
-           #:define-umbrella-package))
+           #:define-umbrella-package
+           #:init-system-allocation-routines
+
+           #:register-foreign-callback
+           #:perform-foreign-callback
+
+           #:unquote
+           #:symbolicate*))
+
 (cl:in-package :alien-works.utils)
 
 
 (defvar *unloaded-foreign-libraries* nil)
+
+(defvar *callback-table* (make-hash-table :test 'eql))
 
 
 (defun enumval (enum value)
@@ -231,3 +255,56 @@
 
 
 (uiop:register-image-dump-hook 'unload-foreign-libraries)
+
+
+(defmacro init-system-allocation-routines (allocator extricator)
+  `(progn
+     (declaim (inline aligned-alloc aligned-free))
+     ,@(cond
+         ((cffi:foreign-symbol-pointer "aligned_alloc")
+          `((cffi:defcfun ("aligned_alloc" ,allocator) :pointer
+              (byte-alignment :size)
+              (byte-size :size))
+
+            (defun ,extricator (ptr)
+              (cffi:foreign-free ptr))))
+
+         ((cffi:foreign-symbol-pointer "_aligned_malloc")
+          `((declaim (inline %aligned-malloc))
+            (cffi:defcfun ("_aligned_malloc" %aligned-malloc) :pointer
+              (byte-size :size)
+              (byte-alignment :size))
+
+            (defun ,allocator (alignment size)
+              (%aligned-malloc size alignment))
+
+            (cffi:defcfun ("_aligned_free" ,extricator) :pointer
+              (memory :pointer))))
+
+         (t (error "Aligned memory allocation function not found. No C std library linked?")))))
+
+
+(defun unquote (expr)
+  (if (atom expr)
+      expr
+      (if (eq 'quote (first expr))
+          (second expr)
+          expr)))
+
+
+(defun symbolicate* (symbol &rest rest-symbols)
+  (let ((*package* (symbol-package symbol)))
+    (apply #'a:symbolicate symbol rest-symbols)))
+
+
+(defun register-foreign-callback (ptr action)
+  (setf (gethash (cffi:pointer-address ptr) *callback-table*) action))
+
+
+(defun perform-foreign-callback (ptr)
+  (let ((id (cffi:pointer-address ptr)))
+    (a:if-let ((callback (gethash id *callback-table*)))
+      (unwind-protect
+           (funcall callback)
+        (remhash id *callback-table*))
+      (error "Callback for pointer ~A not found" ptr))))

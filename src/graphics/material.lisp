@@ -127,66 +127,66 @@
                             :unlit "unlit"
                             :specular-glossiness "specularGlossiness")
 
-    (with-property ("parameters" parameters)
-      (let ((parameters (remove-duplicates
-                         (apply #'append (mapcar #'cdr parameters))
-                         :key #'first)))
-        (format stream "[")
-        (loop for (parameter . rest-parameters) on parameters
-              do (destructuring-bind (name type &key format precision) parameter
-                   (flet ((type->string ()
-                            (ecase type
-                              (:bool "bool")
-                              (:bvec2 "bool2")
-                              (:bvec3 "bool3")
-                              (:bvec4 "bool4")
+    (with-property ("parameters" parameters
+                                 (remove-duplicates
+                                  (apply #'append (mapcar #'cdr parameters))
+                                  :key #'first))
+      (format stream "[")
+      (loop for (parameter . rest-parameters) on parameters
+            do (destructuring-bind (name type &key format precision) parameter
+                 (flet ((type->string ()
+                          (ecase type
+                            (:bool "bool")
+                            (:bvec2 "bool2")
+                            (:bvec3 "bool3")
+                            (:bvec4 "bool4")
 
-                              (:float "float")
-                              (:vec2 "float2")
-                              (:vec3 "float3")
-                              (:vec4 "float4")
+                            (:float "float")
+                            (:vec2 "float2")
+                            (:vec3 "float3")
+                            (:vec4 "float4")
 
-                              (:int "int")
-                              (:ivec2 "int2")
-                              (:ivec3 "int3")
-                              (:ivec4 "int4")
+                            (:int "int")
+                            (:ivec2 "int2")
+                            (:ivec3 "int3")
+                            (:ivec4 "int4")
 
-                              (:uint "uint")
-                              (:uvec2 "uint2")
-                              (:uvec3 "uint3")
-                              (:uvec4 "uint4")
+                            (:uint "uint")
+                            (:uvec2 "uint2")
+                            (:uvec3 "uint3")
+                            (:uvec4 "uint4")
 
-                              (:mat3 "float3x3")
-                              (:mat4 "float4x4")
+                            (:mat3 "float3x3")
+                            (:mat4 "float4x4")
 
-                              (:sampler-2d "sampler2d")
-                              (:sampler-2d-array "sampler2dArray")
-                              (:sampler-external "samplerExternal")
-                              (:sampler-cubemap "samplerCubemap")))
-                          (format->string ()
-                            (ecase format
-                              (:int "int")
-                              (:float "float")))
-                          (precision->string ()
-                            (ecase precision
-                              (:low "low")
-                              (:medium "medium")
-                              (:high "high")
-                              (:default "default")))
-                          (name->string ()
-                            (varjo.internals:safe-glsl-name-string name)))
-                     (progn
-                       (format stream "~&    {")
-                       (format stream "~&      name : ~A," (name->string))
-                       (format stream "~&      type : ~A," (type->string)))
-                     (when format
-                       (format stream "~&      format : ~A," (format->string)))
-                     (when precision
-                       (format stream "~&      precision : ~A," (precision->string)))
-                     (progn
-                       (format stream "~&    }")
-                       (when rest-parameters
-                         (format stream ",")))))))
+                            (:sampler-2d "sampler2d")
+                            (:sampler-2d-array "sampler2dArray")
+                            (:sampler-external "samplerExternal")
+                            (:sampler-cubemap "samplerCubemap")))
+                        (format->string ()
+                          (ecase format
+                            (:int "int")
+                            (:float "float")))
+                        (precision->string ()
+                          (ecase precision
+                            (:low "low")
+                            (:medium "medium")
+                            (:high "high")
+                            (:default "default")))
+                        (name->string ()
+                          (varjo.internals:safe-glsl-name-string name)))
+                   (progn
+                     (format stream "~&    {")
+                     (format stream "~&      name : ~A," (name->string))
+                     (format stream "~&      type : ~A," (type->string)))
+                   (when format
+                     (format stream "~&      format : ~A," (format->string)))
+                   (when precision
+                     (format stream "~&      precision : ~A," (precision->string)))
+                   (progn
+                     (format stream "~&    }")
+                     (when rest-parameters
+                       (format stream ","))))))
       (format stream "~&  ]"))
 
     (with-property ("variantFilter" variant-filter)
@@ -329,7 +329,7 @@
 
 
 (defun symbolicate-material-name (name)
-  (a:symbolicate name '$alien-works$material))
+  (u:symbolicate* name '$alien-works$material))
 
 
 ;; inheritance?
@@ -370,8 +370,8 @@
              ()
              (:default-initargs
               :name ,(format nil "~(~A::~A~)"
-                             (symbol-name name)
-                             (package-name (symbol-package name)))
+                             (package-name (symbol-package name))
+                             (symbol-name name))
               ,@(when shading-model
                   `(:shading-model ,@shading-model))
               ,@(when variant-filter
@@ -504,7 +504,7 @@
 
 
 (defun symbolicate-fragment-shader-name (material-name)
-  (a:symbolicate material-name '$alien-works$fragment))
+  (u:symbolicate* material-name '$alien-works$fragment))
 
 
 (defun parse-shader-input (input)
@@ -601,7 +601,7 @@
   )
 
 (defun symbolicate-vertex-shader-name (material-name)
-  (a:symbolicate material-name '$alien-works$vertex))
+  (u:symbolicate* material-name '$alien-works$vertex))
 
 
 (defmacro define-vertex-shader (((material-vertex material-name) &rest input)

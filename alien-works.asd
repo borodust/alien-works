@@ -1,4 +1,5 @@
-(pushnew :cl-opengl-no-preload *features*)
+(cl:pushnew :cl-opengl-no-preload cl:*features*)
+(cl:pushnew :iffi-custom-allocation cl:*features*)
 
 (asdf:defsystem :alien-works
   :description "High-performance game foundation framework"
@@ -39,6 +40,12 @@
   :components ((:module "utils"
                 :serial t
                 :components ((:file "utils")))
+               (:module "memory"
+                :serial t
+                :components ((:file "packages")
+                             (:file "system")
+                             (:file "memory")
+                             (:file "allocator")))
                (:module "math"
                 :serial t
                 :components ((:file "packages")

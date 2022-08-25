@@ -264,6 +264,8 @@
                     (:%fm :%alien-works.filament)
                     (:%aw.skia :%alien-works.skia)
                     (:u :alien-works.utils)
+                    (:%mem :%alien-works.memory)
+                    (:mem :alien-works.memory)
                     (:sv :static-vectors)
                     (:cref :cffi-c-ref)
                     (:m :alien-works.math)
@@ -294,10 +296,12 @@
    #:destroy-skybox
 
    #:make-material-from-byte-vector
+   #:destroy-material
 
    #:default-material-instance
    #:make-material-instance
    #:destroy-material-instance
+
    #:material-instance-parameter-float
    #:material-instance-parameter-vec2
    #:material-instance-parameter-vec3
@@ -341,6 +345,7 @@
 
    #:.vertex-count
    #:.attribute
+   #:.attribute-from-layout
    #:.normalized
 
    #:.index-count
@@ -396,11 +401,42 @@
    #:define-vertex-shader
    #:define-fragment-shader
    #:prepare-material
-   #:fragment-attribute
+
+   #:vertex-world-normal
+   #:vertex-world-position
+   #:vertex-clip-space-transform
+
+   #:fragment-base-color
+   #:fragment-emissive
+   #:fragment-post-lighting-color
+   #:fragment-roughness
+   #:fragment-metallic
+   #:fragment-reflectance
+   #:fragment-ambient-occlusion
+   #:fragment-sheen-color
+   #:fragment-sheen-roughness
+   #:fragment-clear-coat
+   #:fragment-clear-coat-roughness
+   #:fragment-coat-normal
+   #:fragment-anisotropy
+   #:fragment-anisotropy-direction
+   #:fragment-thickness
+   #:fragment-subsurface-power
+   #:fragment-subsurface-color
+   #:fragment-sheen-color
+   #:fragment-subsurface-color
+   #:fragment-specular-color
+   #:fragment-glossiness
+   #:fragment-normal
+   #:fragment-transmission
+   #:fragment-absorption
+   #:fragment-micro-thickness
+   #:fragment-ior
+
 
    ;; 2D
 
-   #:make-typeface
+   #:make-typefac
    #:destroy-typeface
 
    #:make-canvas

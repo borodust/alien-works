@@ -118,6 +118,7 @@
 
 (define-builder-option vertex-count (count))
 (define-builder-option attribute (attribute type offset stride))
+(define-builder-option attribute-from-layout (attribute type layout slot))
 (define-builder-option normalized (attribute normalized-p))
 
 (define-builder-option index-count (count))
@@ -198,6 +199,17 @@
                                        offset stride))
 
 
+(defmethod %.attribute-from-layout
+    ((this vertex-buffer-builder) attribute type layout-name slot-name)
+  (%fm:vertex-buffer-builder-attribute
+   (handle-of this)
+   (%fm:vertex-attribute-enum attribute)
+   0
+   (%fm:vertex-attribute-type-enum type)
+   (mem:memory-layout-slot-offset layout-name slot-name)
+   (mem:memory-layout-size layout-name)))
+
+
 (defmethod %.normalized ((this vertex-buffer-builder) attribute normalized-p)
   (%fm:vertex-buffer-builder-normalized (handle-of this)
                                         (%fm:vertex-attribute-enum attribute) normalized-p))
@@ -217,8 +229,14 @@
   (%fm:destroy-vertex-buffer (handle-of *engine*) buffer))
 
 
-(defun fill-vertex-buffer (buffer data-ptr data-size &optional (offset 0))
-  (%fm:update-vertex-buffer buffer (handle-of *engine*) 0 data-ptr data-size offset))
+(defun fill-vertex-buffer (buffer memory-vector &key (vector-start 0) vector-end
+                                                  (buffer-offset 0)
+                                                  when-done)
+  (%fm:update-vertex-buffer buffer (handle-of *engine*) 0
+                            (%mem:memory-vector-pointer memory-vector vector-start)
+                            (- (or vector-end (length memory-vector)) vector-start)
+                            buffer-offset
+                            when-done))
 
 ;;;
 ;;; INDEX BUFFER
@@ -247,8 +265,14 @@
   (%fm:destroy-index-buffer (handle-of *engine*) buffer))
 
 
-(defun fill-index-buffer (buffer data-ptr data-size &optional (offset 0))
-  (%fm:update-index-buffer buffer (handle-of *engine*) data-ptr data-size offset))
+(defun fill-index-buffer (buffer memory-vector &key (vector-start 0) vector-end
+                                                 (buffer-offset 0)
+                                                 when-done)
+  (%fm:update-index-buffer buffer (handle-of *engine*)
+                           (%mem:memory-vector-pointer memory-vector vector-start)
+                           (- (or vector-end (length memory-vector)) vector-start)
+                           buffer-offset
+                           when-done))
 
 ;;;
 ;;; MATERIAL
@@ -264,6 +288,10 @@
               (subtypep (array-element-type data) '(signed-byte 8))))
   (u:with-pinned-array-pointer (ptr data :try-pinned-copy t)
     (make-material-from-memory ptr (length data))))
+
+
+(defun destroy-material (material)
+  (%fm:destroy-material (handle-of *engine*) material))
 
 
 ;;;
@@ -324,9 +352,6 @@
 
 (defmethod %.skinning ((this renderable-builder) bone-count)
   (%fm:renderable-builder-skinning (handle-of this) bone-count))
-
-(defmethod %.morphing ((this renderable-builder) enabled)
-  (%fm:renderable-builder-morphing (handle-of this) enabled))
 
 (defmethod %.blend-order ((this renderable-builder) index order)
   (%fm:renderable-builder-blend-order (handle-of this) index order))
