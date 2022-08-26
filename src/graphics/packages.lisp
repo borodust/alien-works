@@ -295,7 +295,7 @@
    #:make-cubemap-skybox
    #:destroy-skybox
 
-   #:make-material-from-byte-vector
+   #:make-material-from-memory-vector
    #:destroy-material
 
    #:default-material-instance

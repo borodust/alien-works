@@ -8,10 +8,10 @@
 ;;;
 ;;; MATERIAL COMPILER
 ;;;
-(defun parse-material (source &key base-path debug
-                                target-api
-                                platform
-                                optimization)
+(defun serialize-material (source &key base-path debug
+                                    target-api
+                                    platform
+                                    optimization)
   ;; fixme: pray i can convince filament authors to remove assert for material
   ;; file existence
   (uiop:with-temporary-file (:pathname temp-file :directory base-path)
@@ -54,39 +54,39 @@
            '(:pointer %filament.util::aw+filament+in-memory-output) out))))))
 
 
-(defun destroy-material (data)
+(defun destroy-material-data (data)
   ;; we can't use intricate destroy here because instance was allocated in
   ;; foreign code using unaligend (default) allocation
   (%filament.util:aw+filament+~material-data
    '(:pointer %filament.util:aw+filament+material-data) data))
 
 
-(defun material-data (data)
+(defun material-data-pointer (data)
   (%filament.util:aw+filament+data
    '(:pointer %filament.util::aw+filament+material-data) data))
 
 
-(defun material-size (data)
+(defun material-data-size (data)
   (%filament.util:aw+filament+size
    '(:pointer %filament.util::aw+filament+material-data) data))
 
 
-(defmacro with-parsed-material ((material source &key base-path debug
-                                                   target-api
-                                                   platform
-                                                   optimization)
-                                &body body)
-  `(let ((,material (parse-material ,source
-                                    ,@(when base-path
-                                        `(:base-path ,base-path))
-                                    ,@(when debug
-                                        `(:debug ,debug))
-                                    ,@(when target-api
-                                        `(:target-api ,target-api))
-                                    ,@(when platform
-                                        `(:platform ,platform))
-                                    ,@(when optimization
-                                        `(:optimization ,optimization)))))
+(defmacro with-serialized-material-data ((material-data source &key base-path debug
+                                                                 target-api
+                                                                 platform
+                                                                 optimization)
+                                         &body body)
+  `(let ((,material-data (serialize-material ,source
+                                             ,@(when base-path
+                                                 `(:base-path ,base-path))
+                                             ,@(when debug
+                                                 `(:debug ,debug))
+                                             ,@(when target-api
+                                                 `(:target-api ,target-api))
+                                             ,@(when platform
+                                                 `(:platform ,platform))
+                                             ,@(when optimization
+                                                 `(:optimization ,optimization)))))
      (unwind-protect
           (progn ,@body)
-       (destroy-material ,material))))
+       (destroy-material-data ,material-data))))

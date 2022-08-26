@@ -283,11 +283,11 @@
     (%make-material (handle-of *engine*))))
 
 
-(defun make-material-from-byte-vector (data)
+(defun make-material-from-memory-vector (data)
   (assert (or (subtypep (array-element-type data) '(unsigned-byte 8))
               (subtypep (array-element-type data) '(signed-byte 8))))
-  (u:with-pinned-array-pointer (ptr data :try-pinned-copy t)
-    (make-material-from-memory ptr (length data))))
+  (make-material-from-memory (%mem:memory-vector-pointer data)
+                             (length data)))
 
 
 (defun destroy-material (material)
