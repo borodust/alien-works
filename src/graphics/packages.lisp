@@ -9,9 +9,11 @@
            #:destroy-engine
 
            #:with-material-builder
+           #:material-name
            #:default-material-instance
            #:make-material-instance
            #:destroy-material-instance
+           #:material-instance-name
            #:material-instance-parameter-float
            #:material-instance-parameter-float2
            #:material-instance-parameter-float3
@@ -296,19 +298,15 @@
    #:destroy-skybox
 
    #:make-material-from-memory-vector
+   #:material-name
    #:destroy-material
 
    #:default-material-instance
    #:make-material-instance
    #:destroy-material-instance
+   #:material-instance-name
 
-   #:material-instance-parameter-float
-   #:material-instance-parameter-vec2
-   #:material-instance-parameter-vec3
-   #:material-instance-parameter-vec4
-   #:material-instance-parameter-mat3
-   #:material-instance-parameter-mat4
-   #:material-instance-parameter-sampler
+   #:material-instance-parameter
 
    #:make-vertex-buffer
    #:destroy-vertex-buffer

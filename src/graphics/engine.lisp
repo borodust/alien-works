@@ -1,6 +1,9 @@
 (cl:in-package :alien-works.graphics)
 
 
+(defvar *engine-tasks* (mt:make-guarded-reference nil))
+
+
 (declaim (special *engine*
                   *renderer*))
 
@@ -55,7 +58,10 @@
     (setf engine (%fm:create-engine (%host:window-graphics-context))
           swap-chain (%fm:create-swap-chain engine (%host:window-surface))
           renderer (%fm:create-renderer engine)
-          canvas-context (make-canvas-context))))
+          canvas-context (make-canvas-context)))
+  (update-material-parameter-registry)
+  (mt:with-guarded-reference (tasks *engine-tasks*)
+    (setf tasks (list nil))))
 
 
 (defun create-engine (&key)
@@ -67,7 +73,21 @@
     (destroy-canvas-context canvas-context)
     (%fm:destroy-renderer engine renderer)
     (%fm:destroy-swap-chain engine swap-chain)
-    (%fm:destroy-engine engine)))
+    (%fm:destroy-engine engine)
+    (mt:with-guarded-reference (tasks *engine-tasks*)
+      (setf tasks nil))))
+
+
+(defun consume-engine-tasks ()
+  (mapc #'funcall (mt:with-guarded-reference (tasks *engine-tasks*)
+                    (prog1 (rest tasks)
+                      (setf (rest tasks) nil)))))
+
+
+(defun push-engine-task (task)
+  (mt:with-guarded-reference (tasks *engine-tasks*)
+    (when tasks
+      (a:nconcf (rest tasks) (list task)))))
 
 
 (defmacro when-frame (() &body body)
@@ -75,6 +95,7 @@
      (when (%fm:begin-frame renderer swap-chain)
        (unwind-protect
             (let ((*renderer* renderer))
+              (consume-engine-tasks)
               ,@body)
          (%fm:end-frame renderer)))))
 
@@ -288,6 +309,11 @@
               (subtypep (array-element-type data) '(signed-byte 8))))
   (make-material-from-memory (%mem:memory-vector-pointer data)
                              (length data)))
+
+
+(defun material-name (material)
+  (with-input-from-string (in (%fm:material-name material))
+    (read in)))
 
 
 (defun destroy-material (material)
@@ -535,13 +561,51 @@
   (%fm:destroy-material-instance (handle-of *engine*) instance))
 
 
-(defun (setf material-instance-parameter) (value material name)
-  (setf (%fm:material-instance-parameter-float material name) value))
+(defun material-instance-name (instance)
+  (with-input-from-string (in (%fm:material-instance-name instance))
+    (read in)))
 
 
-(defun material-instance-parameter-float (material name)
+(defun material-instance-parameter (material name)
   (declare (ignore material name))
   (error "Not implemented: write only"))
+
+
+(defun (setf material-instance-parameter) (value material parameter-name
+                                           &optional texture)
+  (let ((material-name (material-instance-name material)))
+    (multiple-value-bind (type glsl-name)
+        (find-material-parameter-type material-name parameter-name)
+      (unless type
+        (error "Parameter with name ~A not found in material ~A"
+               material-name parameter-name))
+      (ecase type
+        (:float (setf
+                 (%fm:material-instance-parameter-float material glsl-name)
+                 value))
+        (:vec2 (setf
+                (%fm:material-instance-parameter-float2 material glsl-name)
+                value))
+        (:vec3 (setf
+                (%fm:material-instance-parameter-float3 material glsl-name)
+                value))
+        (:vec4 (setf
+                (%fm:material-instance-parameter-float4 material glsl-name)
+                value))
+        (:mat3 (setf
+                (%fm:material-instance-parameter-mat3 material glsl-name)
+                value))
+        (:mat4 (setf
+                (%fm:material-instance-parameter-mat4 material glsl-name)
+                value))
+        ((:sampler-2d
+          :sampler-2d-array
+          :sampler-external
+          :sampler-cubemap)
+         (setf
+          (%fm:material-instance-parameter-sampler material glsl-name texture)
+          value)))))
+  value)
 
 
 (defun (setf material-instance-parameter-float) (value material name)

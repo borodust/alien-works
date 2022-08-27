@@ -33,6 +33,13 @@
    '(claw-utils:claw-pointer %filament::material) material))
 
 
+(defun material-name (material)
+  (cffi:foreign-string-to-lisp
+   (%filament:get-name
+    :const
+    '(claw-utils:claw-pointer %filament::material) material)))
+
+
 (defun default-material-instance (material)
   (%filament:get-default-instance
    '(claw-utils:claw-pointer %filament::material) material))
@@ -43,6 +50,13 @@
    :const
    '(claw-utils:claw-pointer %filament::material) material
    'claw-utils:claw-string (or name (cffi:null-pointer))))
+
+
+(defun material-instance-name (material)
+  (cffi:foreign-string-to-lisp
+   (%filament:get-name
+    :const
+    '(claw-utils:claw-pointer %filament::material-instance) material)))
 
 
 (defun destroy-material-instance (engine instance)

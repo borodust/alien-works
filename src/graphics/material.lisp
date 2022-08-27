@@ -1,5 +1,10 @@
 (cl:in-package :alien-works.graphics)
 
+;; probably useless optimization against locking material-registry in game loop
+;; when setting material instance parameters
+(defvar *material-parameters-registry* (make-hash-table)
+  "Must only be accessed from main thread")
+
 
 (defvar *material-registry* (mt:make-guarded-reference (make-hash-table)))
 
@@ -19,8 +24,11 @@
 (defclass material ()
   ((name :initarg :name)
    (parameters :initform nil)
+   (parameters-per-shader :initform nil)
    (requires :initform nil)
+   (requires-per-shader :initform nil)
    (variables :initform nil)
+   (variables-per-shader :initform nil)
    (vertex-shader :initform nil
                   :reader material-vertex-shader-name)
    (fragment-shader :initform nil
@@ -83,6 +91,43 @@
                            :initform nil)))
 
 
+(defun material-shader-parameters (material)
+  (slot-value material 'parameters))
+
+
+(defun update-material-parameter-registry-for-shader (material-name parameters)
+  "Must be called from main thread"
+  (loop for param in parameters
+        do (destructuring-bind (name type . _) param
+             (declare (ignore _))
+             (let ((param-table
+                     (a:if-let (table
+                                (gethash material-name *material-parameters-registry*))
+                       table
+                       (setf
+                        (gethash material-name *material-parameters-registry*)
+                        (make-hash-table)))))
+               (setf (gethash name param-table) type)))))
+
+
+(defun find-material-parameter-type (material-name parameter-name)
+  "Must be called from main thread"
+  (values (gethash parameter-name
+                   (gethash material-name *material-parameters-registry*))
+          (varjo.internals:safe-glsl-name-string parameter-name)))
+
+
+(defun update-material-parameter-registry ()
+  "Must be called from main thread"
+  (mt:with-guarded-reference (registry *material-registry*)
+    (clrhash *material-parameters-registry*)
+    (loop for material-name being the hash-key of registry
+            using (hash-value material)
+          do (update-material-parameter-registry-for-shader
+              material-name
+              (material-shader-parameters material)))))
+
+
 (defun update-material-shader (material-name stage shader-name
                                shader-parameters
                                shader-attributes
@@ -90,10 +135,28 @@
   (with-material (material material-name)
     (unless material
       (error "Material ~A not found" material-name))
-    (with-slots (parameters requires variables fragment-shader vertex-shader) material
-      (setf (a:assoc-value parameters stage) shader-parameters
-            (a:assoc-value requires stage) shader-attributes
-            (a:assoc-value variables stage) shader-variables)
+    (with-slots (parameters-per-shader
+                 requires-per-shader
+                 variables-per-shader
+                 fragment-shader vertex-shader
+                 parameters requires variables)
+        material
+      (setf (a:assoc-value parameters-per-shader stage) shader-parameters
+            (a:assoc-value requires-per-shader stage) shader-attributes
+            (a:assoc-value variables-per-shader stage) shader-variables)
+      (setf parameters (remove-duplicates
+                        (apply #'append (mapcar #'cdr parameters-per-shader))
+                        :key #'first)
+            requires (remove-duplicates
+                      (apply #'append (mapcar #'cdr requires-per-shader)))
+            variables (remove-duplicates
+                       (apply #'append (mapcar #'cdr variables-per-shader))
+                       :key #'first))
+      (let ((parameters parameters))
+        (push-engine-task (lambda ()
+                            (update-material-parameter-registry-for-shader
+                             material-name
+                             parameters))))
       (ecase stage
         (:vertex (setf vertex-shader shader-name))
         (:fragment (setf fragment-shader shader-name))))))
@@ -133,10 +196,7 @@
                             :unlit "unlit"
                             :specular-glossiness "specularGlossiness")
 
-    (with-property ("parameters" parameters
-                                 (remove-duplicates
-                                  (apply #'append (mapcar #'cdr parameters))
-                                  :key #'first))
+    (with-property ("parameters" parameters)
       (format stream "[")
       (loop for (parameter . rest-parameters) on parameters
             do (destructuring-bind (name type &key format precision) parameter
@@ -212,9 +272,7 @@
     (with-property ("instanced" instanced)
       (format stream "true"))
 
-    (with-property ("requires" requires
-                               (remove-duplicates
-                                (apply #'append (mapcar #'cdr requires))))
+    (with-property ("requires" requires)
       (format stream "[ ~{~A~^, ~} ]"
               (loop for require in requires
                     collect (ecase require
@@ -232,10 +290,7 @@
                               (:custom6 "custom6")
                               (:custom7 "custom7")))))
 
-    (with-property ("variables" variables
-                                (mapcar #'varjo.internals:safe-glsl-name-string
-                                        (remove-duplicates
-                                         (apply #'append (mapcar #'cdr variables)))))
+    (with-property ("variables" variables)
       (format stream "[ ~{~A~^, ~} ]" variables))
 
 
