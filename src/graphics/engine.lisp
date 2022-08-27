@@ -534,28 +534,44 @@
 (defun destroy-material-instance (instance)
   (%fm:destroy-material-instance (handle-of *engine*) instance))
 
+
+(defun (setf material-instance-parameter) (value material name)
+  (setf (%fm:material-instance-parameter-float material name) value))
+
+
+(defun material-instance-parameter-float (material name)
+  (declare (ignore material name))
+  (error "Not implemented: write only"))
+
+
 (defun (setf material-instance-parameter-float) (value material name)
   (setf (%fm:material-instance-parameter-float material name) value))
+
 
 (defun (setf material-instance-parameter-vec2) (value material name)
   (%fm:with-vec2f (vec (m:vec2 value 0) (m:vec2 value 1))
     (setf (%fm:material-instance-parameter-float2 material name) vec)))
 
+
 (defun (setf material-instance-parameter-vec3) (value material name)
   (%fm:with-vec3f (vec (m:vec3 value 0) (m:vec3 value 1) (m:vec3 value 2))
-   (setf (%fm:material-instance-parameter-float3 material name) vec)))
+    (setf (%fm:material-instance-parameter-float3 material name) vec)))
+
 
 (defun (setf material-instance-parameter-vec4) (value material name)
   (%fm:with-vec4f (vec (m:vec4 value 0) (m:vec4 value 1) (m:vec4 value 2) (m:vec4 value 3))
     (setf (%fm:material-instance-parameter-float4 material name) vec)))
 
+
 (defun (setf material-instance-parameter-mat3) (value material name)
   (%fm:with-mat3f (mat value)
     (setf (%fm:material-instance-parameter-mat3 material name) mat)))
 
+
 (defun (setf material-instance-parameter-mat4) (value material name)
   (%fm:with-mat4f (mat value)
     (setf (%fm:material-instance-parameter-mat4 material name) mat)))
+
 
 (defun (setf material-instance-parameter-sampler) (value material name texture)
   (setf (%fm:material-instance-parameter-sampler material name texture) value))

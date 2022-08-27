@@ -1,15 +1,19 @@
 (cl:in-package :alien-works.graphics)
 
 
-(defvar *material-registry* (make-hash-table))
+(defvar *material-registry* (mt:make-guarded-reference (make-hash-table)))
 
 
 (defun register-material (name value)
-  (setf (gethash name *material-registry*) value))
+  (mt:with-guarded-reference (registry *material-registry*)
+    (setf (gethash name registry) value)))
 
 
-(defun find-material (name)
-  (gethash name *material-registry*))
+(defmacro with-material ((var name) &body body)
+  (a:with-gensyms (registry)
+    `(mt:with-guarded-reference (,registry *material-registry* )
+       (let ((,var (gethash ,name ,registry)))
+         ,@body))))
 
 
 (defclass material ()
@@ -83,20 +87,22 @@
                                shader-parameters
                                shader-attributes
                                shader-variables)
-  (a:if-let ((material (find-material material-name)))
+  (with-material (material material-name)
+    (unless material
+      (error "Material ~A not found" material-name))
     (with-slots (parameters requires variables fragment-shader vertex-shader) material
       (setf (a:assoc-value parameters stage) shader-parameters
             (a:assoc-value requires stage) shader-attributes
             (a:assoc-value variables stage) shader-variables)
       (ecase stage
         (:vertex (setf vertex-shader shader-name))
-        (:fragment (setf fragment-shader shader-name))))
-    (error "Material ~A not found" material-name)))
+        (:fragment (setf fragment-shader shader-name))))))
 
 
 (defun update-material-vertex-shader (material-name stage parameters)
-  (a:when-let ((material (find-material material-name)))
-    (setf (a:assoc-value (slot-value material 'parameters) stage) parameters)))
+  (with-material (material material-name)
+    (when material
+      (setf (a:assoc-value (slot-value material 'parameters) stage) parameters))))
 
 
 (defun format-material-descriptor (material stream)
@@ -701,7 +707,7 @@
 
 
 (defun %graphics:print-material-source (material-name stream)
-  (let ((material (find-material material-name)))
+  (with-material (material material-name)
     (unless material
       (error "Material ~A not found" material-name))
     (format-material-descriptor material stream)
