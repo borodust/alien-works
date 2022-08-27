@@ -407,7 +407,7 @@
    #:vertex-clip-space-transform
 
    #:fragment-base-color
-   #:fragment-emissive
+   #:fragment-emissive-color
    #:fragment-post-lighting-color
    #:fragment-roughness
    #:fragment-metallic

@@ -435,7 +435,7 @@
   ;; default: float4(1.0)
   (|baseColor| :vec4 :accessor fragment-base-color)
   ;; default: float4(0.0, 0.0, 0.0, 1.0)
-  (|emissive| :vec4 :accessor fragment-emissive)
+  (|emissive| :vec4 :accessor fragment-emissive-color)
   ;; default: float4(0.0)
   (|postLightingColor| :vec4 :accessor fragment-post-lighting-color)
 
