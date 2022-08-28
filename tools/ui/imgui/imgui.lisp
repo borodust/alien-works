@@ -47,7 +47,8 @@
    :int (floor width)
    :int (floor height)
    :float (float scale-x 0f0)
-   :float (float scale-y 0f0)))
+   :float (float scale-y 0f0)
+   :bool nil))
 
 
 (defmacro define-ui-callback (name () &body body)

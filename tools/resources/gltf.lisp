@@ -4,7 +4,7 @@
 ;;; MATERIAL PROVIDER
 ;;;
 (defun make-material-provider ()
-  (%filament:gltfio+create-material-generator
+  (%filament:gltfio+create-jit-shader-provider
    '(claw-utils:claw-pointer %filament::engine) (%alien-works.graphics:engine-handle)
    :bool t))
 

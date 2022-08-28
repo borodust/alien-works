@@ -124,22 +124,22 @@
 
 
 (defmacro with-face-offsets ((val) &body body)
-  `(iffi:with-intricate-instance (,val %filament:backend+face-offsets)
+  `(iffi:with-intricate-instance (,val %filament:texture+face-offsets)
      ,@body))
 
 
 (defun face-offset (offsets idx)
-  (%filament:backend+operator[]
+  (%filament:operator[]
    :const
-   '(claw-utils:claw-pointer %filament:backend+face-offsets) offsets
+   '(claw-utils:claw-pointer %filament:texture+face-offsets) offsets
    '%filament::size-t idx))
 
 
 (defun (setf face-offset) (value offsets idx)
-  (let ((ptr (%filament:backend+operator[]
-              '(claw-utils:claw-pointer %filament:backend+face-offsets) offsets
+  (let ((ptr (%filament:operator[]
+              '(claw-utils:claw-pointer %filament:texture+face-offsets) offsets
               '%filament::size-t idx)))
-    (setf (cffi:mem-ref ptr '%filament:backend+face-offsets+size-type) value)))
+    (setf (cffi:mem-ref ptr '%filament:texture+face-offsets+size-type) value)))
 
 
 (defun update-cubemap-images (engine texture level pixel-buffer face-offsets)
