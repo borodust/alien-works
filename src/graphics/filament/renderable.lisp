@@ -134,25 +134,21 @@
      ,@body))
 
 
-(defun renderable-material-instance (engine renderable layer)
-  (let ((manager (renderable-manager engine)))
-    (with-renderable-instance (instance renderable) manager
-      (%filament:get-material-instance-at
-       :const
-       '(claw-utils:claw-pointer %filament::renderable-manager) manager
-       '(claw-utils:claw-pointer %filament::renderable-manager+instance) instance
-       '%filament::size-t layer))))
+(defun renderable-material-instance (renderable-manager instance layer)
+  (%filament:get-material-instance-at
+   :const
+   '(claw-utils:claw-pointer %filament::renderable-manager) renderable-manager
+   '(claw-utils:claw-pointer %filament::renderable-manager+instance) instance
+   '%filament::size-t layer))
 
 
 (defun (setf renderable-material-instance) (material-instance
-                                            engine
-                                            renderable
+                                            renderable-manager
+                                            instance
                                             layer)
-  (let ((manager (renderable-manager engine)))
-    (with-renderable-instance (instance renderable) manager
-      (%filament:set-material-instance-at
-       '(claw-utils:claw-pointer %filament::renderable-manager) manager
-       '(claw-utils:claw-pointer %filament::renderable-manager+instance) instance
-       '%filament::size-t layer
-       '(claw-utils:claw-pointer %filament::material-instance) material-instance)))
+  (%filament:set-material-instance-at
+   '(claw-utils:claw-pointer %filament::renderable-manager) renderable-manager
+   '(claw-utils:claw-pointer %filament::renderable-manager+instance) instance
+   '%filament::size-t layer
+   '(claw-utils:claw-pointer %filament::material-instance) material-instance)
   material-instance)

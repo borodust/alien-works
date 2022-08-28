@@ -396,13 +396,17 @@
 
 
 (defun renderable-material-instance (renderable layer)
-  (%fm:renderable-material-instance (handle-of *engine*) renderable layer))
+  (let ((manager (%fm:renderable-manager (handle-of *engine*))))
+    (%fm:with-renderable-instance (instance renderable) manager
+      (%fm:renderable-material-instance manager instance layer))))
 
 
 (defun (setf renderable-material-instance) (material-instance renderable layer)
-  (setf
-   (%fm:renderable-material-instance (handle-of *engine*) renderable layer)
-   material-instance))
+  (let ((manager (%fm:renderable-manager (handle-of *engine*))))
+    (%fm:with-renderable-instance (instance renderable) manager
+      (setf
+       (%fm:renderable-material-instance manager instance layer)
+       material-instance))))
 
 
 (defun destroy-renderable (renderable)

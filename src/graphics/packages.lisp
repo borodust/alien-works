@@ -50,6 +50,7 @@
            #:renderable-builder-morphing
            #:renderable-builder-blend-order
            #:with-renderable-builder
+           #:with-renderable-instance
            #:renderable-manager
            #:renderable-material-instance
 
