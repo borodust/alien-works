@@ -61,7 +61,7 @@
                                                    (buffer-size :size)
                                                    (user-data :pointer))
   (declare (ignore buffer-ptr buffer-size))
-  (u:perform-foreign-callback user-data))
+  (u:perform-foreign-callback (cffi:pointer-address user-data)))
 
 
 (defun update-vertex-buffer (buffer engine index data size
@@ -74,12 +74,12 @@
                   '(claw-utils:claw-pointer :void) (cffi:null-pointer))
 
     (when done-callback
-      (u:register-foreign-callback descriptor done-callback)
-      (%filament:backend+set-callback
-       '(claw-utils:claw-pointer %filament::backend+buffer-descriptor) descriptor
-       '%filament::backend+buffer-descriptor+callback (cffi:callback
-                                                       buffer-descriptor-release)
-       '(claw-utils:claw-pointer :void) descriptor))
+      (let ((id (u:register-foreign-callback done-callback)))
+        (%filament:backend+set-callback
+         '(claw-utils:claw-pointer %filament::backend+buffer-descriptor) descriptor
+         '%filament::backend+buffer-descriptor+callback (cffi:callback
+                                                         buffer-descriptor-release)
+         '(claw-utils:claw-pointer :void) (cffi:make-pointer id))))
 
     (%filament:set-buffer-at
      '(claw-utils:claw-pointer %filament:vertex-buffer) buffer
@@ -149,12 +149,12 @@
                   '(claw-utils:claw-pointer :void) (cffi:null-pointer))
 
     (when done-callback
-      (u:register-foreign-callback descriptor done-callback)
-      (%filament:backend+set-callback
-       '(claw-utils:claw-pointer %filament::backend+buffer-descriptor) descriptor
-       '%filament::backend+buffer-descriptor+callback (cffi:callback
-                                                       buffer-descriptor-release)
-       '(claw-utils:claw-pointer :void) descriptor))
+      (let ((id (u:register-foreign-callback done-callback)))
+        (%filament:backend+set-callback
+         '(claw-utils:claw-pointer %filament::backend+buffer-descriptor) descriptor
+         '%filament::backend+buffer-descriptor+callback (cffi:callback
+                                                         buffer-descriptor-release)
+         '(claw-utils:claw-pointer :void) (cffi:make-pointer id))))
 
     (%filament:set-buffer
      '(claw-utils:claw-pointer %filament:index-buffer) buffer

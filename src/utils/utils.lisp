@@ -47,6 +47,7 @@
 
 (defvar *unloaded-foreign-libraries* nil)
 
+(defvar *next-callback-id* 0)
 (defvar *callback-table* (make-hash-table :test 'eql))
 
 
@@ -297,14 +298,15 @@
     (apply #'a:symbolicate symbol rest-symbols)))
 
 
-(defun register-foreign-callback (ptr action)
-  (setf (gethash (cffi:pointer-address ptr) *callback-table*) action))
+(defun register-foreign-callback (action)
+  (let ((id (setf *next-callback-id* (mod (1+ *next-callback-id*) 4294967295))))
+    (setf (gethash id *callback-table*) action)
+    id))
 
 
-(defun perform-foreign-callback (ptr)
-  (let ((id (cffi:pointer-address ptr)))
-    (a:if-let ((callback (gethash id *callback-table*)))
-      (unwind-protect
-           (funcall callback)
-        (remhash id *callback-table*))
-      (error "Callback for pointer ~A not found" ptr))))
+(defun perform-foreign-callback (id)
+  (a:if-let ((callback (gethash id *callback-table*)))
+    (unwind-protect
+         (funcall callback)
+      (remhash id *callback-table*))
+    (error "Callback with id ~A not found" id)))
