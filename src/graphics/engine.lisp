@@ -307,8 +307,8 @@
 (defun make-material-from-memory-vector (data)
   (assert (or (subtypep (array-element-type data) '(unsigned-byte 8))
               (subtypep (array-element-type data) '(signed-byte 8))))
-  (make-material-from-memory (%mem:memory-vector-pointer data)
-                             (length data)))
+  (u:with-pinned-array-pointer (ptr data)
+    (make-material-from-memory ptr (length data))))
 
 
 (defun material-name (material)
@@ -393,6 +393,16 @@
       (let ((transform-manager (%fm:transform-manager (handle-of *engine*))))
         (%fm:attach-transform transform-manager entity))
       entity)))
+
+
+(defun renderable-material-instance (renderable layer)
+  (%fm:renderable-material-instance (handle-of *engine*) renderable layer))
+
+
+(defun (setf renderable-material-instance) (material-instance renderable layer)
+  (setf
+   (%fm:renderable-material-instance (handle-of *engine*) renderable layer)
+   material-instance))
 
 
 (defun destroy-renderable (renderable)

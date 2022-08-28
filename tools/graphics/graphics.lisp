@@ -3,7 +3,7 @@
 
 (defun make-material (material-name &key base-path
                                       debug
-                                      (target-api :all)
+                                      (target-api :opengl)
                                       (platform :all)
                                       (optimization :performance))
   (let ((source (with-output-to-string (out)
@@ -21,7 +21,7 @@
 
 
 (defun serialize-material (material-name &key base-path debug
-                                           (target-api :all)
+                                           (target-api :opengl)
                                            (platform :all)
                                            (optimization :performance))
   (let ((source (with-output-to-string (out)

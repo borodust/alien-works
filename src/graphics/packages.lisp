@@ -50,6 +50,8 @@
            #:renderable-builder-morphing
            #:renderable-builder-blend-order
            #:with-renderable-builder
+           #:renderable-manager
+           #:renderable-material-instance
 
            #:vertex-attribute-enum
            #:vertex-attribute-type-enum
@@ -318,6 +320,7 @@
 
    #:make-renderable
    #:destroy-renderable
+   #:renderable-material-instance
    #:transform-entity
 
    #:make-light
@@ -399,6 +402,8 @@
    #:define-vertex-shader
    #:define-fragment-shader
    #:prepare-material
+   #:register-material-listener
+   #:remove-material-listener
 
    #:vertex-world-normal
    #:vertex-world-position

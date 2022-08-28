@@ -1,6 +1,9 @@
 (cl:in-package :%alien-works.filament)
 
 
+(defun renderable-manager (engine)
+  (%filament:get-renderable-manager
+   '(claw-utils:claw-pointer %filament::engine) engine))
 
 ;;;
 ;;; RENDERABLE
@@ -119,3 +122,37 @@
                      '(!::engine !::entity)
                      steps
                      body)))
+
+
+(defmacro with-renderable-instance ((instance entity) renderable-manager &body body)
+  `(iffi:with-intricate-instance (,instance %filament::renderable-manager+instance)
+     (%filament:get-instance
+      :const
+      '(claw-utils:claw-pointer %filament::renderable-manager+instance) ,instance
+      '(claw-utils:claw-pointer %filament::renderable-manager) ,renderable-manager
+      '(claw-utils:claw-pointer %filament::utils+entity) ,entity)
+     ,@body))
+
+
+(defun renderable-material-instance (engine renderable layer)
+  (let ((manager (renderable-manager engine)))
+    (with-renderable-instance (instance renderable) manager
+      (%filament:get-material-instance-at
+       :const
+       '(claw-utils:claw-pointer %filament::renderable-manager) manager
+       '(claw-utils:claw-pointer %filament::renderable-manager+instance) instance
+       '%filament::size-t layer))))
+
+
+(defun (setf renderable-material-instance) (material-instance
+                                            engine
+                                            renderable
+                                            layer)
+  (let ((manager (renderable-manager engine)))
+    (with-renderable-instance (instance renderable) manager
+      (%filament:set-material-instance-at
+       '(claw-utils:claw-pointer %filament::renderable-manager) manager
+       '(claw-utils:claw-pointer %filament::renderable-manager+instance) instance
+       '%filament::size-t layer
+       '(claw-utils:claw-pointer %filament::material-instance) material-instance)))
+  material-instance)

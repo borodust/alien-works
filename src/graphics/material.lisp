@@ -5,13 +5,33 @@
 (defvar *material-parameters-registry* (make-hash-table)
   "Must only be accessed from main thread")
 
-
 (defvar *material-registry* (mt:make-guarded-reference (make-hash-table)))
+
+(defvar *material-listeners* (mt:make-guarded-reference (make-hash-table)))
+
+
+(defun register-material-listener (material-name listener)
+  (mt:with-guarded-reference (listeners *material-listeners*)
+    (pushnew listener (gethash material-name listeners))))
+
+
+(defun remove-material-listener (material-name listener)
+  (mt:with-guarded-reference (listeners *material-listeners*)
+    (a:deletef (gethash material-name listeners) listener)))
+
+
+(defun invoke-material-listeners (material-name)
+  (push-engine-task
+   (lambda ()
+     (mt:with-guarded-reference (listeners *material-listeners*)
+       (dolist (listener (gethash material-name listeners))
+         (funcall listener))))))
 
 
 (defun register-material (name value)
   (mt:with-guarded-reference (registry *material-registry*)
-    (setf (gethash name registry) value)))
+    (setf (gethash name registry) value))
+  (invoke-material-listeners name))
 
 
 (defmacro with-material ((var name) &body body)
@@ -159,7 +179,8 @@
                              parameters))))
       (ecase stage
         (:vertex (setf vertex-shader shader-name))
-        (:fragment (setf fragment-shader shader-name))))))
+        (:fragment (setf fragment-shader shader-name))))
+    (invoke-material-listeners material-name)))
 
 
 (defun update-material-vertex-shader (material-name stage parameters)
