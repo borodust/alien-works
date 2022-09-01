@@ -9,7 +9,9 @@
 
            #:make-shared-context-thread
            #:window-graphics-context
-           #:window-surface))
+           #:window-surface
+
+           #:write-foreign-array))
 
 
 (cl:defpackage :alien-works.host

@@ -174,6 +174,11 @@
   (declare (ignore this)))
 
 
+(defun write-foreign-array (array-ptr array-size host-output-stream)
+  (%sdl:r-wwrite (%handle-of host-output-stream) array-ptr array-size 1)
+  (values))
+
+
 (defun open-host-file (location &key (direction :input) size)
   (ecase direction
     (:input (make-instance 'host-input-stream :location location :size size :direction :input))
@@ -1056,7 +1061,7 @@ Returns -32768 to 32767 for sticks and 0 to 32767 for triggers"
          (add-known-foreign-library-directories)
          (u:reload-foreign-libraries)
          (cl-opengl-library:load-opengl-library)
-         (loop with args = (uiop:command-line-arguments)
+           (loop with args = (uiop:command-line-arguments)
                for hook in *init-hooks*
                do (apply hook args)))
     (bodge-blobs-support:close-foreign-libraries)

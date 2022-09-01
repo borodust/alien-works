@@ -13,7 +13,6 @@
                #:aw-sdl
                #:aw-glm
                #:aw-filament/runtime
-               #:aw-stb/image
                #:aw-physx
                #:aw-chipmunk
                #:aw-skia
@@ -97,7 +96,8 @@
                                            (:file "camera")
                                            (:file "skybox")
                                            (:file "texture")
-                                           (:file "light")))
+                                           (:file "light")
+                                           (:file "image")))
                              (:module "skia"
                               :serial t
                               :components ((:file "skia")))
@@ -134,15 +134,15 @@
   :depends-on (#:alien-works
                #:alien-works-foundation/tools
                #:aw-filament/tools
-               #:aw-assimp
-               #:aw-stb/image-write)
+               #:aw-assimp)
   :serial t
   :pathname "tools/"
   :components ((:module "graphics"
                 :serial t
                 :components ((:file "packages")
                              (:module "filament"
-                              :components ((:file "material")))
+                              :components ((:file "image")
+                                           (:file "material")))
                              (:file "graphics")))
                (:module "resources"
                 :serial t

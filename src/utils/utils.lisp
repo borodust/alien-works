@@ -40,7 +40,8 @@
            #:perform-foreign-callback
 
            #:unquote
-           #:symbolicate*))
+           #:symbolicate*
+           #:without-float-traps))
 
 (cl:in-package :alien-works.utils)
 
@@ -310,3 +311,8 @@
          (funcall callback)
       (remhash id *callback-table*))
     (error "Callback with id ~A not found" id)))
+
+
+(defmacro without-float-traps (&body body)
+  `(float-features:with-float-traps-masked t
+     ,@body))

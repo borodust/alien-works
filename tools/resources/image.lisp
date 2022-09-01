@@ -1,74 +1,24 @@
 (cl:in-package :alien-works.tools.resources)
 
 
-(defclass image ()
-  ((name :initarg :name :initform (error ":name missing") :reader image-name)
-   (data :initarg :data :initform (error ":data missing") :reader image-data)
-   (width :initarg :width :initform (error ":width missing") :reader image-width)
-   (height :initarg :height :initform (error ":height missing") :reader image-height)
-   (channels :initarg :channels :initform (error ":channels missing") :reader image-channels)))
+(defun load-image (path)
+  (%awt.fm:decode-image (alexandria:read-file-into-byte-vector path)))
 
 
-(defun load-image (name path &key (premultiply-alpha t))
-  (cref:c-with ((width :int)
-                (height :int)
-                (channels :int))
-    (cffi:with-foreign-string (path (namestring path))
-      (%stb.image:set-unpremultiply-on-load 1)
-      (let ((data (%stb.image:load path (width &) (height &) (channels &) 0)))
-        (when (and (= channels 4) premultiply-alpha)
-          (loop for pixel = data then (cffi:inc-pointer pixel channels)
-                for idx from 0 below (* width height)
-                do (cref:c-val ((pixel :uint8))
-                     (let ((alpha (denormalize-uint8 (pixel 3))))
-                       (setf (pixel 0) (floor (* (pixel 0) alpha))
-                             (pixel 1) (floor (* (pixel 1) alpha))
-                             (pixel 2) (floor (* (pixel 2) alpha)))))))
-        (make-instance 'image
-                       :name name
-                       :data data
-                       :width width
-                       :height height
-                       :channels channels)))))
-
-
-(defun load-image-from-octet-vector (name data &key (premultiply-alpha t))
-  (cref:c-with ((width :int)
-                (height :int)
-                (channels :int))
-    (%stb.image:set-unpremultiply-on-load 1)
-    (u:with-pinned-array-pointer (ptr data)
-      (let ((data (%stb.image:load-from-memory ptr (length data) (width &) (height &) (channels &) 0)))
-        (when (and (= channels 4) premultiply-alpha)
-          (loop for pixel = data then (cffi:inc-pointer pixel channels)
-                for idx from 0 below (* width height)
-                do (cref:c-val ((pixel :uint8))
-                     (let ((alpha (denormalize-uint8 (pixel 3))))
-                       (setf (pixel 0) (floor (* (pixel 0) alpha))
-                             (pixel 1) (floor (* (pixel 1) alpha))
-                             (pixel 2) (floor (* (pixel 2) alpha)))))))
-        (make-instance 'image
-                       :name name
-                       :data data
-                       :width width
-                       :height height
-                       :channels channels)))))
+(defun load-image-from-octet-vector (data)
+  (%awt.fm:decode-image data))
 
 
 (defun save-image (image path)
-  (%stb.image.write:write-png (namestring path)
-                              (image-width image)
-                              (image-height image)
-                              (image-channels image)
-                              (image-data image)
-                              0))
+  (host:with-open-host-file (out path :direction :output)
+    (%host:write-foreign-array (%awt.fm:image-data-ptr image)
+                               (%awt.fm:image-data-size image)
+                               out)))
 
 
 (defun read-image-into-octet-vector (image)
-  (let* ((data-ptr (image-data image))
-         (data-size (* (image-width image)
-                       (image-height image)
-                       (image-channels image)))
+  (let* ((data-ptr (%awt.fm:image-data-ptr image))
+         (data-size (%awt.fm:image-data-size image))
          (result (make-array data-size :element-type '(unsigned-byte 8))))
     (u:with-pinned-array-pointer (result-ptr result)
       (alien-works:memcpy result-ptr data-ptr data-size))
@@ -76,36 +26,30 @@
 
 
 (defun encode-image-octet-vector-into-png (data width height channels)
-  (cref:c-with ((out-len :int))
-    (u:with-pinned-array-pointer (data-ptr data)
-      (let ((encoded-ptr (%stb.image.write:write-png-to-mem data-ptr
-                                                            0
-                                                            width
-                                                            height
-                                                            channels
-                                                            (out-len &)))
-            (result (make-array out-len :element-type '(unsigned-byte 8))))
-        (u:with-pinned-array-pointer (result-ptr result)
-          (alien-works:memcpy result-ptr encoded-ptr out-len))
-        result))))
-
-
-(defun destroy-image (image)
-  (with-slots (data) image
-    (%stb.image:image-free data)))
+  (let ((image (%awt.fm:make-image width height channels)))
+    (unwind-protect
+         (alien-works:with-memory-vector (tmp
+                                          (%awt.fm:image-data-size image))
+           (u:with-pinned-array-pointer (data-ptr data)
+             (host:memcpy (%awt.fm:image-data-ptr image)
+                          data-ptr
+                          (%awt.fm:image-data-size image)))
+           (let ((written (%awt.fm:encode-image image tmp :format :png)))
+             (make-array written :element-type '(unsigned-byte 8)
+                                 :initial-contents tmp))))))
 
 
 (defun images-to-cubemap-cross (px-path nx-path py-path ny-path pz-path nz-path
                                 target-path)
   (let* ((images (loop for path in (list px-path nx-path py-path ny-path pz-path nz-path)
-                       collect (load-image (file-namestring path) path)))
-         (width (image-width (first images)))
-         (height (image-height (first images)))
-         (channels (image-channels (first images))))
+                       collect (load-image path)))
+         (width (%awt.fm:image-width (first images)))
+         (height (%awt.fm:image-height (first images)))
+         (channels (%awt.fm:image-channels (first images))))
     (loop for image in images
-          unless (and (= (image-width image) width)
-                      (= (image-height image) height)
-                      (= (image-channels image) channels))
+          unless (and (= (%awt.fm:image-width image) width)
+                      (= (%awt.fm:image-height image) height)
+                      (= (%awt.fm:image-channels image) channels))
             do (error "Cubemap face image with wrong dimensions found"))
     (let* ((target-width (* width 4))
            (target-height (* height 3))
@@ -117,7 +61,7 @@
                      (y (* y-sector height)))
                  (loop with dst-stride = (* target-width channels)
                        with src-stride = (* width channels)
-                       with src-data = (image-data image)
+                       with src-data = (%awt.fm:image-data-ptr image)
                        for j below height
                        for dst-ptr = (cffi:inc-pointer target-data (+ (* x channels) (* y dst-stride)))
                          then (cffi:inc-pointer dst-ptr dst-stride)

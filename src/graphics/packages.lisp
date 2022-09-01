@@ -5,7 +5,10 @@
                     (:m :alien-works.math)
                     (:cref :cffi-c-ref))
   (:use :cl)
-  (:export #:create-engine
+  (:export #:warp-intricate-builder-option
+           #:explode-builder
+
+           #:create-engine
            #:destroy-engine
 
            #:with-material-builder
@@ -196,7 +199,10 @@
            #:compare-func-enum
 
            #:make-sampler
-           #:destroy-sampler))
+           #:destroy-sampler
+
+           #:with-compressed-texture-decoder
+           #:decode-compressed-texture))
 
 
 (cl:defpackage :%alien-works.skia
@@ -442,7 +448,7 @@
 
    #:make-typefac
    #:destroy-typeface
-
+p
    #:make-canvas
    #:destroy-canvas
    #:canvas-texture

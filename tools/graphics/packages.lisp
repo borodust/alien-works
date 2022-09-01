@@ -2,12 +2,23 @@
   (:local-nicknames (:a :alexandria)
                     (:! :alien-works.utils.empty)
                     (:u :alien-works.utils)
-                    (:m :alien-works.math))
+                    (:m :alien-works.math)
+                    (:%aw.fm :%alien-works.filament))
   (:use :cl)
   (:export #:serialize-material
            #:material-data-pointer
            #:material-data-size
-           #:with-serialized-material-data))
+           #:with-serialized-material-data
+
+           #:make-image
+           #:image-width
+           #:image-height
+           #:image-channels
+           #:image-data-ptr
+           #:image-data-size
+           #:destroy-image
+           #:decode-image
+           #:encode-image))
 
 
 (cl:defpackage :alien-works.tools.graphics
@@ -24,5 +35,21 @@
                     (:%mem :%alien-works.memory)
                     (:host :alien-works.host))
   (:use :cl)
+  (:import-from :%alien-works.tools.filament
+                #:make-image
+                #:image-width
+                #:image-height
+                #:image-channels
+                #:destroy-image
+                #:decode-image
+                #:encode-image)
   (:export #:make-material
-           #:serialize-material))
+           #:serialize-material
+
+           #:make-image
+           #:image-width
+           #:image-height
+           #:image-channels
+           #:destroy-image
+           #:decode-image
+           #:encode-image))

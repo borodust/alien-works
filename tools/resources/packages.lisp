@@ -5,8 +5,11 @@
                     (:cref :cffi-c-ref)
                     (:u :alien-works.utils)
                     (:m :alien-works.math)
+                    (:%awt.fm :%alien-works.tools.filament)
+                    (:%host :%alien-works.host)
                     (:host :alien-works.host)
-                    (:%ai :%assimp))
+                    (:%ai :%assimp)
+                    (:% :%assimp))
   (:use :cl)
   (:export #:resize-file
            #:parse-scene
@@ -37,13 +40,6 @@
            #:load-image-from-octet-vector
            #:read-image-into-octet-vector
            #:encode-image-octet-vector-into-png
-           #:destroy-image
-
-           #:image-name
-           #:image-data
-           #:image-width
-           #:image-height
-           #:image-channels
 
            #:images-to-cubemap-cross
 
