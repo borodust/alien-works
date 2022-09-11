@@ -528,7 +528,7 @@
 ;;; EVENTS
 ;;;
 (defun handle-events (handler)
-  (loop while (> (%sdl:poll-event *event*) 0)
+  (loop until (zerop (%sdl:poll-event *event*))
         do (funcall handler *event*)))
 
 
@@ -674,6 +674,10 @@
 
 (define-event-accessor event-key-scan-code (:keyboard-button-down :keyboard-button-up) (event)
   (keymod->host (cref:c-ref event %sdl:event :key :keysym :scancode)))
+
+
+(define-event-accessor event-text-input (:text-input) (event)
+  (cffi:foreign-string-to-lisp (cref:c-ref event %sdl:event :text :text &)))
 
 
 (define-event-accessor event-game-controller-id (:game-controller-button-down

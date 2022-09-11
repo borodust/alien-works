@@ -48,6 +48,7 @@
            #:event-game-controller-button
            #:event-gamepad-id
            #:event-gamepad-button
+           #:event-text-input
 
            #:make-mouse-state
            #:mouse-state
