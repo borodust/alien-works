@@ -1,6 +1,9 @@
 (cl:in-package :%alien-works.tools.imgui)
 
 
+(declaim (special *context*))
+
+
 (u:define-enumval-extractor key-enum %imgui:im-gui-key-enum)
 (u:define-enumval-extractor style-var-enum %imgui:im-gui-style-var-enum)
 (u:define-enumval-extractor mouse-button-enum %imgui:im-gui-mouse-button-enum)
@@ -14,14 +17,14 @@
 ;;;
 ;;; HELPER
 ;;;
-(defun make-imgui-helper (filament-engine filament-view font-path)
+(defun make-imgui-helper (context filament-engine filament-view font-path)
   (iffi:with-intricate-instance (path %filament:utils+path
-                                  'claw-utils:claw-string (namestring font-path))
+                                      'claw-utils:claw-string (namestring font-path))
     (iffi:make-intricate-instance '%filament:im-gui-helper
                                   '(:pointer %filament:engine) filament-engine
                                   '(:pointer %filament:view) filament-view
                                   '(:pointer %filament:utils+path) path
-                                  '(:pointer %filament:im-gui-context) (cffi:null-pointer))))
+                                  '(:pointer %filament:im-gui-context) context)))
 
 
 (defun destroy-imgui-helper (helper)
@@ -38,7 +41,7 @@
 (defun update-font-atlas (helper engine)
   (%filament:create-atlas-texture
    '(claw-utils:claw-pointer %filament:im-gui-helper) helper
-   '(claw-utils:claw-pointer %filament::engine) engine))
+   '(claw-utils:claw-pointer %filament:engine) engine))
 
 
 (defun update-display-size (imgui-helper width height scale-x scale-y)
@@ -119,19 +122,38 @@
   (values))
 
 
-(defmacro with-io ((io) &body body)
-  `(let ((,io (%imgui:get-io)))
-     ,@body))
+(defun make-context ()
+  (%filament.imgui:create-context
+   '(claw-utils:claw-pointer %filament.imgui:im-font-atlas) nil))
 
 
-(defun init-io (io)
+(defun destroy-context (context)
+  (%filament.imgui:destroy-context
+   '(claw-utils:claw-pointer %filament.imgui:im-gui-context) context))
+
+
+(defmacro with-bound-context ((context) &body body)
+  (a:once-only (context)
+    (a:with-gensyms (prev-context)
+      `(let ((,prev-context (%imgui:get-current-context))
+             (*context* ,context))
+         (unwind-protect
+              (progn
+                (%imgui:set-current-context
+                 '(claw-utils:claw-pointer %filament.imgui:im-gui-context) ,context)
+                ,@body)
+           (%imgui:set-current-context
+            '(claw-utils:claw-pointer %filament.imgui:im-gui-context) ,prev-context))))))
+
+
+(defun initialize-context ()
   (iffi:with-intricate-slots %imgui:im-gui-io
       ((key-map %imgui:key-map)
        (set-clipboard-fn %imgui:set-clipboard-text-fn)
        (get-clipboard-fn %imgui:get-clipboard-text-fn)
        (ini-filename %imgui:ini-filename)
        (log-filename %imgui:log-filename))
-      io
+      (%imgui:get-io)
     (cref:c-val ((key-map :int))
       (setf (key-map (key-enum :tab)) (host:scancode :tab)
             (key-map (key-enum :left-arrow)) (host:scancode :left)
@@ -161,36 +183,36 @@
           log-filename (cffi:null-pointer))))
 
 
-(defun (setf font-scale) (scale io)
-  (iffi:with-intricate-slots %imgui:im-gui-io ((value %imgui:font-global-scale)) io
+(defun (setf font-scale) (scale)
+  (iffi:with-intricate-slots %imgui:im-gui-io ((value %imgui:font-global-scale)) (%imgui:get-io)
     (setf value (float scale 0f0))))
 
 
-(defun font-scale (io)
-  (iffi:with-intricate-slots %imgui:im-gui-io ((value %imgui:font-global-scale)) io
+(defun font-scale ()
+  (iffi:with-intricate-slots %imgui:im-gui-io ((value %imgui:font-global-scale)) (%imgui:get-io)
     value))
 
 
-(defun framebuffer-scale (io)
-  (iffi:with-intricate-slots %imgui:im-gui-io ((value %imgui:display-framebuffer-scale)) io
+(defun framebuffer-scale ()
+  (iffi:with-intricate-slots %imgui:im-gui-io ((value %imgui:display-framebuffer-scale)) (%imgui:get-io)
     (with-vec2 ((vec value) x y)
       (values x y))))
 
 
-(defun set-framebuffer-scale (io new-x &optional new-y)
-  (iffi:with-intricate-slots %imgui:im-gui-io ((value %imgui:display-framebuffer-scale)) io
+(defun set-framebuffer-scale (new-x &optional new-y)
+  (iffi:with-intricate-slots %imgui:im-gui-io ((value %imgui:display-framebuffer-scale)) (%imgui:get-io)
     (with-vec2 ((vec value) x y)
       (setf x (float new-x 0f0)
             y (float (or new-y new-x) 0f0))
       (values x y))))
 
 
-(defsetf framebuffer-scale (io) (x y)
-  `(set-framebuffer-scale ,io ,x ,y))
+(defsetf framebuffer-scale () (x y)
+  `(set-framebuffer-scale ,x ,@(when y `(,y))))
 
 
-(defun update-mouse-position (io x y)
-  (iffi:with-intricate-slots %imgui:im-gui-io ((mouse-pos %imgui:mouse-pos)) io
+(defun update-mouse-position (x y)
+  (iffi:with-intricate-slots %imgui:im-gui-io ((mouse-pos %imgui:mouse-pos)) (%imgui:get-io)
     (with-vec2 ((pos mouse-pos) mouse-x mouse-y)
       (if (and x y)
           (setf mouse-x (float x 0f0)
@@ -199,15 +221,14 @@
                 mouse-y +undefined-float+)))))
 
 
-(defun update-keyboard-buttons (io scan-code pressed-p shift-p alt-p ctrl-p super-p)
+(defun update-keyboard-buttons (scan-code pressed-p shift-p alt-p ctrl-p super-p)
   (iffi:with-intricate-slots %imgui:im-gui-io ((keys-down %imgui:keys-down)
-                                                        (key-shift %imgui:key-shift)
-                                                        (key-alt %imgui:key-alt)
-                                                        (key-ctrl %imgui:key-ctrl)
-                                                        (key-super %imgui:key-super))
-                             io
-
-    (assert (<= 0 scan-code 511)) ; see %imgui:keys-down array in ImGuiIO
+                                               (key-shift %imgui:key-shift)
+                                               (key-alt %imgui:key-alt)
+                                               (key-ctrl %imgui:key-ctrl)
+                                               (key-super %imgui:key-super))
+                             (%imgui:get-io)
+    (assert (<= 0 scan-code 511))       ; see %imgui:keys-down array in ImGuiIO
     (cref:c-val ((keys-down :bool))
       (setf (keys-down scan-code) (and pressed-p t)))
 
@@ -217,25 +238,25 @@
           key-super (and super-p t))))
 
 
-(defun update-mouse-buttons (io left-button-pressed-p right-button-pressed-p middle-button-pressed-p)
-  (iffi:with-intricate-slots %imgui:im-gui-io ((mouse-down %imgui:mouse-down)) io
+(defun update-mouse-buttons (left-button-pressed-p right-button-pressed-p middle-button-pressed-p)
+  (iffi:with-intricate-slots %imgui:im-gui-io ((mouse-down %imgui:mouse-down)) (%imgui:get-io)
     (cref:c-val ((mouse-down :bool))
       (setf (mouse-down 0) (and left-button-pressed-p t)
             (mouse-down 1) (and right-button-pressed-p t)
             (mouse-down 2) (and middle-button-pressed-p t)))))
 
 
-(defun update-mouse-wheel (io y-offset &optional x-offset)
+(defun update-mouse-wheel (y-offset &optional x-offset)
   (iffi:with-intricate-slots %imgui:im-gui-io ((mouse-wheel-x %imgui:mouse-wheel-h)
                                                (mouse-wheel-y %imgui:mouse-wheel))
-                             io
+                             (%imgui:get-io)
     (incf mouse-wheel-x (float (or x-offset 0f0) 0f0))
     (incf mouse-wheel-y (float y-offset 0f0))))
 
 
-(defun add-input-characters (io text)
+(defun add-input-characters (text)
   (%imgui:add-input-characters-utf8
-   '(claw-utils:claw-pointer %imgui:im-gui-io) io
+   '(claw-utils:claw-pointer %imgui:im-gui-io) (%imgui:get-io)
    'claw-utils:claw-string text))
 
 
@@ -263,20 +284,20 @@
     result-vec2))
 
 
-(defun add-default-font (io &key pixel-size)
-  (iffi:with-intricate-slots %imgui:im-gui-io ((fonts %imgui:fonts)) io
+(defun add-default-font (&key pixel-size)
+  (iffi:with-intricate-slots %imgui:im-gui-io ((fonts %imgui:fonts)) (%imgui:get-io)
     (iffi:with-intricate-instance (font-config %imgui:im-font-config)
       (iffi:with-intricate-slots %imgui:im-font-config ((%size-pixels %imgui:size-pixels)) font-config
         (when (numberp pixel-size)
           (setf %size-pixels (float pixel-size 0f0))))
       (%imgui:add-font-default
-       '(claw-utils:claw-pointer %filament.imgui::im-font-atlas) fonts
-       '(claw-utils:claw-pointer %filament.imgui::im-font-config) font-config))))
+       '(claw-utils:claw-pointer %filament.imgui:im-font-atlas) fonts
+       '(claw-utils:claw-pointer %filament.imgui:im-font-config) font-config))))
 
 
-(defun add-font-from-foreign (io foreign-data-ptr foreign-data-size pixel-size
+(defun add-font-from-foreign (foreign-data-ptr foreign-data-size pixel-size
                               &key transfer-ownership)
-  (iffi:with-intricate-slots %imgui:im-gui-io ((fonts %imgui:fonts)) io
+  (iffi:with-intricate-slots %imgui:im-gui-io ((fonts %imgui:fonts)) (%imgui:get-io)
     (iffi:with-intricate-instance (font-config %imgui:im-font-config)
       (iffi:with-intricate-slots %imgui:im-font-config ((owned-by-atlas %imgui:font-data-owned-by-atlas)
                                                         (oversample-h %imgui:oversample-h)
@@ -296,11 +317,11 @@
          '(claw-utils:claw-pointer %filament.imgui:im-wchar) (cffi:null-pointer))))))
 
 
-(defun add-font (io data pixel-size)
+(defun add-font (data pixel-size)
   (let* ((foreign-data-size (length data))
          (foreign-data-ptr (cffi:foreign-array-alloc
                             data `(:array :uint8 ,foreign-data-size))))
-    (add-font-from-foreign io foreign-data-ptr foreign-data-size pixel-size :transfer-ownership t)))
+    (add-font-from-foreign foreign-data-ptr foreign-data-size pixel-size :transfer-ownership t)))
 
 
 (defmacro with-font ((font) &body body)
@@ -542,7 +563,7 @@
                       :float (float (or min 0f0) 0f0)
                       :float (float (or max 1f0) 0f0)
                       'claw-utils:claw-string (or format "%.3f")
-                      '%filament.imgui::im-gui-slider-flags 0)))
+                      '%filament.imgui:im-gui-slider-flags 0)))
       (values fvalue changed-p))))
 
 
@@ -614,7 +635,7 @@
 (defun popup-open-p (id)
   (%imgui:is-popup-open
    'claw-utils:claw-string (string id)
-   '%filament.imgui::im-gui-popup-flags 0))
+   '%filament.imgui:im-gui-popup-flags 0))
 
 
 (defmacro with-popup ((id &key modal) &body body)

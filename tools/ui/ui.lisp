@@ -145,6 +145,7 @@
 (defclass ui ()
   ((view :initarg :view)
    (callback :initarg :callback)
+   (context :initarg :context)
    (imgui-helper :initarg :imgui)
    (keyboard-modifier-state :initform (host:make-keyboard-modifier-state))
    (touch-mouse :initform (make-instance 'touch-mouse-emulation))))
@@ -171,36 +172,41 @@
 (defun make-ui (&key scale touch-padding)
   (let* ((engine-handle (%alien-works.graphics:engine-handle))
          (view (%fm:create-view engine-handle))
-         (helper (%ui:make-imgui-helper engine-handle view "")))
-
-    (%ui:with-io (io)
-      (%ui:init-io io)
+         (context (%ui:make-context))
+         (helper (%ui:make-imgui-helper context engine-handle view "")))
+    (%ui:with-bound-context (context)
+      (%ui:initialize-context)
       (when scale
-        (setf (%ui:framebuffer-scale io) scale)))
+        (setf (%ui:framebuffer-scale) scale))
 
-    (let ((style (%ui:style)))
-      (when touch-padding
-        (%ui:update-touch-padding style touch-padding touch-padding))
-      ;; must be last
-      (when scale
-        (%ui:scale-style style scale)))
+      (let ((style (%ui:style)))
+        (when touch-padding
+          (%ui:update-touch-padding style touch-padding touch-padding))
+        ;; must be last
+        (when scale
+          (%ui:scale-style style scale)))
+
+      (%ui:update-font-atlas helper (%alien-works.graphics:engine-handle)))
 
     (make-instance 'ui :view view
                        :callback (iffi:make-intricate-callback 'ui-callback)
-                       :imgui helper)))
+                       :imgui helper
+                       :context context)))
 
 
 (defun destroy-ui (ui)
-  (with-slots (imgui-helper view callback) ui
-    (%ui:destroy-imgui-helper imgui-helper)
-    (let ((engine-handle (%alien-works.graphics:engine-handle)))
-      (%fm:destroy-view engine-handle view))
-    (%ui:destroy-ui-callback 'ui-callback callback)))
+  (with-slots (context imgui-helper view callback) ui
+    (%ui:with-bound-context (context)
+      (%ui:destroy-imgui-helper imgui-helper)
+      (let ((engine-handle (%alien-works.graphics:engine-handle)))
+        (%fm:destroy-view engine-handle view))
+      (%ui:destroy-ui-callback 'ui-callback callback))
+    (%ui:destroy-context context)))
 
 
 (defun update-ui-input (ui)
-  (with-slots (touch-mouse) ui
-    (%ui:with-io (io)
+  (with-slots (touch-mouse context) ui
+    (%ui:with-bound-context (context)
       (flet ((%clamp (value)
                (cond
                  ((< -0.00001 value 0.00001) 0)
@@ -208,30 +214,28 @@
                  (t 1/8))))
         (multiple-value-bind (x-scroll y-scroll)
             (read-touch-mouse-scroll touch-mouse)
-          (%ui:update-mouse-wheel io (%clamp y-scroll) (%clamp x-scroll)))))))
+          (%ui:update-mouse-wheel (%clamp y-scroll) (%clamp x-scroll)))))))
 
 
-(defun update-input-from-touch (io touch-mouse)
-  (%ui:update-mouse-buttons io
-                            (left-pressed-of touch-mouse)
+(defun update-input-from-touch (touch-mouse)
+  (%ui:update-mouse-buttons (left-pressed-of touch-mouse)
                             (right-pressed-of touch-mouse)
                             (middle-pressed-of touch-mouse))
-  (%ui:update-mouse-position io
-                             (x-of touch-mouse)
+  (%ui:update-mouse-position (x-of touch-mouse)
                              (y-of touch-mouse)))
 
 
 (defun handle-ui-event (ui event)
-  (with-slots (keyboard-modifier-state touch-mouse) ui
+  (with-slots (keyboard-modifier-state touch-mouse context) ui
     (host:keyboard-modifier-state keyboard-modifier-state)
     (let ((width (alien-works:window-width))
           (height (alien-works:window-height)))
-      (%ui:with-io (io)
+      (%ui:with-bound-context (context)
         (case (host:event-kind event)
           (:text-input
-           (%ui:add-input-characters io (%alien-works.host:event-input-foreign-text event)))
+           (%ui:add-input-characters (%alien-works.host:event-input-foreign-text event)))
           ((:keyboard-button-up :keyboard-button-down)
-           (%ui:update-keyboard-buttons io (host:scancode (host:event-key-scan-code event))
+           (%ui:update-keyboard-buttons (host:scancode (host:event-key-scan-code event))
                                         (eq (host:event-kind event) :keyboard-button-down)
                                         (host:keyboard-modifier-state-some-pressed-p
                                          keyboard-modifier-state :shift)
@@ -246,30 +250,29 @@
                  (pressed (eq (host:event-kind event) :mouse-button-down)))
              (macrolet ((pressed-p (btn)
                           `(and pressed (eq button ,btn))))
-               (%ui:update-mouse-buttons io
-                                         (pressed-p :left)
+               (%ui:update-mouse-buttons (pressed-p :left)
                                          (pressed-p :right)
                                          (pressed-p :middle)))))
           (:mouse-wheel
            (multiple-value-bind (y-offset x-offset) (host:event-mouse-wheel event)
-             (%ui:update-mouse-wheel io y-offset x-offset)))
+             (%ui:update-mouse-wheel y-offset x-offset)))
           (:mouse-motion
            (multiple-value-bind (x y)
                (host:event-mouse-position event)
-             (%ui:update-mouse-position io (1- x) (1- y))))
+             (%ui:update-mouse-position (1- x) (1- y))))
           ((:finger-down :finger-up)
            (update-touch-mouse-finger touch-mouse
                                       (host:event-finger-id event)
                                       (not (eq (host:event-kind event) :finger-up))
                                       (* (host:event-finger-x event) width)
                                       (* (host:event-finger-y event) height))
-           (update-input-from-touch io touch-mouse))
+           (update-input-from-touch touch-mouse))
           (:finger-motion
            (update-touch-mouse-motion touch-mouse
                                       (host:event-finger-id event)
                                       (* (host:event-finger-x-offset event) width)
                                       (* (host:event-finger-y-offset event) height))
-           (update-input-from-touch io touch-mouse))
+           (update-input-from-touch touch-mouse))
           (:simple-gesture
            (update-touch-mouse-multigesture touch-mouse
                                             (host:event-simple-gesture-finger-count event)
@@ -277,25 +280,27 @@
                                             (host:event-simple-gesture-rotation-offset event)
                                             (* (host:event-simple-gesture-x event) width)
                                             (* (host:event-simple-gesture-y event) height))
-           (update-input-from-touch io touch-mouse)))))))
+           (update-input-from-touch touch-mouse)))))))
 
 
 (defun render-ui (ui width height time-delta ui-callback
                    &key framebuffer-width framebuffer-height)
-  (with-slots (view imgui-helper callback) ui
-    (let ((framebuffer-width (or framebuffer-width width))
-          (framebuffer-height (or framebuffer-height height)))
-      (%fm:update-view-viewport view 0 0
-                                framebuffer-width framebuffer-height)
-      (%ui:update-display-size imgui-helper width height
-                               (/ framebuffer-width width)
-                               (/ framebuffer-height height)))
-    (let ((*ui-callback* ui-callback)
-          (*ui-cleanup* nil))
-      (%ui:render-imgui imgui-helper callback time-delta)
-      (when *ui-cleanup*
-        (funcall *ui-cleanup*)))
-    (%fm:render-view (%alien-works.graphics:renderer-handle) view)))
+  (with-slots (view imgui-helper callback context) ui
+    (%ui:with-bound-context (context)
+      (let ((framebuffer-width (or framebuffer-width width))
+            (framebuffer-height (or framebuffer-height height)))
+
+        (%fm:update-view-viewport view 0 0
+                                  framebuffer-width framebuffer-height)
+        (%ui:update-display-size imgui-helper width height
+                                 (/ framebuffer-width width)
+                                 (/ framebuffer-height height)))
+      (let ((*ui-callback* ui-callback)
+            (*ui-cleanup* nil))
+        (%ui:render-imgui imgui-helper callback time-delta)
+        (when *ui-cleanup*
+          (funcall *ui-cleanup*)))
+      (%fm:render-view (%alien-works.graphics:renderer-handle) view))))
 
 
 (defmacro ui ((ui width height time-delta &key
@@ -337,7 +342,7 @@
 
 
 (defun add-font (ui data pixel-size)
-  (with-slots (imgui-helper) ui
-    (%ui:with-io (io)
-      (prog1 (%ui:add-font io data (floor pixel-size))
+  (with-slots (imgui-helper context) ui
+    (%ui:with-bound-context (context)
+      (prog1 (%ui:add-font data (floor pixel-size))
         (%ui:update-font-atlas imgui-helper (%alien-works.graphics:engine-handle))))))

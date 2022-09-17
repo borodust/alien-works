@@ -16,8 +16,10 @@
            #:make-ui-callback
            #:destroy-ui-callback
 
-           #:with-io
-           #:init-io
+           #:make-context
+           #:destroy-context
+           #:initialize-context
+           #:with-bound-context
            #:update-mouse-position
            #:update-keyboard-buttons
            #:update-mouse-buttons

@@ -16,7 +16,8 @@
 
 (cl:defpackage :alien-works.utils
   (:local-nicknames (:a :alexandria)
-                    (:sv :static-vectors))
+                    (:sv :static-vectors)
+                    (:gray :trivial-gray-streams))
   (:use :cl)
   (:export #:enumval
            #:define-enumval-extractor
@@ -41,7 +42,10 @@
 
            #:unquote
            #:symbolicate*
-           #:without-float-traps))
+           #:without-float-traps
+
+           #:with-bounded-wrapped-input-stream
+           #:with-bounded-wrapped-output-stream))
 
 (cl:in-package :alien-works.utils)
 
@@ -316,3 +320,152 @@
 (defmacro without-float-traps (&body body)
   `(float-features:with-float-traps-masked t
      ,@body))
+
+
+;;;
+;;; BOUNDED STREAMS
+;;;
+
+
+(defclass bounded-wrapped-stream ()
+  ((stream :initarg :stream
+           :initform (a:required-argument :stream)
+           :reader %stream-of)
+   (bound :initarg :bound
+          :initform (a:required-argument :bound)
+          :reader %bound-of)))
+
+
+;;;
+;;; INPUT
+;;;
+(defclass bounded-wrapped-input-stream (bounded-wrapped-stream gray:fundamental-input-stream)
+  ((read :initform 0 :accessor %read-of)))
+
+
+(defmacro with-bounded-wrapped-input-stream ((bounded-var stream bound) &body body)
+  `(let ((,bounded-var (make-instance 'bounded-wrapped-input-stream :stream ,stream
+                                                                    :bound ,bound)))
+     ,@body))
+
+
+(defmethod gray:stream-clear-input ((this bounded-wrapped-input-stream))
+  (setf (%read-of this) 0)
+  (clear-input (%stream-of this)))
+
+
+(defmethod gray:stream-read-sequence ((this bounded-wrapped-input-stream) sequence start end &key)
+  (let* ((to-read (min (- end start) (- (%bound-of this) (%read-of this)))))
+    (incf (%read-of this) to-read)
+    (read-sequence sequence (%stream-of this) :start start :end (+ start to-read))))
+
+
+(defmethod gray:stream-read-byte ((this bounded-wrapped-input-stream))
+  (unless (= (%read-of this) (%bound-of this))
+    (let ((value (read-byte (%stream-of this) 'eof)))
+      (if (eq value 'eof)
+          :EOF
+          (progn
+            (incf (%read-of this))
+            value)))))
+
+
+(defmethod gray:stream-read-char ((this bounded-wrapped-input-stream))
+  (unless (= (%read-of this) (%bound-of this))
+    (let ((value (read-char (%stream-of this) 'eof)))
+      (if (eq value 'eof)
+          :EOF
+          (progn
+            (incf (%read-of this))
+            value)))))
+
+
+(defmethod gray:stream-unread-char ((this bounded-wrapped-input-stream) ch)
+  (unless (zerop (%read-of this))
+    (decf (%read-of this))
+    (unread-char ch (%stream-of this))))
+
+
+(defmethod gray:stream-file-position ((this bounded-wrapped-input-stream))
+  (file-position (%stream-of this)))
+
+
+(defmethod (setf gray:stream-file-position) (value (this bounded-wrapped-input-stream))
+  (file-position (%stream-of this) value))
+
+
+;;;
+;;; OUTPUT
+;;;
+(defclass bounded-wrapped-output-stream (bounded-wrapped-stream gray:fundamental-output-stream)
+  ((written :initform 0 :accessor %written-of)))
+
+
+(defmacro with-bounded-wrapped-output-stream ((bounded-var stream bound) &body body)
+  `(let ((,bounded-var (make-instance 'bounded-wrapped-output-stream :stream ,stream
+                                                                     :bound ,bound)))
+     ,@body))
+
+
+(defmethod gray:stream-write-byte ((this bounded-wrapped-output-stream) byte)
+  (unless (= (%written-of this) (%bound-of this))
+    (prog1 (write-byte byte (%stream-of this))
+      (incf (%written-of this)))))
+
+
+(defmethod gray:stream-write-char ((this bounded-wrapped-output-stream) char)
+  (unless (= (%written-of this) (%bound-of this))
+    (prog1 (write-char char (%stream-of this))
+      (incf (%written-of this)))))
+
+
+(defmethod gray:stream-write-sequence ((this bounded-wrapped-output-stream) sequence start end &key)
+  (let ((to-write (min
+                   (- end start)
+                   (- (%bound-of this) (%written-of this)) )))
+    (unless (zerop to-write)
+      (prog1 (write-sequence sequence (%stream-of this) :start start :end (+ start to-write))
+        (incf (%written-of this) to-write)))))
+
+
+(defmethod gray:stream-write-string ((this bounded-wrapped-output-stream) string &optional start end)
+  (let ((to-write (min
+                   (- end start)
+                   (- (%bound-of this) (%written-of this)) )))
+    (unless (zerop to-write)
+      (prog1 (write-string string (%stream-of this) :start start :end (+ start to-write))
+        (incf (%written-of this) to-write)))))
+
+
+(defmethod gray:stream-fresh-line ((this bounded-wrapped-output-stream))
+  (unless (= (%written-of this) (%bound-of this))
+    (prog1 (fresh-line (%stream-of this))
+      (incf (%written-of this)))))
+
+
+(defmethod gray:stream-terpri ((this bounded-wrapped-output-stream))
+  (unless (= (%written-of this) (%bound-of this))
+    (prog1 (terpri (%stream-of this))
+      (incf (%written-of this)))))
+
+
+(defmethod gray:stream-line-column ((this bounded-wrapped-output-stream))
+  (ignore-errors
+   (gray:stream-line-column (%stream-of this))))
+
+
+(defmethod gray:stream-start-line-p ((this bounded-wrapped-output-stream))
+  (ignore-errors
+   (gray:stream-start-line-p (%stream-of this))))
+
+
+(defmethod gray:stream-force-output ((this bounded-wrapped-output-stream))
+  (force-output (%stream-of this)))
+
+
+(defmethod gray:stream-finish-output ((this bounded-wrapped-output-stream))
+  (finish-output (%stream-of this)))
+
+
+(defmethod gray:stream-clear-output ((this bounded-wrapped-output-stream))
+  (clear-output (%stream-of this)))

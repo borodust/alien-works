@@ -6,7 +6,9 @@
                                  window-height)
   (handler-bind ((serious-condition (lambda (c)
                                       (format *error-output* "~%Unhandled serious condition:~%")
-                                      (dissect:present c *error-output*))))
+                                      (u:with-bounded-wrapped-output-stream
+                                          (bounded *error-output* 4096)
+                                        (dissect:present c bounded)))))
     (dissect:with-capped-stack ()
       (float-features:with-float-traps-masked t
         (%host:with-window (:title window-title
