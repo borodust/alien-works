@@ -71,6 +71,7 @@
            #:text-input
            #:float-input
            #:color-input
+           #:text-area
 
            #:with-menu-bar
            #:with-menu
@@ -126,6 +127,7 @@
                 #:float-input
                 #:text-input
                 #:color-input
+                #:text-area
 
                 #:with-style
                 #:style-window-rounding
@@ -179,6 +181,7 @@
            #:float-input
            #:text-input
            #:color-input
+           #:text-area
 
            #:with-style
            #:style-window-rounding

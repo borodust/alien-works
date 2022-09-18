@@ -513,13 +513,15 @@
                                                      '(:default-open))))))
 
 
-(defun tree-node (text &key open)
+(defun tree-node (text &key open leaf)
   (%imgui:tree-node-ex
    'claw-utils:claw-string (string text)
    '%filament.imgui:im-gui-tree-node-flags (apply #'tree-node-flags-enum
                                                   (append
                                                    (when open
-                                                     '(:default-open))))))
+                                                     '(:default-open))
+                                                   (when leaf
+                                                     '(:leaf))))))
 
 
 (defun tree-pop ()
@@ -618,6 +620,29 @@
                                                                      :enter-returns-true)
                            '%filament.imgui:im-gui-input-text-callback (cffi:null-pointer)
                            '(claw-utils:claw-pointer :void) (cffi:null-pointer))))
+     completed)))
+
+
+(defun text-area (label size &key text width height)
+  (let ((completed nil))
+    (values
+     (cffi:with-foreign-pointer-as-string (str-ptr size)
+       (if text
+           (cffi:lisp-string-to-foreign text str-ptr size)
+           (setf (cffi:mem-ref str-ptr :char 0) 0))
+       (with-vec2 (dimensions x y)
+         (setf x (float (or width 0) 0f0)
+               y (float (or height 0) 0f0))
+         (setf
+          completed
+          (%imgui:input-text-multiline
+           'claw-utils:claw-string (string label)
+           'claw-utils:claw-string str-ptr
+           '%filament.imgui:size-t size
+           '(claw-utils:claw-pointer %filament.imgui:im-vec2) dimensions
+           '%filament.imgui:im-gui-input-text-flags (input-text-flags-enum)
+           '%filament.imgui:im-gui-input-text-callback (cffi:null-pointer)
+           '(claw-utils:claw-pointer :void) (cffi:null-pointer)))))
      completed)))
 
 
