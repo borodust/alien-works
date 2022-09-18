@@ -39,6 +39,17 @@
   (%sdl:memset destination value size))
 
 
+(defun delay (msec)
+  (%sdl:delay (floor msec)))
+
+
+(defun timer-clicks-per-second ()
+  (%sdl:get-performance-frequency))
+
+
+(defun timer-clicks ()
+  (%sdl:get-performance-counter))
+
 ;;;
 ;;; STREAMS
 ;;;
