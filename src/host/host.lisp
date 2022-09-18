@@ -43,11 +43,11 @@
   (%sdl:delay (floor msec)))
 
 
-(defun timer-clicks-per-second ()
+(defun clock-clicks-per-second ()
   (%sdl:get-performance-frequency))
 
 
-(defun timer-clicks ()
+(defun clock-clicks ()
   (%sdl:get-performance-counter))
 
 ;;;

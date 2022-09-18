@@ -124,4 +124,8 @@
            #:with-open-host-file
            #:read-host-file-into-static-vector
            #:read-host-file-into-shareable-vector
-           #:working-directory))
+           #:working-directory
+
+           #:delay
+           #:clock-clicks-per-second
+           #:clock-clicks))
