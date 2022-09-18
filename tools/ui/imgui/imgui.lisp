@@ -11,6 +11,7 @@
 (u:define-enumbit-combiner window-flags-enum %imgui:im-gui-window-flags-enum)
 (u:define-enumbit-combiner color-edit-flags-enum %imgui:im-gui-color-edit-flags-enum)
 (u:define-enumbit-combiner tree-node-flags-enum %imgui:im-gui-tree-node-flags-enum)
+(u:define-enumbit-combiner input-text-flags-enum %imgui:im-gui-input-text-flags-enum)
 
 (defvar +undefined-float+ (- (float %imgui:+flt-max+ 0f0)))
 
@@ -602,16 +603,22 @@
 
 
 (defun text-input (label size &key text)
-  (cffi:with-foreign-pointer-as-string (str-ptr size)
-    (if text
-        (cffi:lisp-string-to-foreign text str-ptr size)
-        (setf (cffi:mem-ref str-ptr :char 0) 0))
-    (%imgui:input-text 'claw-utils:claw-string (string label)
-                       'claw-utils:claw-string str-ptr
-                       '%filament.imgui:size-t size
-                       '%filament.imgui:im-gui-input-text-flags 0
-                       '%filament.imgui:im-gui-input-text-callback (cffi:null-pointer)
-                       '(claw-utils:claw-pointer :void) (cffi:null-pointer))))
+  (let ((completed nil))
+    (values
+     (cffi:with-foreign-pointer-as-string (str-ptr size)
+       (if text
+           (cffi:lisp-string-to-foreign text str-ptr size)
+           (setf (cffi:mem-ref str-ptr :char 0) 0))
+       (setf
+        completed
+        (%imgui:input-text 'claw-utils:claw-string (string label)
+                           'claw-utils:claw-string str-ptr
+                           '%filament.imgui:size-t size
+                           '%filament.imgui:im-gui-input-text-flags (input-text-flags-enum
+                                                                     :enter-returns-true)
+                           '%filament.imgui:im-gui-input-text-callback (cffi:null-pointer)
+                           '(claw-utils:claw-pointer :void) (cffi:null-pointer))))
+     completed)))
 
 
 (defun next-item-width (value)
