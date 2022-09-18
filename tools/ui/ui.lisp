@@ -195,13 +195,12 @@
 
 
 (defun destroy-ui (ui)
-  (with-slots (context imgui-helper view callback) ui
-    (%ui:with-bound-context (context)
-      (%ui:destroy-imgui-helper imgui-helper)
-      (let ((engine-handle (%alien-works.graphics:engine-handle)))
-        (%fm:destroy-view engine-handle view))
-      (%ui:destroy-ui-callback 'ui-callback callback))
-    (%ui:destroy-context context)))
+  (with-slots (imgui-helper view callback) ui
+    ;; context is destroyed in helper
+    ;; see ImGuiHelper::~ImGuiHelper
+    (%ui:destroy-imgui-helper imgui-helper)
+    (%fm:destroy-view (%alien-works.graphics:engine-handle) view)
+    (%ui:destroy-ui-callback 'ui-callback callback)))
 
 
 (defun update-ui-input (ui)
