@@ -5,7 +5,7 @@
 (cl:defpackage :alien-works.utils.empty
   (:use))
 
-(defpackage #:alien-works.cltl2
+(defpackage :alien-works.cltl2
   (:use #:cl
         #+sbcl #:sb-cltl2
         #+lispworks #:hcl
@@ -19,6 +19,8 @@
                     (:sv :static-vectors)
                     (:gray :trivial-gray-streams))
   (:use :cl)
+  (:import-from #:alien-works.cltl2
+                #:compiler-let)
   (:export #:enumval
            #:define-enumval-extractor
            #:enumbit
@@ -45,7 +47,9 @@
            #:without-float-traps
 
            #:with-bounded-wrapped-input-stream
-           #:with-bounded-wrapped-output-stream))
+           #:with-bounded-wrapped-output-stream
+
+           #:compiler-let))
 
 (cl:in-package :alien-works.utils)
 

@@ -487,12 +487,14 @@
      '(claw-utils:claw-pointer %imgui:im-vec2) vec)))
 
 
-(defun checkbox (text &optional checked)
+(defun checkbox (text &key checked)
   (cref:c-with ((fchecked :bool))
     (setf fchecked (and checked t))
-    (%imgui:checkbox
-     'claw-utils:claw-string (string text)
-     '(claw-utils:claw-pointer :bool) (fchecked &))))
+    (values
+     (%imgui:checkbox
+      'claw-utils:claw-string (string text)
+      '(claw-utils:claw-pointer :bool) (fchecked &))
+     fchecked)))
 
 
 (defun text (text &rest args)
