@@ -443,12 +443,15 @@
    #:fragment-micro-thickness
    #:fragment-ior
 
+   #:viewport-resolution
+   #:normalized-viewport-coordinates
+
 
    ;; 2D
 
    #:make-typefac
    #:destroy-typeface
-p
+
    #:make-canvas
    #:destroy-canvas
    #:canvas-texture

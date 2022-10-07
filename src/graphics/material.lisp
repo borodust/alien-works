@@ -771,6 +771,14 @@
   :pure t)
 
 
+(varjo:define-glsl-template-function viewport-resolution () :vec4
+  "getResolution()"
+  :pure t)
+(varjo:define-glsl-template-function normalized-viewport-coordinates () :vec3
+  "getNormalizedViewportCoord()"
+  :pure t)
+
+
 (varjo:define-glsl-template-function prepare-material
     ((material-inputs |MaterialInputs|)) :void
   "prepareMaterial(~A)")
