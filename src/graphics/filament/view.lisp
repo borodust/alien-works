@@ -83,10 +83,10 @@
 
 (defun update-view-viewport (view x y width height)
   (iffi:with-intricate-instance (viewport %filament:viewport
-                                          '%filament:int32-t (coerce x 'fixnum)
-                                          '%filament:int32-t (coerce y 'fixnum)
-                                          '%filament:uint32-t (coerce width 'fixnum)
-                                          '%filament:uint32-t (coerce height 'fixnum))
+                                          '%filament:int32-t (floor x)
+                                          '%filament:int32-t (floor y)
+                                          '%filament:uint32-t (floor width)
+                                          '%filament:uint32-t (floor height))
     (%filament:set-viewport
      '(claw-utils:claw-pointer %filament:view) view
      '(claw-utils:claw-pointer %filament:viewport) viewport)))

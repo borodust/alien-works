@@ -296,6 +296,40 @@
        '(claw-utils:claw-pointer %filament.imgui:im-font-config) font-config))))
 
 
+(defun font-atlas-width ()
+  (iffi:with-intricate-slots %imgui:im-gui-io
+      ((fonts %imgui:fonts))
+      (%imgui:get-io)
+    (iffi:with-intricate-slots %imgui:im-font-atlas
+        ((tex-width %imgui:tex-width))
+        fonts
+      tex-width)))
+
+
+(defun desired-font-atlas-width ()
+  (iffi:with-intricate-slots %imgui:im-gui-io
+      ((fonts %imgui:fonts))
+      (%imgui:get-io)
+    (iffi:with-intricate-slots %imgui:im-font-atlas
+        ((desired-width %imgui:tex-desired-width))
+        fonts
+      desired-width)))
+
+
+(defun (setf desired-font-atlas-width) (width)
+  (let ((width (round width)))
+    (unless (< (abs (nth-value 1 (truncate (log width 2))))
+               math:+epsilon+)
+      (error "Width must be power of 2"))
+    (iffi:with-intricate-slots %imgui:im-gui-io
+        ((fonts %imgui:fonts))
+        (%imgui:get-io)
+      (iffi:with-intricate-slots %imgui:im-font-atlas
+          ((desired-width %imgui:tex-desired-width))
+          fonts
+        (setf desired-width width)))))
+
+
 (defun add-font-from-foreign (foreign-data-ptr foreign-data-size pixel-size
                               &key transfer-ownership)
   (iffi:with-intricate-slots %imgui:im-gui-io ((fonts %imgui:fonts)) (%imgui:get-io)
@@ -306,8 +340,8 @@
                                                         (pixel-snap-h %imgui:pixel-snap-h))
                                  font-config
         (setf owned-by-atlas transfer-ownership
-              oversample-h 1
-              oversample-v 1
+              oversample-h 3
+              oversample-v 2
               pixel-snap-h t)
         (%imgui:add-font-from-memory-ttf
          '(claw-utils:claw-pointer %filament.imgui:im-font-atlas) fonts

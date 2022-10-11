@@ -147,6 +147,11 @@
    (callback :initarg :callback)
    (context :initarg :context)
    (imgui-helper :initarg :imgui)
+   (width :initform 0 :initarg :width)
+   (height :initform 0 :initarg :height)
+   (framebuffer-width :initform 0 :initarg :framebuffer-width)
+   (framebuffer-height :initform 0 :initarg :framebuffer-height)
+   (scale :initform 0f0 :initarg :scale)
    (keyboard-modifier-state :initform (host:make-keyboard-modifier-state))
    (touch-mouse :initform (make-instance 'touch-mouse-emulation))))
 
@@ -169,24 +174,55 @@
         (return-from ui (values))))))
 
 
-(defun make-ui (&key scale touch-padding)
+(defun update-ui-size (ui width height
+                        framebuffer-width framebuffer-height
+                        scale)
+  (with-slots (view context imgui-helper
+               (this-width width)
+               (this-height height)
+               (this-framebuffer-width framebuffer-width)
+               (this-framebuffer-height framebuffer-height)
+               (this-scale scale))
+      ui
+    (%ui:with-bound-context (context)
+      (unless (and (= width this-width)
+                   (= height this-height)
+                   (= framebuffer-width this-framebuffer-width)
+                   (= framebuffer-height this-framebuffer-height))
+        (let ((framebuffer-scale (float (/ framebuffer-width width) 0f0)))
+          (%fm:update-view-viewport view
+                                    0 0
+                                    framebuffer-width
+                                    framebuffer-height)
+          (%ui:update-display-size imgui-helper
+                                   width height
+                                   framebuffer-scale
+                                   framebuffer-scale)))
+      (unless (= scale this-scale)
+        (let ((adjusted-scale (float (* scale
+                                        (/ width framebuffer-width))
+                                     0f0))
+              (prev-adjusted-scale (if (zerop this-framebuffer-width)
+                                       1
+                                       (float (* this-scale
+                                                 (/ this-width this-framebuffer-width))
+                                              0f0)))
+              (style (%ui:style)))
+          (%ui:scale-style style (* (/ 1 prev-adjusted-scale) adjusted-scale))
+          (setf this-scale scale))))))
+
+
+(defun make-ui (&key touch-padding)
   (let* ((engine-handle (%alien-works.graphics:engine-handle))
          (view (%fm:create-view engine-handle))
          (context (%ui:make-context))
          (helper (%ui:make-imgui-helper context engine-handle view "")))
     (%ui:with-bound-context (context)
       (%ui:initialize-context)
-      (when scale
-        (setf (%ui:framebuffer-scale) scale))
 
       (let ((style (%ui:style)))
         (when touch-padding
-          (%ui:update-touch-padding style touch-padding touch-padding))
-        ;; must be last
-        (when scale
-          (%ui:scale-style style scale)))
-
-      (%ui:update-font-atlas helper (%alien-works.graphics:engine-handle)))
+          (%ui:update-touch-padding style touch-padding touch-padding))))
 
     (make-instance 'ui :view view
                        :callback (iffi:make-intricate-callback 'ui-callback)
@@ -282,18 +318,9 @@
            (update-input-from-touch touch-mouse)))))))
 
 
-(defun render-ui (ui width height time-delta ui-callback
-                   &key framebuffer-width framebuffer-height)
+(defun render-ui (ui time-delta ui-callback)
   (with-slots (view imgui-helper callback context) ui
     (%ui:with-bound-context (context)
-      (let ((framebuffer-width (or framebuffer-width width))
-            (framebuffer-height (or framebuffer-height height)))
-
-        (%fm:update-view-viewport view 0 0
-                                  framebuffer-width framebuffer-height)
-        (%ui:update-display-size imgui-helper width height
-                                 (/ framebuffer-width width)
-                                 (/ framebuffer-height height)))
       (let ((*ui-callback* ui-callback)
             (*ui-cleanup* nil))
         (%ui:render-imgui imgui-helper callback time-delta)
@@ -302,14 +329,8 @@
       (%fm:render-view (%alien-works.graphics:renderer-handle) view))))
 
 
-(defmacro ui ((ui width height time-delta &key
-                framebuffer-width framebuffer-height) &body body)
-  `(render-ui ,ui ,width ,height ,time-delta
-              (lambda () ,@body)
-              ,@(when framebuffer-width
-                  `(:framebuffer-width ,framebuffer-width))
-              ,@(when framebuffer-height
-                  `(:framebuffer-height ,framebuffer-height))))
+(defmacro ui ((ui time-delta) &body body)
+  `(render-ui ,ui ,time-delta (lambda () ,@body)))
 
 
 (defmacro rows (() &body rows)

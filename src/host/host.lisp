@@ -384,12 +384,12 @@
 
 (defun call-with-window (callback &key title width height)
   (%sdl:set-main-ready)
+  (%init-host)
   (unless (zerop (%sdl:init (logior %sdl:+init-timer+
                                     %sdl:+init-video+
                                     %sdl:+init-gamecontroller+
                                     %sdl:+init-haptic+)))
     (error "Failed to initialize SDL"))
-  (%init-host)
 
   (%sdl:gl-set-attribute (gl-attr :share-with-current-context) 1)
   ;; TODO: move filament package somewhere else, probably

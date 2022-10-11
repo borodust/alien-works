@@ -1,7 +1,8 @@
 (cl:in-package :alien-works.host)
 
 
-(defun %init-host ())
+(defun %init-host ()
+  (%sdl:set-hint %sdl:+hint-windows-dpi-scaling+ "1"))
 
 
 (defun %window-surface (wm-info)

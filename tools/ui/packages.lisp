@@ -33,6 +33,8 @@
            #:add-font
            #:add-font-from-foreign
            #:with-font
+           #:font-atlas-width
+           #:desired-font-atlas-width
 
            #:framebuffer-scale
 
@@ -145,6 +147,7 @@
   (:export #:make-ui
            #:destroy-ui
            #:update-ui-input
+           #:update-ui-size
            #:handle-ui-event
            #:render-ui
            #:ui
