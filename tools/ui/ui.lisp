@@ -361,8 +361,10 @@
 
 
 
-(defun add-font (ui data pixel-size)
+(defun add-font (ui data pixel-size &key oversample)
   (with-slots (imgui-helper context) ui
     (%ui:with-bound-context (context)
-      (prog1 (%ui:add-font data (floor pixel-size))
-        (%ui:update-font-atlas imgui-helper (%alien-works.graphics:engine-handle))))))
+      (prog1 (%ui:add-font data (floor pixel-size)
+                           :oversample oversample)
+        (%ui:update-font-atlas imgui-helper
+                               (%alien-works.graphics:engine-handle))))))

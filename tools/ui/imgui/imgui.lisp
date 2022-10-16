@@ -331,7 +331,7 @@
 
 
 (defun add-font-from-foreign (foreign-data-ptr foreign-data-size pixel-size
-                              &key transfer-ownership)
+                              &key transfer-ownership oversample)
   (iffi:with-intricate-slots %imgui:im-gui-io ((fonts %imgui:fonts)) (%imgui:get-io)
     (iffi:with-intricate-instance (font-config %imgui:im-font-config)
       (iffi:with-intricate-slots %imgui:im-font-config ((owned-by-atlas %imgui:font-data-owned-by-atlas)
@@ -340,8 +340,8 @@
                                                         (pixel-snap-h %imgui:pixel-snap-h))
                                  font-config
         (setf owned-by-atlas transfer-ownership
-              oversample-h 3
-              oversample-v 2
+              oversample-h (round (* 2 (or oversample 1f0)))
+              oversample-v (round (* 1 (or oversample 1f0)))
               pixel-snap-h t)
         (%imgui:add-font-from-memory-ttf
          '(claw-utils:claw-pointer %filament.imgui:im-font-atlas) fonts
@@ -352,11 +352,13 @@
          '(claw-utils:claw-pointer %filament.imgui:im-wchar) (cffi:null-pointer))))))
 
 
-(defun add-font (data pixel-size)
+(defun add-font (data pixel-size &key oversample)
   (let* ((foreign-data-size (length data))
          (foreign-data-ptr (cffi:foreign-array-alloc
                             data `(:array :uint8 ,foreign-data-size))))
-    (add-font-from-foreign foreign-data-ptr foreign-data-size pixel-size :transfer-ownership t)))
+    (add-font-from-foreign foreign-data-ptr foreign-data-size pixel-size
+                           :transfer-ownership t
+                           :oversample oversample)))
 
 
 (defmacro with-font ((font) &body body)
