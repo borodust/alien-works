@@ -280,6 +280,7 @@
                     (:sv :static-vectors)
                     (:cref :cffi-c-ref)
                     (:m :alien-works.math)
+                    (:host :alien-works.host)
                     (:%host :%alien-works.host)
                     (:%graphics :%alien-works.graphics)
                     (:%varjo :%alien-works.varjo))

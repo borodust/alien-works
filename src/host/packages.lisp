@@ -128,4 +128,5 @@
 
            #:delay
            #:clock-clicks-per-second
-           #:clock-clicks))
+           #:clock-clicks
+           #:within-clicks-frame))

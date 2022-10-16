@@ -391,10 +391,14 @@
 
 (defun maintain-canvas-context (ctx)
   (unwind-protect
-       (loop do (drain-tasks ctx)
-                (draw-canvases ctx)
-                ;; FIXME: need better delta time calc
-                (sleep 0.010)
+       (loop with prev-clicks = (host:clock-clicks)
+             with clicks-frame = (* #.(/ 1 60) (host:clock-clicks-per-second))
+             do (host:within-clicks-frame (current-clicks
+                                           clicks-frame
+                                           prev-clicks)
+                  (setf prev-clicks current-clicks)
+                  (drain-tasks ctx)
+                  (draw-canvases ctx))
              until (canvas-context-done-p ctx))
     (drain-tasks ctx)))
 

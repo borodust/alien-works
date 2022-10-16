@@ -50,6 +50,7 @@
 (defun clock-clicks ()
   (%sdl:get-performance-counter))
 
+
 ;;;
 ;;; STREAMS
 ;;;
@@ -1093,3 +1094,27 @@ Returns -32768 to 32767 for sticks and 0 to 32767 for triggers"
                                    `((&rest ,args-param)
                                      (declare (ignore ,args-param)))))
          ,@body))))
+
+;;;
+;;; CLICKS FRAME
+;;;
+(defun call-within-clicks-frame (clicks-frame previous-clicks action)
+  (let* ((current-clicks (clock-clicks))
+         (adjusted-clicks-frame (- clicks-frame
+                                   (min 0 (- current-clicks
+                                             previous-clicks
+                                             clicks-frame)))))
+    (funcall action current-clicks)
+    (let ((frame-clicks (- (clock-clicks) current-clicks)))
+      (when (< frame-clicks adjusted-clicks-frame)
+        (delay (floor (/ (- adjusted-clicks-frame frame-clicks)
+                            (/ (clock-clicks-per-second) 1000))))
+        (loop :with end-clicks = (+ adjusted-clicks-frame current-clicks)
+              :while (< (clock-clicks) end-clicks))))))
+
+
+(defmacro within-clicks-frame ((current-clicks-var clicks-frame
+                                &optional (previous-clicks 0))
+                               &body body)
+  `(call-within-clicks-frame ,clicks-frame ,(if previous-clicks previous-clicks 0)
+                             (lambda (,current-clicks-var) ,@body)))
