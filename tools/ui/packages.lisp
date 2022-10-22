@@ -94,7 +94,8 @@
                     (:host :alien-works.host)
                     (:%gx :%alien-works.graphics)
                     (:%fm :%alien-works.filament)
-                    (:%ui :%alien-works.tools.imgui))
+                    (:%ui :%alien-works.tools.imgui)
+                    (:%mem :%alien-works.memory))
   (:use :cl)
   (:import-from :%alien-works.tools.imgui
                 #:mouse-dragging-p
@@ -201,6 +202,7 @@
            #:focus-keyboard
 
            #:add-font
+           #:use-memory-vector-font
            #:with-font
 
            #:skip-ui-processing))

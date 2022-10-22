@@ -360,11 +360,32 @@
            (%ui:columns 1))))))
 
 
-
-(defun add-font (ui data pixel-size &key oversample)
+(defun %add-font (ui data-ptr data-size pixel-size &key
+                   oversample transfer-ownership)
   (with-slots (imgui-helper context) ui
     (%ui:with-bound-context (context)
-      (prog1 (%ui:add-font data (floor pixel-size)
-                           :oversample oversample)
+      (prog1 (%ui:add-font-from-foreign data-ptr data-size
+                                        (floor pixel-size)
+                                        :transfer-ownership transfer-ownership
+                                        :oversample oversample)
         (%ui:update-font-atlas imgui-helper
                                (%alien-works.graphics:engine-handle))))))
+
+
+(defun add-font (ui data pixel-size &key oversample)
+  (let* ((data-size (length data))
+         (data-ptr (cffi:foreign-alloc :uint8
+                                       :initial-contents data
+                                       :count data-size)))
+    (%add-font ui data-ptr data-size pixel-size
+               :oversample oversample
+               :transfer-ownership t)))
+
+
+
+(defun use-memory-vector-font (ui memvec pixel-size &key oversample)
+  (let* ((data-size (length memvec))
+         (data-ptr (%mem:memory-vector-pointer memvec)))
+    (%add-font ui data-ptr data-size pixel-size
+               :oversample oversample
+               :transfer-ownership nil)))

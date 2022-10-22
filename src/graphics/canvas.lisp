@@ -274,10 +274,11 @@
         (~texture (triple-buffered-value-prepared tritex))
         (~texture (triple-buffered-value-back tritex))))))
 
-
 (defun draw-canvas (canvas framebuffer)
-  (let ((front-command-queue (swap-triple-buffered-value (%canvas-triple-command-queue canvas)))
-        (back-texture (triple-buffered-value-back (%canvas-triple-texture canvas)))
+  (let ((front-command-queue (swap-triple-buffered-value
+                              (%canvas-triple-command-queue canvas)))
+        (back-texture (triple-buffered-value-back
+                       (%canvas-triple-texture canvas)))
         (width (%canvas-width canvas))
         (height (%canvas-height canvas))
         (framebuffer-width (%canvas-framebuffer-width canvas))
@@ -293,15 +294,16 @@
             (%aw.skia:*paint* nil)
             (%aw.skia:*font* nil))
         (%push-paint)
+        (%aw.skia:save-transform)
         (unwind-protect
              (progn
-               (%aw.skia:save-transform)
-               (%aw.skia:scale (/ framebuffer-width width) (/ framebuffer-height height))
+               (%aw.skia:scale (/ framebuffer-width width)
+                               (/ framebuffer-height height))
                (drain-draw-commands front-command-queue))
-          (%pop-paint)
-          (%aw.skia:reset-transform))
-        (%aw.skia:flush-context (canvas-context-handle (%canvas-context canvas))))
-
+          (%aw.skia:reset-transform)
+          (%pop-paint))
+        (%aw.skia:flush-context (canvas-context-handle
+                                 (%canvas-context canvas))))
       (flush-framebuffer framebuffer)
       (prepare-triple-buffered-value (%canvas-triple-texture canvas)))))
 

@@ -76,16 +76,19 @@
      ,@body))
 
 
-(defun make-memory-vector (length &optional (type :uint8))
+(defun make-memory-vector (length &key (type :uint8) initial-contents)
   (sv:make-static-vector (* length (find-foreign-type type))
-                         :element-type '(unsigned-byte 8)))
+                         :element-type '(unsigned-byte 8)
+                         :initial-contents initial-contents))
 
 
-(define-compiler-macro make-memory-vector (&whole whole length &optional (type :uint8))
+(define-compiler-macro make-memory-vector (&whole whole length &key (type :uint8) initial-contents)
   (let ((actual-type (find-foreign-type (u:unquote type))))
     (if actual-type
         `(sv:make-static-vector (* ,length ,(cffi:foreign-type-size actual-type))
-                                :element-type '(unsigned-byte 8))
+                                :element-type '(unsigned-byte 8)
+                                ,@(when initial-contents
+                                    `(:initial-contents ,initial-contents)))
         whole)))
 
 

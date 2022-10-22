@@ -354,8 +354,7 @@
 
 (defun add-font (data pixel-size &key oversample)
   (let* ((foreign-data-size (length data))
-         (foreign-data-ptr (cffi:foreign-array-alloc
-                            data `(:array :uint8 ,foreign-data-size))))
+         (foreign-data-ptr (cffi:foreign-alloc :uint8 :initial-contents data :count foreign-data-size)))
     (add-font-from-foreign foreign-data-ptr foreign-data-size pixel-size
                            :transfer-ownership t
                            :oversample oversample)))
