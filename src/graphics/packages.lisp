@@ -450,7 +450,7 @@
 
    ;; 2D
 
-   #:make-typefac
+   #:make-typeface
    #:destroy-typeface
 
    #:make-canvas
