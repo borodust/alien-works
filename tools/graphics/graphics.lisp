@@ -38,3 +38,17 @@
                      (%gxs:material-data-pointer material-data)
                      (length serialized-mat-data))
         serialized-mat-data))))
+
+
+(defun prepare-texture (image)
+  (%gxs:with-compressed-texture-encoder-builder
+      (((%build-encoder :instance builder) 1 1))
+    (%gxs:compressed-texture-encoder-builder-linear builder t)
+    (%gxs:compressed-texture-encoder-builder-mip-level builder 0 0 image)
+    (let ((encoder (%build-encoder)))
+      (multiple-value-bind (data-ptr size)
+          (%gxs:encode-compressed-texture encoder)
+        (let ((encoded (cffi:make-shareable-byte-vector size)))
+          (cffi:with-pointer-to-vector-data (encoded-ptr encoded)
+            (host:memcpy encoded-ptr data-ptr size))
+          encoded)))))

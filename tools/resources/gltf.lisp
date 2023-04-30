@@ -37,34 +37,18 @@
      '(claw-utils:claw-pointer (claw-utils:claw-pointer %filament::gltfio+asset-loader)) (ptr &))))
 
 
-(defun load-text-gltf-model-from-byte-vector (loader data)
+(defun load-gltf-model-from-byte-vector (loader data)
   (u:with-pinned-array-pointer (ptr data)
-    (%filament:gltfio+create-asset-from-json
+    (%filament:gltfio+create-asset
      '(claw-utils:claw-pointer %filament::gltfio+asset-loader) loader
      '(claw-utils:claw-pointer %filament::uint8-t) ptr
      '%filament::uint32-t (length data))))
 
 
-(defun load-binary-gltf-model-from-byte-vector (loader data)
-  (u:with-pinned-array-pointer (ptr data)
-    (%filament:gltfio+create-asset-from-binary
-     '(claw-utils:claw-pointer %filament::gltfio+asset-loader) loader
-     '(claw-utils:claw-pointer %filament::uint8-t) ptr
-     '%filament::uint32-t (length data))))
-
-
-(defun load-text-gltf-model (loader path)
-  (let ((data (host:read-host-file-into-static-vector path :element-type '(unsigned-byte 8))))
-
-    (unwind-protect
-         (load-text-gltf-model-from-byte-vector loader data)
-      (sv:free-static-vector data))))
-
-
-(defun load-binary-gltf-model (loader path)
+(defun load-gltf-model (loader path)
   (let ((data (host:read-host-file-into-static-vector path :element-type '(unsigned-byte 8))))
     (unwind-protect
-         (load-binary-gltf-model-from-byte-vector loader data)
+         (load-gltf-model-from-byte-vector loader data)
       (sv:free-static-vector data))))
 
 

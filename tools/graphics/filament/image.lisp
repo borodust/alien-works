@@ -61,7 +61,10 @@
        '(claw-utils:claw-pointer %filament.util:uint8-t) data-ptr
        '%filament.util:size-t (length byte-vector)
        '%filament.util:image+image-decoder+color-space color-space)
-      image)))
+      (if (zerop (image-data-size image))
+          (prog1 nil
+            (destroy-image image))
+          image))))
 
 
 (defun encode-image (image byte-vector &key (format :png))
@@ -73,7 +76,6 @@
                     '(claw-utils:claw-pointer %filament.util:image+linear-image) image)))
       (when (> written 0)
         written))))
-
 
 
 (%aw.fm:warp-intricate-builder-option compressed-texture-encoder-builder :linear

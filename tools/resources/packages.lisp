@@ -47,8 +47,7 @@
            #:destroy-material-provider
            #:make-gltf-loader
            #:destroy-gltf-loader
-           #:load-text-gltf-model-from-byte-vector
-           #:load-binary-gltf-model-from-byte-vector
+           #:load-gltf-model-from-byte-vector
            #:destroy-gltf-model
            #:add-scene-gltf-model
            #:remove-scene-gltf-model

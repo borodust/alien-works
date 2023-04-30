@@ -521,6 +521,14 @@
       (%build (handle-of *engine*)))))
 
 
+(defun restore-texture (octet-vector &key (internal-format :etc2-eac-rgba8)
+                                       (transfer-function :linear))
+  (%fm:with-compressed-texture-decoder (decoder (handle-of *engine*) internal-format)
+    (let ((result (%fm:decode-compressed-texture decoder octet-vector transfer-function)))
+      (unless (cffi:null-pointer-p result)
+        result))))
+
+
 (defun destroy-texture (texture)
   (%fm:destroy-texture (handle-of *engine*) texture))
 

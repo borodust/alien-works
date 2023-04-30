@@ -5,9 +5,9 @@
                                           &body body)
   (a:once-only (engine)
     `(iffi:with-intricate-instance
-         (reader %filament:ktxreader+ktx2reader
-                 (claw-utils:claw-pointer %filament::ktxreader+ktx2reader+engine) ,engine
-                 :bool t)
+         (,decoder-var %filament:ktxreader+ktx2reader
+                       '(claw-utils:claw-pointer %filament::ktxreader+ktx2reader+engine) ,engine
+                       :bool nil)
        (%filament:ktxreader+request-format
         '(claw-utils:claw-pointer %filament::ktxreader+ktx2reader) ,decoder-var
         '%filament::texture+internal-format ,internal-format)

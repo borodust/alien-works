@@ -338,6 +338,7 @@
    #:destroy-indirect-light
 
    #:make-texture
+   #:restore-texture
    #:update-texture-image
    #:update-cubemap-images
    #:generate-texture-mipmaps

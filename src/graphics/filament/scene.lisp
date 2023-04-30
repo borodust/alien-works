@@ -14,6 +14,7 @@
 
 (defun scene-skybox (scene)
   (%filament::get-skybox
+   :const
    '(claw-utils:claw-pointer %filament::scene) scene))
 
 

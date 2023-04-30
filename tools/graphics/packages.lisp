@@ -18,7 +18,12 @@
            #:image-data-size
            #:destroy-image
            #:decode-image
-           #:encode-image))
+           #:encode-image
+
+           #:with-compressed-texture-encoder-builder
+           #:compressed-texture-encoder-builder-linear
+           #:compressed-texture-encoder-builder-mip-level
+           #:encode-compressed-texture))
 
 
 (cl:defpackage :alien-works.tools.graphics
@@ -52,4 +57,5 @@
            #:image-channels
            #:destroy-image
            #:decode-image
-           #:encode-image))
+           #:encode-image
+           #:prepare-texture))
