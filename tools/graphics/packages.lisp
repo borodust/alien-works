@@ -49,7 +49,7 @@
                 #:decode-image
                 #:encode-image)
   (:export #:make-material
-           #:serialize-material
+           #:encode-material
 
            #:make-image
            #:image-width
@@ -58,4 +58,4 @@
            #:destroy-image
            #:decode-image
            #:encode-image
-           #:prepare-texture))
+           #:encode-texture))

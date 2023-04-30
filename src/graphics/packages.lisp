@@ -267,7 +267,8 @@
            #:renderer-handle
            #:with-renderer
            #:make-material-from-memory
-           #:print-material-source))
+           #:print-material-source
+           #:format-material-source))
 
 
 (cl:defpackage :alien-works.graphics
@@ -338,7 +339,7 @@
    #:destroy-indirect-light
 
    #:make-texture
-   #:restore-texture
+   #:decode-texture
    #:update-texture-image
    #:update-cubemap-images
    #:generate-texture-mipmaps

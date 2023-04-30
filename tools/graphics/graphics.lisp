@@ -6,8 +6,7 @@
                                       (target-api :opengl)
                                       (platform :all)
                                       (optimization :performance))
-  (let ((source (with-output-to-string (out)
-                  (%gx:print-material-source material-name out))))
+  (let ((source (%gx:format-material-source material-name)))
     (%gxs:with-serialized-material-data (material-data source
                                          :base-path base-path
                                          :debug debug
@@ -20,12 +19,11 @@
         (%make-material (%alien-works.graphics:engine-handle))))))
 
 
-(defun serialize-material (material-name &key base-path debug
-                                           (target-api :opengl)
-                                           (platform :all)
-                                           (optimization :performance))
-  (let ((source (with-output-to-string (out)
-                  (%gx:print-material-source material-name out))))
+(defun encode-material (material-name &key base-path debug
+                                         (target-api :opengl)
+                                         (platform :all)
+                                         (optimization :performance))
+  (let ((source (%gx:format-material-source material-name)))
     (%gxs:with-serialized-material-data (material-data source
                                          :base-path base-path
                                          :debug debug
@@ -40,7 +38,7 @@
         serialized-mat-data))))
 
 
-(defun prepare-texture (image)
+(defun encode-texture (image)
   (%gxs:with-compressed-texture-encoder-builder
       (((%build-encoder :instance builder) 1 1))
     (%gxs:compressed-texture-encoder-builder-linear builder t)

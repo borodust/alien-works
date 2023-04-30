@@ -808,6 +808,17 @@
     (format stream "~&~%}")))
 
 
+(defun %graphics:format-material-source (material-name)
+  (block nil
+    (tagbody start
+       (restart-case
+           (return (with-output-to-string (out)
+                     (%graphics:print-material-source material-name out)))
+         (retry ()
+           :report "Retry transpiling material source"
+           (go start))))))
+
+
 (defmethod print-object ((this material) stream)
   (print-unreadable-object (this stream :type t)
     (format-material-descriptor this stream)))
