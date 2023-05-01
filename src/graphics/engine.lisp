@@ -127,6 +127,38 @@
         (setf (%fm:transform transform-manager instance) mat)))))
 
 
+(defun create-entity ()
+  (let* ((transform-manager (%fm:transform-manager (handle-of *engine*)))
+         (entity-manager (%fm:entity-manager (handle-of *engine*)))
+         (entity (%fm:create-entity entity-manager)))
+    (%fm:attach-transform transform-manager entity)
+    entity))
+
+
+(defun destroy-entity (entity)
+  (%fm:destroy-engine-entity (handle-of *engine*) entity)
+  (let ((entity-manager (%fm:entity-manager (handle-of *engine*))))
+    (%fm:destroy-entity entity-manager entity)))
+
+
+(defun (setf entity-parent) (parent entity)
+  (let ((transform-manager (%fm:transform-manager (handle-of *engine*))))
+    (%fm:with-transform-instance (entity-instance entity) transform-manager
+      (if parent
+          (%fm:with-transform-instance (parent-instance parent) transform-manager
+            (setf (%fm:transform-parent transform-manager entity-instance)
+                  parent-instance))
+          (iffi:with-intricate-instance (parent-instance
+                                         %filament:transform-manager+instance)
+            (setf (%fm:transform-parent transform-manager entity-instance)
+                  parent-instance))))))
+
+
+(defun entity-parent (entity)
+  (declare (ignore entity))
+  (error "Not implemented"))
+
+
 ;;;
 ;;; BUILDER
 ;;;
@@ -398,8 +430,9 @@
 
 (defun make-renderable (count &rest options)
   (%fm:with-renderable-builder ((%make-renderable :instance handle) (count))
-    (let ((builder (make-instance 'renderable-builder :handle handle))
-          (entity (%fm:create-entity)))
+    (let* ((builder (make-instance 'renderable-builder :handle handle))
+           (entity-manager (%fm:entity-manager (handle-of *engine*)))
+           (entity (%fm:create-entity entity-manager)))
       (loop for opt in options
             do (funcall opt builder))
       (%make-renderable (handle-of *engine*) entity)
@@ -475,8 +508,9 @@
 
 (defun make-light (type &rest options)
   (%fm:with-light-builder ((%build :instance handle) (type))
-    (let ((builder (make-instance 'light-builder :handle handle))
-          (entity (%fm:create-entity)))
+    (let* ((builder (make-instance 'light-builder :handle handle))
+           (entity-manager (%fm:entity-manager (handle-of *engine*)))
+           (entity (%fm:create-entity entity-manager)))
       (loop for opt in options
             do (funcall opt builder))
       (%build (handle-of *engine*) entity)
@@ -751,16 +785,17 @@
                                                       (shadows-enabled t)
                                                       (blend-mode :opaque))
   (with-slots (engine scene camera view camera-entity) this
-    (setf camera-entity (%fm:create-entity)
-          camera (%fm:create-camera engine camera-entity)
-          view (%fm:create-view engine)
-          scene (%fm:create-scene engine)
+    (let ((entity-manager (%fm:entity-manager (handle-of *engine*))))
+      (setf camera-entity (%fm:create-entity entity-manager)
+            camera (%fm:create-camera engine camera-entity)
+            view (%fm:create-view engine)
+            scene (%fm:create-scene engine)
 
-          (%fm:view-camera view) camera
-          (%fm:view-scene view) scene
-          (%fm:view-post-processing-enabled-p view) post-processing-enabled
-          (%fm:view-shadows-enabled-p view) shadows-enabled
-          (%fm:view-blend-mode view) blend-mode)
+            (%fm:view-camera view) camera
+            (%fm:view-scene view) scene
+            (%fm:view-post-processing-enabled-p view) post-processing-enabled
+            (%fm:view-shadows-enabled-p view) shadows-enabled
+            (%fm:view-blend-mode view) blend-mode))
     (when post-processing-enabled
       (%fm:update-view-bloom-options view :enabled t))
     (let ((width (or width 1280))
@@ -783,10 +818,11 @@
 
 (defun destroy-scene (scene)
   (with-slots (engine view scene camera-entity camera) scene
-    (%fm:destroy-camera engine camera-entity)
-    (%fm:destroy-entity camera-entity)
-    (%fm:destroy-scene engine scene)
-    (%fm:destroy-view engine view)))
+    (let ((entity-manager (%fm:entity-manager (handle-of *engine*))))
+      (%fm:destroy-camera engine camera-entity)
+      (%fm:destroy-entity entity-manager camera-entity)
+      (%fm:destroy-scene engine scene)
+      (%fm:destroy-view engine view))))
 
 
 (defun (setf scene-skybox) (skybox scene)

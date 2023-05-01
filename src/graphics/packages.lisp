@@ -31,6 +31,7 @@
            #:material-size
            #:with-parsed-material
 
+           #:entity-manager
            #:create-entity
            #:destroy-entity
            #:destroy-engine-entity
@@ -128,6 +129,7 @@
            #:transform
            #:attach-transform
            #:detach-transform
+           #:transform-parent
 
            #:with-mat4f
            #:with-mat3f
@@ -302,6 +304,10 @@
    #:transform-scene-camera
    #:scene-camera-lens-projection
    #:scene-camera-ortho-projection
+
+   #:create-entity
+   #:destroy-entity
+   #:entity-parent
 
    #:scene-skybox
    #:scene-indirect-light
