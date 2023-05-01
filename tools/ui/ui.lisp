@@ -4,7 +4,6 @@
 (declaim (special *ui-callback*
                   *ui-cleanup*))
 
-
 (defstruct finger
   id
   (x 0)
@@ -162,16 +161,40 @@
     (error "No SKIP-UI-PROCESSING restart found")))
 
 
+(define-condition unhandled-foreign-stack-condition (warning)
+  ((instance :initarg :instance :reader unhandled-foreign-stack-condition-instance))
+  (:report (lambda (c stream)
+             (let ((condition (unhandled-foreign-stack-condition-instance c)))
+               (format stream "Unhandled condition encountered during UI processing:~&~A"
+                       condition)
+               (format stream "~&~%Invoke #'alien-works:skip-ui-processing in your code to gracefully handle it.")))))
+
+
+(defun skip-ui-rendering ()
+  (throw 'skip-ui-rendering (values)))
+
+
 (%ui:define-ui-callback ui-callback ()
   (block ui
-    (restart-case
-        (prog1 (values)
-          (funcall *ui-callback*))
-      (skip-ui-processing (&optional cleanup-function)
-        :report "Skip UI processing in foreign callback and call cleanup function in lisp environment"
-        (when cleanup-function
-          (setf *ui-cleanup* cleanup-function))
-        (return-from ui (values))))))
+    ;; prevent unwinding through foreign frames
+    (let (registered-condition)
+      (unwind-protect
+           (restart-case
+               (handler-bind ((serious-condition
+                                (lambda (c)
+                                  (setf registered-condition c))))
+                 (funcall *ui-callback*))
+             (skip-ui-processing (&optional cleanup-function)
+               :report "Skip UI processing in foreign callback and call cleanup function in lisp environment."
+               (setf registered-condition nil
+                     *ui-cleanup* (or cleanup-function #'skip-ui-rendering))))
+        (when registered-condition
+          (warn (make-condition
+                 'unhandled-foreign-stack-condition
+                 :instance registered-condition)))
+        ;; ensure we catch every stack unwinding and stop it
+        ;; before foreign stack is reached
+        (return-from ui)))))
 
 
 (defun update-ui-size (ui width height
@@ -320,13 +343,14 @@
 
 (defun render-ui (ui time-delta ui-callback)
   (with-slots (view imgui-helper callback context) ui
-    (%ui:with-bound-context (context)
-      (let ((*ui-callback* ui-callback)
-            (*ui-cleanup* nil))
-        (%ui:render-imgui imgui-helper callback time-delta)
-        (when *ui-cleanup*
-          (funcall *ui-cleanup*)))
-      (%fm:render-view (%alien-works.graphics:renderer-handle) view))))
+    (catch 'skip-ui-rendering
+      (%ui:with-bound-context (context)
+        (let ((*ui-callback* ui-callback)
+              (*ui-cleanup* nil))
+          (%ui:render-imgui imgui-helper callback time-delta)
+          (when *ui-cleanup*
+            (funcall *ui-cleanup*)))
+        (%fm:render-view (%alien-works.graphics:renderer-handle) view)))))
 
 
 (defmacro ui ((ui time-delta) &body body)

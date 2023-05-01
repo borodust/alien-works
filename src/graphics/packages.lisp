@@ -291,6 +291,7 @@
                 #:destroy-typeface)
   (:export ;; 3D
 
+   #:with-frame-loop
    #:when-frame
 
    #:make-scene

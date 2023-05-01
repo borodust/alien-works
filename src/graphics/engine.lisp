@@ -1,11 +1,10 @@
 (cl:in-package :alien-works.graphics)
 
+(declaim (special *engine*))
 
 (defvar *engine-tasks* (mt:make-guarded-reference nil))
 
-
-(declaim (special *engine*
-                  *renderer*))
+(defvar *renderer* nil)
 
 
 (defmacro with-transform ((transform &rest operations) &body body)
@@ -90,13 +89,27 @@
       (a:nconcf (rest tasks) (list task)))))
 
 
+(defmacro with-frame-loop (&body body)
+  `(progn
+     ;; end outer frame earlier
+     (when *renderer*
+       (%fm:end-frame *renderer*))
+     (unwind-protect
+          (progn ,@body)
+       (when *renderer*
+         ;; restart outer frame
+         (unless (%fm:begin-frame *renderer* (slot-value *engine* 'swap-chain))
+           (throw 'skip-frame (values)))))))
+
+
 (defmacro when-frame (() &body body)
   `(with-slots (renderer swap-chain) *engine*
      (when (%fm:begin-frame renderer swap-chain)
        (unwind-protect
-            (let ((*renderer* renderer))
-              (consume-engine-tasks)
-              ,@body)
+            (catch 'skip-frame
+              (let ((*renderer* renderer))
+                (consume-engine-tasks)
+                ,@body))
          (%fm:end-frame renderer)))))
 
 
